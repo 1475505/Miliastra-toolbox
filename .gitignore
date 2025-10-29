@@ -49,6 +49,8 @@ design-tokens/
 /src/styles/design-tokens.css
 /src/styles/specify/
 
+.kilocode/
+
 # PWA files
 **/public/sw.js
 **/public/workbox-*.js
@@ -56,3 +58,5 @@ design-tokens/
 **/public/sw.js.map
 **/public/workbox-*.js.map
 **/public/worker-*.js.map
+
+.env*

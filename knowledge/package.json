@@ -1,0 +1,27 @@
+{
+  "name": "doc-qa-knowledge",
+  "version": "1.0.0",
+  "description": "知识库管理脚本 - 文档爬取（简化版，只生成markdown文件）",
+  "type": "module",
+  "scripts": {
+    "crawl": "tsx scripts/crawl.ts",
+    "scrape": "tsx scripts/scrape.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "crawler",
+    "firecrawl",
+    "markdown"
+  ],
+  "author": "Miliastra-toolbox Team",
+  "license": "MIT",
+  "dependencies": {
+    "@mendable/firecrawl-js": "^4.4.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
