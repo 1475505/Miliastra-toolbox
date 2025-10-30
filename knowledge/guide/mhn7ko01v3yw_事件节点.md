@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhn7ko01v3yw
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-29T22:52:33.898Z
+crawledAt: 2025-10-30T19:30:03.892Z
 ---
 
 # 一、自定义变量

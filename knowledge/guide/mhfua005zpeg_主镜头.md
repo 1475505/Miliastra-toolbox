@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhfua005zpeg
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-29T22:52:31.270Z
+crawledAt: 2025-10-30T19:30:03.642Z
 ---
 
 _镜头_是游戏中用于呈现玩家视角的工具。它决定了玩家在游戏中看到的画面。
