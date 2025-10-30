@@ -54,8 +54,8 @@ knowledge/
 ├── tsconfig.json                 # TypeScript 配置
 ├── .env.local                    # 环境变量配置
 │
-├── scripts/                      # 核心脚本
-│   ├── crawl.ts                 # 自动爬取 URL 列表
+├── spider/                       # 核心脚本
+│   ├── crawl.ts                  # 自动爬取 URL 列表
 │   ├── scrape.ts                 # 主爬虫脚本
 │   ├── types.ts                  # 类型定义
 │   └── utils/                    # 工具模块

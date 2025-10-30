@@ -130,9 +130,9 @@ export class FirecrawlClient {
   }
 
   /**
-   * 爬取单个 URL（使用 scrape 方法）
-   * 按照官方文档格式处理响应，并保存 markdown 文件
-   */
+    * 爬取单个 URL（使用 scrape 方法）
+    * 按照官方文档格式处理响应，并保存 markdown 文件
+    */
   async scrapeURL(url: string, options?: {
     scope?: string;
     saveMarkdown?: boolean;
@@ -148,6 +148,7 @@ export class FirecrawlClient {
         excludeTags: ['nav', 'footer', 'header', 'aside', 'script', 'style'], // 排除不需要的标签
         onlyMainContent: true, // 只提取主要内容
         waitFor: 2000, // 等待动态内容加载完成
+        timeout: 180000, // 3分钟超时
       });
       
       // 新版本直接返回数据，没有success属性

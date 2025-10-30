@@ -18,7 +18,7 @@
     "esm": true
   },
   "include": [
-    "scripts/**/*"
+    "spider/**/*"
   ],
   "exclude": [
     "node_modules",

@@ -36,15 +36,36 @@ class Crawler {
   }
   
   /**
-   * 爬取单个 URL
-   */
+    * 爬取单个 URL
+    */
   async crawlURL(entry: URLEntry, force: boolean = false) {
     const { id, title, url, scope } = entry;
-    
+
     console.log(`\n📄 [${scope}] ${title}`);
     console.log(`   URL: ${url}`);
     console.log(`   ID: ${id}`);
-    
+
+    // 检查是否已有对应的 markdown 文件
+    const knowledgeDir = path.join(__dirname, '..');
+    const scopeDir = path.join(knowledgeDir, scope);
+    const safeTitle = title
+      .replace(/[<>:"/\\|?*]/g, '_')
+      .replace(/\s+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
+    const fileName = `${id}_${safeTitle}.md`;
+    const filePath = path.join(scopeDir, fileName);
+
+    try {
+      await fs.access(filePath);
+      if (!force) {
+        console.log(`   ⏭️ 跳过：Markdown 文件已存在`);
+        return { success: true, skipped: true };
+      }
+    } catch {
+      // 文件不存在，继续爬取
+    }
+
     try {
       // 爬取内容（Firecrawl 会自动保存 markdown 文件）
       console.log('   ↓ 爬取中...');
@@ -54,15 +75,15 @@ class Crawler {
         documentId: entry.id,
         title: entry.title // 传递正确的标题
       });
-      
+
       if (!result.success) {
         console.error(`   ✗ 爬取失败: ${result.error}`);
         return { success: false, error: result.error };
       }
-      
+
       console.log(`   ✓ 爬取成功`);
       console.log(`   ✓ Markdown 文件已保存`);
-      
+
       return { success: true };
     } catch (error) {
       const errorMessage = (error as Error).message;
@@ -72,68 +93,81 @@ class Crawler {
   }
   
   /**
-   * 批量爬取（支持并发）
-   */
+    * 批量爬取（支持并发）
+    */
   async scrapeMultiple(entries: URLEntry[], options: { force?: boolean; concurrency?: number } = {}) {
     const concurrency = options.concurrency || 2;
     console.log(`\n🚀 开始爬取 ${entries.length} 个文档 (并发度: ${concurrency})\n`);
-    
+
     const startTime = Date.now();
     let successCount = 0;
     let failCount = 0;
+    let skippedCount = 0;
     let processedCount = 0;
-    
+
     // 按scope统计
     const scopeStats: Record<string, number> = {};
-    
+
     // 分批处理以控制并发
     for (let i = 0; i < entries.length; i += concurrency) {
       const batch = entries.slice(i, i + concurrency);
       const batchPromises = batch.map(entry => this.processEntry(entry, options.force));
-      
+
       const batchResults = await Promise.allSettled(batchPromises);
-      
+
       batchResults.forEach((result, index) => {
         processedCount++;
         const entry = batch[index];
-        
-        if (result.status === 'fulfilled' && result.value.success) {
-          successCount++;
-          scopeStats[entry.scope] = (scopeStats[entry.scope] || 0) + 1;
+
+        if (result.status === 'fulfilled') {
+          const value = result.value;
+          if (value.success) {
+            if (value.skipped) {
+              skippedCount++;
+            } else {
+              successCount++;
+              scopeStats[entry.scope] = (scopeStats[entry.scope] || 0) + 1;
+            }
+          } else {
+            failCount++;
+            const error = value.error;
+            console.error(`\n❌ [${entry.scope}] ${entry.title} (${entry.id})`);
+            console.error(`   错误: ${error}`);
+          }
         } else {
           failCount++;
-          const error = result.status === 'rejected' ?
-            result.reason : result.value.error;
+          const error = result.reason;
           console.error(`\n❌ [${entry.scope}] ${entry.title} (${entry.id})`);
           console.error(`   错误: ${error}`);
         }
-        
+
         // 进度报告
         const percentage = ((processedCount / entries.length) * 100).toFixed(1);
         console.log(`\n📊 进度: ${processedCount}/${entries.length} (${percentage}%)`);
-        console.log(`   成功: ${successCount} | 失败: ${failCount}`);
+        console.log(`   成功: ${successCount} | 跳过: ${skippedCount} | 失败: ${failCount}`);
         const categoriesStr = Object.entries(scopeStats)
           .map(([key, value]) => `${key}: ${value}`)
           .join(' | ');
         console.log(`   ${categoriesStr}`);
       });
-      
+
       // 批次间短暂延迟（避免 API 限流）
       if (i + concurrency < entries.length) {
         console.log(`   ⏱️  批次间延迟 0.5 秒...`);
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
-    
+
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    
+
     console.log(`\n✅ 爬取完成`);
     console.log(`  总数: ${entries.length}`);
     console.log(`  成功: ${successCount}`);
+    console.log(`  跳过: ${skippedCount}`);
     console.log(`  失败: ${failCount}`);
     console.log(`  耗时: ${duration}s`);
     console.log(`  平均速度: ${(successCount / parseFloat(duration)).toFixed(2)} 文档/秒`);
-    
+
     // 按scope统计
     console.log(`\n📂 scope统计:`);
     Object.entries(scopeStats).forEach(([scope, count]) => {
