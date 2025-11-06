@@ -12,17 +12,22 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["*"],
+      "../*": ["../*"]
+    },
+    "types": ["node"]
   },
   "ts-node": {
     "esm": true
   },
   "include": [
-    "spider/**/*"
+    "**/*"
   ],
   "exclude": [
     "node_modules",
-    "docs",
-    "config"
+    "data"
   ]
 }

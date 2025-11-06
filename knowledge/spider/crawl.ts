@@ -15,8 +15,8 @@ import dotenv from 'dotenv';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// 加载环境变量（从 knowledge 目录）
-dotenv.config({ path: path.join(__dirname, '..', '.env.local') });
+// 加载环境变量（从 spider 目录）
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 // 源页面配置
 const SOURCES = {

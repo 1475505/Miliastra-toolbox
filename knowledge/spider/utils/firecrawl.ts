@@ -16,11 +16,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
-// 加载环境变量
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// 加载环境变量
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 export class FirecrawlClient {
   private client: Firecrawl;

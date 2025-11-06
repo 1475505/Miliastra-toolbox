@@ -1,0 +1,14 @@
+# Core
+llama-index>=0.10.0
+python-dotenv>=1.0.0
+click>=8.0.0
+
+# LLM and Embeddings
+llama-index-llms-openai
+llama-index-llms-openai-like
+llama-index-embeddings-openai
+pyyaml>=6.0
+
+# Vector Store
+llama-index-vector-stores-chroma
+chromadb>=0.4.22
