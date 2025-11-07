@@ -1,6 +1,8 @@
 # 知识库管理系统
 
-基于 Firecrawl API 的自动化文档爬取、处理和 RAG 检索生成系统。
+基于 Firecrawl API / LLamaIndex 的自动化文档爬取、处理和 RAG 检索生成系统。
+
+> 大部分代码由AI生成，质量较低
 
 ## 模块概览
 

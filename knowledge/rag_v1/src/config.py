@@ -28,6 +28,12 @@ class Config:
     MAX_CHUNK_SIZE: int = int(os.getenv("MAX_CHUNK_SIZE", "2048"))  # 增大chunk_size以保持一级标题内容完整性
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "200"))  # 增加重叠以保持上下文连贯性
     USE_H1_ONLY: bool = os.getenv("USE_H1_ONLY", "True").lower() == "true"  # 只按一级标题分块
+
+    # 混合检索配置
+    RAG_STRATEGY: str = os.getenv("RAG_STRATEGY", "vector")  # 检索策略: "vector" 或 "hybrid"
+    FUSION_MODE: str = os.getenv("FUSION_MODE", "reciprocal_rank")  # 融合模式: "reciprocal_rank" 或 "relative_score"
+    VECTOR_TOP_K: int = int(os.getenv("VECTOR_TOP_K", "5"))  # 向量检索的top_k
+    BM25_TOP_K: int = int(os.getenv("BM25_TOP_K", "5"))  # BM25检索的top_k
     
     # 模型配置
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")  # 嵌入模型，默认BAAI/bge-m3

@@ -10,8 +10,11 @@ from .db import get_storage_context, get_vector_store_index, clear_collection, g
 
 from llama_index.core import Settings as LlamaSettings
 from llama_index.core.query_engine import BaseQueryEngine
+from llama_index.core.retrievers import BaseRetriever
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai_like import OpenAILike
+from llama_index.retrievers.bm25 import BM25Retriever
+from llama_index.core.retrievers import QueryFusionRetriever
 
 class RAGStrategy:
     VECTOR = "vector"
@@ -37,6 +40,7 @@ class RAGEngine:
             collection_name=config.CHROMA_COLLECTION_NAME
         )
         self.index = self._load_index()
+        self.documents = []  # 保存文档节点，用于BM25检索
         self.query_engine = self._create_query_engine()
         logging.info("RAG引擎初始化完成")
 
@@ -75,6 +79,7 @@ class RAGEngine:
             logging.info("强制重建：清空现有集合...")
             clear_collection(config.KNOWLEDGE_BASE_PATH, config.CHROMA_COLLECTION_NAME)
             self.index = None
+            self.documents = []  # 清空文档节点
             # 重新创建 storage_context 以确保使用新的 collection
             self.storage_context = get_storage_context(
                 persist_dir=config.KNOWLEDGE_BASE_PATH,
@@ -95,7 +100,10 @@ class RAGEngine:
         logging.info(f"开始构建新索引，共 {len(all_nodes)} 个节点...")
         self.index = get_vector_store_index(self.storage_context, embed_model=LlamaSettings.embed_model)
         self.index.insert_nodes(all_nodes)
-        
+
+        # 保存文档节点用于BM25检索
+        self.documents = all_nodes
+
         # 索引持久化由ChromaDB自动处理
         self.query_engine = self._create_query_engine()
         logging.info("知识库构建成功并且查询引擎已更新。")
@@ -109,11 +117,64 @@ class RAGEngine:
             logging.warning("索引未加载，无法创建查询引擎。")
             return None
 
-        # 默认使用向量检索，添加相似度阈值过滤
-        return self.index.as_query_engine(
-            similarity_top_k=config.TOP_K,
-            similarity_cutoff=config.SIMILARITY_THRESHOLD
-        )
+        # 根据配置选择检索策略
+        if config.RAG_STRATEGY == RAGStrategy.HYBRID:
+            return self._create_hybrid_query_engine()
+        else:
+            # 默认使用向量检索，添加相似度阈值过滤
+            return self.index.as_query_engine(
+                similarity_top_k=config.TOP_K,
+                similarity_cutoff=config.SIMILARITY_THRESHOLD
+            )
+
+    def _create_hybrid_query_engine(self) -> Optional[BaseQueryEngine]:
+        """创建混合检索查询引擎"""
+        if not self.index:
+            logging.warning("索引未加载，无法创建混合查询引擎。")
+            return None
+
+        if not self.documents:
+            logging.warning("文档节点未加载，无法创建混合查询引擎。")
+            return None
+
+        try:
+            # 创建向量检索器
+            vector_retriever = self.index.as_retriever(
+                similarity_top_k=config.VECTOR_TOP_K,
+                similarity_cutoff=config.SIMILARITY_THRESHOLD
+            )
+
+            # 创建BM25检索器
+            bm25_retriever = BM25Retriever.from_defaults(
+                documents=self.documents,
+                similarity_top_k=config.BM25_TOP_K
+            )
+
+            # 创建混合检索器
+            hybrid_retriever = QueryFusionRetriever(
+                retrievers=[vector_retriever, bm25_retriever],
+                similarity_top_k=config.TOP_K,
+                mode=config.FUSION_MODE,
+                num_queries=1  # 不进行查询扩展，只使用原始查询
+            )
+
+            # 基于混合检索器创建查询引擎
+            from llama_index.core.query_engine import RetrieverQueryEngine
+            query_engine = RetrieverQueryEngine.from_args(
+                retriever=hybrid_retriever,
+                llm=LlamaSettings.llm
+            )
+
+            logging.info(f"混合检索查询引擎创建成功，融合模式: {config.FUSION_MODE}")
+            return query_engine
+
+        except Exception as e:
+            logging.error(f"创建混合检索查询引擎失败: {e}")
+            logging.info("回退到向量检索模式")
+            return self.index.as_query_engine(
+                similarity_top_k=config.TOP_K,
+                similarity_cutoff=config.SIMILARITY_THRESHOLD
+            )
     
     def query(self, question: str, include_answer: bool = True) -> Dict[str, Any]:
         if not self.query_engine:

@@ -30,7 +30,7 @@ python3 rag_cli.py init
 
 ```bash
 # 召回测试
-python3 rag_cli.py retrieve "如何开始使用这个系统？"
+python3 rag_cli.py query "如何开始使用这个系统？" --no-answer
 
 # LLM问答
 python3 rag_cli.py query "什么是节点图？"
@@ -99,16 +99,34 @@ python3 test_rag.py query "你的问题"
 | `MAX_CHUNK_SIZE` | 文本块大小 | 512 |
 | `CHUNK_OVERLAP` | 块重叠大小 | 100 |
 | `CHUNKING_STRATEGY` | 分块策略 | structure |
-| **混合召回配置** |  |  |
-| `RETRIEVAL_STRATEGY` | 召回策略：vector/hybrid | hybrid |
-| `FUSION_MODE` | 融合模式：reciprocal_rerank/relative_score | reciprocal_rerank |
+| **混合检索配置** |  |  |
+| `RAG_STRATEGY` | 检索策略：vector/hybrid | vector |
+| `FUSION_MODE` | 融合模式：reciprocal_rank/relative_score | reciprocal_rank |
+| `VECTOR_TOP_K` | 向量检索的top_k数量 | 5 |
+| `BM25_TOP_K` | BM25检索的top_k数量 | 5 |
 
-### 召回策略说明
+### 检索策略说明
 
-1. **vector（纯向量召回）**: 基于语义相似度，适合概念性问题
-2. **hybrid（混合召回）**: 向量召回 + BM25召回，兼顾语义理解和精确匹配
+1. **vector（纯向量检索）**: 基于语义相似度，适合概念性问题
+   - 使用向量化技术进行语义检索
+   - 适合理解概念关系和上下文相似性
+
+2. **hybrid（混合检索）**: 向量检索 + BM25检索，兼顾语义理解和精确匹配
+   - 结合向量检索的语义理解能力和BM25的精确匹配能力
    - 适合技术文档的专业术语检索
-   - 推荐在大多数场景下使用
+   - 推荐在大多数场景下使用，提供更全面和准确的检索结果
+
+### 融合模式说明
+
+1. **reciprocal_rank（互序排名融合）**:
+   - 基于文档在不同检索器中的排名进行融合
+   - 计算公式: `1 / (k + rank)`，其中k通常为60
+   - 适合大多数检索场景，默认推荐
+
+2. **relative_score（相对评分融合）**:
+   - 基于不同检索器的评分进行标准化和融合
+   - 将不同检索器的评分映射到相同范围
+   - 适合需要精确评分控制的场景
 
 ### 文档路径
 
