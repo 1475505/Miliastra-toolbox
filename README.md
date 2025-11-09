@@ -2,6 +2,8 @@
 
 千星奇域工具箱是AI赋能，提升千星沙箱编辑效率的工具集合。
 
+![demo](https://7s-1304005994.cos.ap-singapore.myqcloud.com/68cd1a565e1334de448e717cceffcc82.png)
+
 ## 开发计划
 
 【1】知识问答系统：通过RAG对奇匠学院的文档进行知识问答。
