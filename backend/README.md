@@ -12,6 +12,8 @@
 - ✅ 多轮对话，自动管理对话上下文
 - ✅ 知识库检索，返回引用来源
 - ✅ Token 消耗统计
+- ✅ **流式响应**：实时逐字返回，提升用户体验
+- ✅ **Web 前端**：开箱即用的问答界面
 
 ## 快速开始
 
@@ -33,11 +35,14 @@ pip install -r requirements.txt
 
 ```bash
 python3 main.py
+# 或使用 uvicorn
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 服务将在 `http://localhost:8000` 启动。
 
-访问 API 文档: `http://localhost:8000/docs`
+- **Web 界面**: `http://localhost:8000`
+- **API 文档**: `http://localhost:8000/docs`
 
 ### 4. 测试 API
 
@@ -70,8 +75,10 @@ backend/
 ├── .env                 # 环境变量配置（不提交到 git）
 ├── api.md              # API 接口文档
 ├── README.md           # 项目说明
+├── static/             # 前端静态文件
+│   └── index.html      # Web 问答界面
 ├── rag/                # 核心模块
-│   ├── chatEngine.py   # ChatEngine 实现
+│   ├── chatEngine.py   # ChatEngine 实现（支持流式/非流式）
 │   └── chat.py         # FastAPI 路由
 └── tests/              # 测试目录
     ├── test_chat.py    # 单元测试
@@ -81,7 +88,16 @@ backend/
 
 ## API 使用示例
 
-### 单轮对话
+### 方式 1：Web 界面（推荐）
+
+访问 `http://localhost:8000`，在浏览器中直接使用：
+- ✅ 流式对话，实时显示
+- ✅ 引用来源展示
+- ✅ 配置管理（localStorage）
+
+### 方式 2：非流式 API
+
+**单轮对话**：
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/rag/chat \
@@ -97,7 +113,7 @@ curl -X POST http://localhost:8000/api/v1/rag/chat \
   }'
 ```
 
-### 多轮对话
+**多轮对话**：
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/rag/chat \
@@ -115,6 +131,31 @@ curl -X POST http://localhost:8000/api/v1/rag/chat \
     }
   }'
 ```
+
+### 方式 3：流式 API
+
+```bash
+curl -X POST http://localhost:8000/api/v1/rag/chat/stream \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "什么是节点图？",
+    "conversation": [],
+    "config": {
+      "api_key": "sk-xxx",
+      "api_base_url": "https://api.deepseek.com/v1",
+      "model": "deepseek-chat"
+    }
+  }'
+```
+
+**响应格式（SSE）**：
+```
+data: {"type": "sources", "data": [...]}
+data: {"type": "token", "data": "文本"}
+data: {"type": "done", "data": {"tokens": 123}}
+```
+
+详见 [api.md](./api.md)
 
 ## 技术栈
 

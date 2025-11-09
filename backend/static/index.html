@@ -47,6 +47,12 @@
             font-weight: 600;
         }
 
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
         .config-btn {
             background: rgba(255,255,255,0.2);
             border: none;
@@ -69,7 +75,7 @@
         }
 
         .message {
-            margin-bottom: 16px;
+            margin-bottom: 8px;
             display: flex;
             animation: fadeIn 0.3s;
         }
@@ -104,29 +110,71 @@
 
         .sources {
             margin-top: 8px;
-            padding: 8px;
-            background: #f0f4ff;
-            border-radius: 8px;
-            font-size: 12px;
+            padding: 10px;
+            background: #f8f9ff;
+            border-left: 3px solid #667eea;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .sources-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+            font-size: 13px;
         }
 
         .source-item {
             padding: 4px 0;
-            border-bottom: 1px solid #e0e7ff;
+            border-bottom: 1px solid #e5e7ff;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         .source-item:last-child {
             border-bottom: none;
+            padding-bottom: 0;
         }
 
-        .source-title {
+        .source-header {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 3px;
+        }
+
+        .source-link {
             font-weight: 600;
             color: #667eea;
+            text-decoration: none;
+            transition: color 0.2s;
+            font-size: 13px;
+        }
+
+        .source-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
         }
 
         .source-similarity {
             color: #888;
             font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .source-snippet {
+            color: #666;
+            font-size: 12px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-all;
+            max-height: 2.8em; /* fallback to keep snippets compact when line-clamp is unsupported */
         }
 
         .input-area {
@@ -267,7 +315,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌟 千星知识库问答</h1>
+            <div>
+                <h1>🌟 千星知识库问答</h1>
+                <div class="subtitle">（简易版，刷新不保留对话）</div>
+            </div>
             <button class="config-btn" onclick="openConfig()">⚙️ 配置</button>
         </div>
 
@@ -293,7 +344,7 @@
     <!-- 配置弹窗 -->
     <div class="modal" id="config-modal">
         <div class="modal-content">
-            <h2>API 配置</h2>
+            <h2>API 配置（浏览器本地保存，后端不保存）</h2>
             <div class="form-group">
                 <label>API Key</label>
                 <input type="password" id="api-key" placeholder="sk-xxxxxxxx">
@@ -370,12 +421,17 @@
             
             // 如果有引用来源
             if (sources && sources.length > 0) {
-                html += '<div class="sources"><strong>📚 引用来源：</strong>';
+                html += '<div class="sources">';
+                html += '<div class="sources-title">📚 引用来源</div>';
                 sources.forEach(source => {
+                    const snippet = source.text_snippet ? source.text_snippet.substring(0, 100).replace(/\n/g, ' ') : '';
                     html += `
                         <div class="source-item">
-                            <span class="source-title">${escapeHtml(source.title)}</span>
-                            <span class="source-similarity">(相似度: ${(source.similarity * 100).toFixed(0)}%)</span>
+                            <div class="source-header">
+                                <a href="${escapeHtml(source.url)}" target="_blank" class="source-link">${escapeHtml(source.title)}</a>
+                                <span class="source-similarity">(${(source.similarity * 100).toFixed(0)}%)</span>
+                            </div>
+                            ${snippet ? `<div class="source-snippet">${escapeHtml(snippet)}...</div>` : ''}
                         </div>
                     `;
                 });
@@ -400,7 +456,7 @@
             return div.innerHTML;
         }
 
-        // 发送消息
+        // 发送消息（流式版本）
         async function sendMessage() {
             const input = document.getElementById('message-input');
             const sendBtn = document.getElementById('send-btn');
@@ -430,8 +486,20 @@
                 content: message
             });
 
+            // 创建一个空的助手消息容器用于流式更新
+            const chatArea = document.getElementById('chat-area');
+            const assistantDiv = document.createElement('div');
+            assistantDiv.className = 'message assistant';
+            assistantDiv.innerHTML = '<div class="message-content"></div>';
+            chatArea.appendChild(assistantDiv);
+            const contentDiv = assistantDiv.querySelector('.message-content');
+
+            let fullAnswer = '';
+            let sources = [];
+            let tokens = 0;
+
             try {
-                const response = await fetch('/api/v1/rag/chat', {
+                const response = await fetch('/api/v1/rag/chat/stream', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -441,28 +509,84 @@
                     })
                 });
 
-                const data = await response.json();
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
 
-                if (data.success) {
-                    // 添加助手回答
-                    addMessage('assistant', data.data.answer, data.data.sources, data.data.stats);
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    // 解码数据
+                    buffer += decoder.decode(value, { stream: true });
                     
-                    // 添加到历史记录
-                    conversation.push({
-                        role: 'assistant',
-                        content: data.data.answer
-                    });
+                    // 按行分割
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // 保留不完整的行
 
-                    // 保持历史记录在合理长度（最多保留10轮对话）
-                    if (conversation.length > 20) {
-                        conversation = conversation.slice(-20);
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+
+                                if (data.type === 'sources') {
+                                    sources = data.data;
+                                } else if (data.type === 'token') {
+                                    fullAnswer += data.data;
+                                    contentDiv.textContent = fullAnswer;
+                                    chatArea.scrollTop = chatArea.scrollHeight;
+                                } else if (data.type === 'done') {
+                                    tokens = data.data.tokens;
+                                    // 添加来源信息和统计
+                                    let finalHtml = escapeHtml(fullAnswer);
+                                    
+                                    if (sources.length > 0) {
+                                        finalHtml += '<div class="sources">';
+                                        finalHtml += '<div class="sources-title">📚 引用来源</div>';
+                                        sources.forEach(source => {
+                                            const snippet = source.text_snippet ? source.text_snippet.substring(0, 100).replace(/\n/g, ' ') : '';
+                                            finalHtml += `
+                                                <div class="source-item">
+                                                    <div class="source-header">
+                                                        <a href="${escapeHtml(source.url)}" target="_blank" class="source-link">${escapeHtml(source.title)}</a>
+                                                        <span class="source-similarity">(${(source.similarity * 100).toFixed(0)}%)</span>
+                                                    </div>
+                                                    ${snippet ? `<div class="source-snippet">${escapeHtml(snippet)}...</div>` : ''}
+                                                </div>
+                                            `;
+                                        });
+                                        finalHtml += '</div>';
+                                    }
+                                    
+                                    if (tokens) {
+                                        finalHtml += `<div class="stats">💬 消耗 tokens: ${tokens}</div>`;
+                                    }
+                                    
+                                    contentDiv.innerHTML = finalHtml;
+                                } else if (data.type === 'error') {
+                                    contentDiv.textContent = `❌ 错误：${data.data}`;
+                                }
+                            } catch (e) {
+                                console.warn('解析 SSE 数据失败:', line, e);
+                            }
+                        }
                     }
-                } else {
-                    addMessage('assistant', `❌ 错误：${data.error || '未知错误'}`);
                 }
+
+                // 添加到历史记录
+                conversation.push({
+                    role: 'assistant',
+                    content: fullAnswer
+                });
+
+                // 保持历史记录在合理长度（最多保留10轮对话）
+                if (conversation.length > 20) {
+                    conversation = conversation.slice(-20);
+                }
+
             } catch (error) {
                 console.error('请求失败:', error);
-                addMessage('assistant', `❌ 网络错误：${error.message}`);
+                contentDiv.textContent = `❌ 网络错误：${error.message}`;
             } finally {
                 // 恢复输入
                 input.disabled = false;

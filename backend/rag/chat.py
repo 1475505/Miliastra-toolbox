@@ -7,6 +7,7 @@ FastAPI Chat 端点
 3. 错误处理：统一异常处理
 """
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from .chatEngine import ChatEngine
@@ -135,3 +136,43 @@ async def health():
             "status": "error",
             "error": str(e)
         }
+
+
+@router.post("/rag/chat/stream")
+async def chat_stream(request: ChatRequest):
+    """流式对话端点
+    
+    Returns:
+        StreamingResponse: SSE 格式的流式响应
+    """
+    try:
+        # 1. 获取引擎
+        engine = get_chat_engine()
+        
+        # 2. 转换请求
+        conversation = [msg.dict() for msg in request.conversation]
+        llm_config = request.config.dict()
+        
+        # 3. 返回流式响应
+        return StreamingResponse(
+            engine.chat_stream(
+                message=request.message,
+                conversation=conversation,
+                config=llm_config
+            ),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"  # 禁用 Nginx 缓冲
+            }
+        )
+    
+    except Exception as e:
+        # 流式错误处理：返回错误事件
+        import json
+        error_event = f"data: {json.dumps({'type': 'error', 'data': str(e)}, ensure_ascii=False)}\n\n"
+        return StreamingResponse(
+            iter([error_event]),
+            media_type="text/event-stream"
+        )

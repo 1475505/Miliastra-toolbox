@@ -1,7 +1,22 @@
-# RAG API
+# RAG API 文档
 
-## 接口地址
-**POST** `/rag/chat`
+## 概述
+
+提供两种对话模式：
+- **非流式**：适合 API 调用、命令行测试
+- **流式**：适合 Web 前端实时渲染
+
+---
+
+## 1. 非流式接口
+
+### 接口地址
+**POST** `/api/v1/rag/chat`
+
+### 特点
+- 返回完整 JSON 响应
+- 适合命令行测试
+- 兼容性好
 
 ## 请求参数
 
@@ -114,16 +129,16 @@
 
 ## 客户端调用示例
 
-### JavaScript
+### 1. 非流式调用
+
+#### JavaScript
 ```javascript
-const response = await fetch('/query', {
+const response = await fetch('/api/v1/rag/chat', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     message: '小地图如何使用？',
-    conversation: [
-      { role: 'user', content: '什么是小地图？' }
-    ],
+    conversation: [],
     config: {
       api_key: 'sk-xxxxxxxx',
       api_base_url: 'https://api.deepseek.com/v1',
@@ -136,22 +151,16 @@ const data = await response.json();
 if (data.success) {
   console.log('回答:', data.data.answer);
   console.log('引用来源:', data.data.sources);
-  console.log('消耗tokens:', data.data.stats.tokens);
 }
 ```
 
-### Python
+#### Python
 ```python
 import requests
 
-response = requests.post('/query', json={
+response = requests.post('http://localhost:8000/api/v1/rag/chat', json={
     'message': '小地图如何使用？',
-    'conversation': [
-        {
-            'role': 'user',
-            'content': '什么是小地图？'
-        }
-    ],
+    'conversation': [],
     'config': {
         'api_key': 'sk-xxxxxxxx',
         'api_base_url': 'https://api.deepseek.com/v1',
@@ -162,6 +171,141 @@ response = requests.post('/query', json={
 data = response.json()
 if data['success']:
     print('回答:', data['data']['answer'])
-    print('引用来源:', data['data']['sources'])
-    print('消耗tokens:', data['data']['stats']['tokens'])
+```
+
+#### cURL
+```bash
+curl -X POST http://localhost:8000/api/v1/rag/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "小地图如何使用？",
+    "conversation": [],
+    "config": {
+      "api_key": "sk-xxxxxxxx",
+      "api_base_url": "https://api.deepseek.com/v1",
+      "model": "deepseek-chat"
+    }
+  }'
+```
+
+---
+
+## 2. 流式接口
+
+### 接口地址
+**POST** `/api/v1/rag/chat/stream`
+
+### 特点
+- 返回 SSE (Server-Sent Events) 流
+- 实时逐字显示
+- 更好的用户体验
+
+### 请求参数
+与非流式接口相同
+
+### 响应格式（SSE）
+
+```
+data: {"type": "sources", "data": [{"title": "...", "url": "..."}]}
+
+data: {"type": "token", "data": "文本"}
+
+data: {"type": "token", "data": "片段"}
+
+data: {"type": "done", "data": {"tokens": 123}}
+```
+
+### 事件类型
+
+| 类型 | 说明 | 数据格式 |
+|------|------|---------|
+| `sources` | 引用来源 | `{"data": [{"title", "url", "similarity"}]}` |
+| `token` | 文本片段 | `{"data": "文本内容"}` |
+| `done` | 完成信号 | `{"data": {"tokens": 123}}` |
+| `error` | 错误信息 | `{"data": "错误描述"}` |
+
+### 客户端调用示例
+
+#### JavaScript (Fetch API)
+```javascript
+const response = await fetch('/api/v1/rag/chat/stream', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    message: '小地图如何使用？',
+    conversation: [],
+    config: {
+      api_key: 'sk-xxxxxxxx',
+      api_base_url: 'https://api.deepseek.com/v1',
+      model: 'deepseek-chat'
+    }
+  })
+});
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  
+  const chunk = decoder.decode(value);
+  const lines = chunk.split('\n');
+  
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      const data = JSON.parse(line.slice(6));
+      
+      if (data.type === 'token') {
+        console.log(data.data); // 实时输出文本
+      } else if (data.type === 'done') {
+        console.log('完成，消耗 tokens:', data.data.tokens);
+      }
+    }
+  }
+}
+```
+
+#### Python (SSE Client)
+```python
+import requests
+import json
+
+response = requests.post(
+    'http://localhost:8000/api/v1/rag/chat/stream',
+    json={
+        'message': '小地图如何使用？',
+        'conversation': [],
+        'config': {
+            'api_key': 'sk-xxxxxxxx',
+            'api_base_url': 'https://api.deepseek.com/v1',
+            'model': 'deepseek-chat'
+        }
+    },
+    stream=True
+)
+
+for line in response.iter_lines():
+    if line:
+        line = line.decode('utf-8')
+        if line.startswith('data: '):
+            data = json.loads(line[6:])
+            if data['type'] == 'token':
+                print(data['data'], end='', flush=True)
+            elif data['type'] == 'done':
+                print(f"\n\n消耗 tokens: {data['data']['tokens']}")
+```
+---
+
+## 健康检查
+
+### 接口地址
+**GET** `/health`
+
+### 响应示例
+```json
+{
+  "status": "ok",
+  "index_loaded": true
+}
 ```
