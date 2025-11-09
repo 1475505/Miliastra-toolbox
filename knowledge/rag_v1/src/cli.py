@@ -3,7 +3,6 @@
 """
 import click
 import sys
-import json
 from .api import get_rag_api
 
 @click.group()
@@ -35,21 +34,45 @@ def init(force, source_dirs):
 
 @cli.command()
 @click.argument('question')
-@click.option('--no-answer', is_flag=True, help='仅检索文档，不生成答案')
-def query(question, no_answer):
+def retrieve(question):
+    """检索相关文档（不生成答案）"""
+    click.echo(f"🔍 检索: {question}")
+    api = get_rag_api()
+
+    result = api.retrieve(question=question)
+
+    if not result.get("success"):
+        click.echo(f"❌ 检索失败: {result.get('message', '未知错误')}")
+        sys.exit(1)
+
+    data = result.get("data", {})
+
+    click.echo("\n📖 相关来源:")
+    if data.get("sources"):
+        for i, source in enumerate(data["sources"], 1):
+            click.echo(f"{i}. {source.get('title', 'N/A')}")
+            click.echo(f"   相似度: {source.get('similarity', 0.0):.3f}")
+            click.echo(f"   片段: {source.get('text_snippet', 'N/A')}")
+            click.echo("-" * 20)
+    else:
+        click.echo("未找到相关来源。")
+
+@cli.command()
+@click.argument('question')
+def query(question):
     """执行RAG查询"""
     click.echo(f"🔍 查询: {question}")
     api = get_rag_api()
-    
-    result = api.query(question=question, include_answer=not no_answer)
+
+    result = api.query(question=question)
 
     if not result.get("success"):
         click.echo(f"❌ 查询失败: {result.get('message', '未知错误')}")
         sys.exit(1)
 
     data = result.get("data", {})
-    
-    if not no_answer and data.get("answer"):
+
+    if data.get("answer"):
         click.echo("\n💡 答案:")
         click.echo(data["answer"])
 

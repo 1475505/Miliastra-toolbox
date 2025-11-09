@@ -16,8 +16,16 @@ class RAGAPI:
 
     def __init__(self):
         self.rag_engine = create_rag_engine()
-        logging.basicConfig(level=config.LOG_LEVEL)
+        # 配置根日志记录器
+        logging.basicConfig(
+            level=getattr(logging, config.LOG_LEVEL.upper(), logging.INFO),
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        # 创建专门的logger
         self.logger = logging.getLogger(__name__)
+        # 设置logger的级别
+        self.logger.setLevel(getattr(logging, config.LOG_LEVEL.upper(), logging.INFO))
 
     def init_knowledge_base(
         self,
@@ -37,16 +45,44 @@ class RAGAPI:
             self.logger.error(f"初始化知识库失败: {e}", exc_info=True)
             return {"success": False, "message": str(e)}
 
-    def query(
+    def retrieve(
         self,
-        question: str,
-        include_answer: bool = True
+        question: str
     ) -> Dict[str, Any]:
         """
-        执行查询（可选择是否生成答案）。
+        检索相关文档（不生成答案）。
         """
         try:
-            result = self.rag_engine.query(question, include_answer=include_answer)
+            result = self.rag_engine.retrieve(question)
+            return {"success": True, "data": result}
+        except Exception as e:
+            self.logger.error(f"检索失败: {e}", exc_info=True)
+            return {"success": False, "message": str(e)}
+
+    def query_llm(
+        self,
+        question: str,
+        context_nodes: List
+    ) -> Dict[str, Any]:
+        """
+        使用 LLM 生成答案。
+        """
+        try:
+            answer = self.rag_engine.query_llm(question, context_nodes)
+            return {"success": True, "data": {"question": question, "answer": answer}}
+        except Exception as e:
+            self.logger.error(f"LLM 生成答案失败: {e}", exc_info=True)
+            return {"success": False, "message": str(e)}
+
+    def query(
+        self,
+        question: str
+    ) -> Dict[str, Any]:
+        """
+        执行查询（检索+LLM生成答案）。
+        """
+        try:
+            result = self.rag_engine.query(question)
             return {"success": True, "data": result}
         except Exception as e:
             self.logger.error(f"查询失败: {e}", exc_info=True)

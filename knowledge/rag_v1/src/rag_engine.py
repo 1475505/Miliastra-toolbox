@@ -3,6 +3,7 @@ RAG引擎核心模块
 """
 import logging
 from typing import List, Dict, Any, Optional
+import tiktoken
 
 from .config import config
 from .parser import DocumentParser
@@ -13,8 +14,10 @@ from llama_index.core.query_engine import BaseQueryEngine
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai_like import OpenAILike
+from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.core.retrievers import QueryFusionRetriever
+from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
 
 class RAGStrategy:
     VECTOR = "vector"
@@ -29,6 +32,14 @@ class RAGEngine:
 
     def __init__(self):
         config.validate()
+        # 配置日志（如果还没有配置）
+        if not logging.getLogger().handlers:
+            logging.basicConfig(
+                level=getattr(logging, config.LOG_LEVEL.upper(), logging.INFO),
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S'
+            )
+
         self._setup_services()
         self.parser = DocumentParser(
             chunk_size=config.MAX_CHUNK_SIZE,
@@ -42,6 +53,14 @@ class RAGEngine:
         self.index = self._load_index()
         self.documents = []  # 保存文档节点，用于BM25检索
         self.query_engine = self._create_query_engine()
+        
+        # 初始化 token 计数器
+        # 使用通用的 cl100k_base encoding，适用于所有模型
+        self.token_counter = TokenCountingHandler(
+            tokenizer=tiktoken.get_encoding("cl100k_base").encode,
+            verbose=False
+        )
+        
         logging.info("RAG引擎初始化完成")
 
     def _setup_services(self):
@@ -161,8 +180,7 @@ class RAGEngine:
             # 基于混合检索器创建查询引擎
             from llama_index.core.query_engine import RetrieverQueryEngine
             query_engine = RetrieverQueryEngine.from_args(
-                retriever=hybrid_retriever,
-                llm=LlamaSettings.llm
+                retriever=hybrid_retriever
             )
 
             logging.info(f"混合检索查询引擎创建成功，融合模式: {config.FUSION_MODE}")
@@ -175,20 +193,170 @@ class RAGEngine:
                 similarity_top_k=config.TOP_K,
                 similarity_cutoff=config.SIMILARITY_THRESHOLD
             )
-    
-    def query(self, question: str, include_answer: bool = True) -> Dict[str, Any]:
-        if not self.query_engine:
-            return self._format_error_response(question, "查询引擎未初始化。请先构建知识库。")
+    def retrieve(
+        self,
+        question: str,
+        embed_model: Optional[BaseEmbedding] = None
+    ) -> Dict[str, Any]:
+        """
+        检索相关文档（不生成答案）
 
+        Args:
+            question: 查询问题
+            embed_model: 可选的嵌入模型，如果不提供则使用默认配置
+
+        Returns:
+            包含检索结果的字典
+        """
+        if not self.index:
+            return self._format_error_response(question, "索引未初始化。请先构建知识库。")
+
+        # 使用提供的嵌入模型或默认配置
+        retriever_embed_model = embed_model if embed_model is not None else LlamaSettings.embed_model
+
+        logging.info(f"开始检索: {question}")
+
+        # 创建向量检索器
+        retriever = self.index.as_retriever(
+            similarity_top_k=config.TOP_K,
+            similarity_cutoff=config.SIMILARITY_THRESHOLD,
+            embed_model=retriever_embed_model
+        )
+
+        nodes = retriever.retrieve(question)
+        
+        logging.info(f"检索完成，找到 {len(nodes)} 个相关文档")
+
+        return self._format_response(question, "仅检索", nodes)
+
+    def query_llm(
+        self,
+        question: str,
+        context_nodes: List,
+        llm: Optional[OpenAILike] = None
+    ) -> Dict[str, Any]:
+        """
+        使用 LLM 生成答案
+
+        Args:
+            question: 查询问题
+            context_nodes: 检索到的文档节点
+            llm: 可选的 LLM 模型，如果不提供则使用默认配置
+
+        Returns:
+            LLM 生成的答案
+        """
+        from llama_index.core.response_synthesizers import get_response_synthesizer
+
+        # 使用提供的 LLM 或默认 LLM
+        target_llm = llm if llm is not None else LlamaSettings.llm
+
+        # 重置 token 计数器
+        self.token_counter.reset_counts()
+        
+        # 临时设置全局 callback manager
+        original_callback_manager = LlamaSettings.callback_manager
+        LlamaSettings.callback_manager = CallbackManager([self.token_counter])
+        
+        try:
+            # 创建响应合成器，使用 simple_summarize 模式避免多轮调用
+            # simple_summarize: 将所有上下文一次性传给 LLM，只调用一次
+            synthesizer = get_response_synthesizer(
+                response_mode="simple_summarize",
+                llm=target_llm
+            )
+
+            # 合成响应
+            response = synthesizer.synthesize(
+                query=question,
+                nodes=context_nodes
+            )
+
+            answer = response.response if hasattr(response, 'response') else str(response)
+
+            # 只获取 completion tokens（LLM 输出的 token 数量）
+            completion_tokens = self.token_counter.completion_llm_token_count
+            
+            logging.info(f"LLM 响应生成完成，completion tokens: {completion_tokens}")
+
+            return {
+                "answer": answer,
+                "tokens": completion_tokens,  # 只返回输出的 tokens
+                "response": response
+            }
+        finally:
+            # 恢复原来的 callback manager
+            LlamaSettings.callback_manager = original_callback_manager
+
+    def query(
+        self,
+        question: str,
+        include_answer: bool = True,
+        embed_model: Optional[BaseEmbedding] = None,
+        llm: Optional[OpenAILike] = None
+    ) -> Dict[str, Any]:
+        """
+        执行查询（检索+可选的 LLM 生成答案）
+
+        Args:
+            question: 查询问题
+            include_answer: 是否生成答案
+            embed_model: 可选的嵌入模型
+            llm: 可选的 LLM 模型
+
+        Returns:
+            包含答案和来源的字典
+        """
+        if not self.index:
+            return self._format_error_response(question, "索引未初始化。请先构建知识库。")
+
+        # 使用提供的嵌入模型或默认配置
+        retriever_embed_model = embed_model if embed_model is not None else LlamaSettings.embed_model
+
+        logging.info(f"开始查询: {question}")
+
+        # 创建检索器
+        retriever = self.index.as_retriever(
+            similarity_top_k=config.TOP_K,
+            similarity_cutoff=config.SIMILARITY_THRESHOLD,
+            embed_model=retriever_embed_model
+        )
+
+        # 检索相关文档
+        nodes = retriever.retrieve(question)
+        
+        logging.info(f"检索完成，找到 {len(nodes)} 个相关文档")
+
+        # 如果不需要答案，只返回检索结果
         if not include_answer:
-            # 只检索，不生成答案
-            nodes = self.query_engine.retrieve(question)
-            return self._format_response(question, "仅检索", nodes)
+            return self._format_response(
+                question, 
+                "仅检索", 
+                nodes
+            )
 
-        response = self.query_engine.query(question)
-        return self._format_response(question, response.response, response.source_nodes)
+        # 使用 LLM 生成答案
+        logging.info("开始生成答案...")
+        llm_result = self.query_llm(question, nodes, llm)
+        answer = llm_result["answer"]
+        completion_tokens = llm_result.get("tokens", 0)  # tokens 就是 completion_tokens
+        logging.info("答案生成完成")
 
-    def _format_response(self, question: str, answer: str, source_nodes) -> Dict[str, Any]:
+        return self._format_response(
+            question, 
+            answer, 
+            nodes, 
+            completion_tokens=completion_tokens
+        )
+
+    def _format_response(
+        self,
+        question: str,
+        answer: str,
+        source_nodes,
+        completion_tokens: int = 0,
+        response=None
+    ) -> Dict[str, Any]:
         """格式化最终的响应"""
         sources = []
         if source_nodes:
@@ -199,7 +367,7 @@ class RAGEngine:
                     "similarity": node.score or 0.0,
                     "text_snippet": node.get_text()[:200] + "..."
                 })
-        
+
         return {
             "question": question,
             "answer": answer,
@@ -207,6 +375,7 @@ class RAGEngine:
             "stats": {
                 "search_results": len(sources),
                 "answer_generated": bool(answer != "仅检索"),
+                "completion_tokens": completion_tokens,  # LLM 输出的 token 数量
             }
         }
 
