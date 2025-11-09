@@ -7,9 +7,10 @@
 【1】知识问答系统：通过RAG对奇匠学院的文档进行知识问答。
 - **已实现**: 支持多目录（guide + tutorial）的知识库构建和查询。目前：原型版本（效果不佳）、Cli交互。
 - **使用方法**: 配置.env后，`cd knowledge/rag_v1 && python3 rag_cli.py init` 初始化知识库
-- **查询示例**: `cd knowledge/rag_v1 && python3 rag_cli.py query "小地图" --max-results 3`
+- **查询示例**: `cd knowledge/rag_v1 && python3 rag_cli.py retrieve 小地图`
 
 【2】搭建前后端，需要BYOK。提供限额的openrouter免费模型。
+- **已实现**: Fastapi后端（未提供免费模型）
 
 【3】数据问答系统：集合和统计所有方便的参数，可与AI对话设计。比如：一次冲刺可以移动多少坐标距离
 
