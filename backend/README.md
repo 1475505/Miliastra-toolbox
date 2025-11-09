@@ -2,6 +2,10 @@
 
 基于 FastAPI 和 LlamaIndex 的知识库问答后端服务。
 
+## TODO
+
+- 提供免费模型服务
+
 ## 功能特性
 
 - ✅ 支持用户自定义 LLM 配置（API Key、Base URL、Model）

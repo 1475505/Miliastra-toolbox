@@ -3,6 +3,7 @@ RAG Chat API 服务
 FastAPI 启动文件
 """
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from rag.chat import router as chat_router
 
@@ -21,16 +22,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 注册路由
+# 注册 API 路由
 app.include_router(chat_router, prefix="/api/v1")
-
-@app.get("/")
-async def root():
-    return {"message": "RAG Chat API 运行中", "docs": "/docs"}
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+# 托管前端静态文件（必须放在最后）
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 
 if __name__ == "__main__":
