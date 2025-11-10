@@ -383,6 +383,11 @@
                 </div>
             </div>
             
+            <div class="form-group">
+                <label>上下文轮数（保留最近几轮对话作为上下文）</label>
+                <input type="number" id="context-length" min="1" max="20" value="3" placeholder="3">
+            </div>
+            
             <div class="modal-actions">
                 <button class="modal-btn secondary" onclick="closeConfig()">取消</button>
                 <button class="modal-btn primary" onclick="saveConfig()">保存</button>
@@ -399,7 +404,8 @@
             api_key: localStorage.getItem('api_key') || '',
             api_base_url: localStorage.getItem('api_base_url') || 'https://api.deepseek.com/v1',
             model: localStorage.getItem('model') || 'deepseek-chat',
-            use_default_model: localStorage.getItem('use_default_model') === 'true' || false
+            use_default_model: localStorage.getItem('use_default_model') === 'true' || false,
+            context_length: parseInt(localStorage.getItem('context_length')) || 3
         };
 
         // 打开配置弹窗
@@ -408,6 +414,7 @@
             document.getElementById('api-key').value = config.api_key;
             document.getElementById('api-base-url').value = config.api_base_url;
             document.getElementById('model').value = config.model;
+            document.getElementById('context-length').value = config.context_length;
             document.getElementById('config-modal').style.display = 'flex';
         }
 
@@ -427,12 +434,14 @@
             config.api_key = document.getElementById('api-key').value;
             config.api_base_url = document.getElementById('api-base-url').value;
             config.model = document.getElementById('model').value;
+            config.context_length = parseInt(document.getElementById('context-length').value) || 3;
 
             // 保存到 localStorage
             localStorage.setItem('use_default_model', config.use_default_model.toString());
             localStorage.setItem('api_key', config.api_key);
             localStorage.setItem('api_base_url', config.api_base_url);
             localStorage.setItem('model', config.model);
+            localStorage.setItem('context_length', config.context_length.toString());
 
             closeConfig();
             alert('配置已保存！');
@@ -539,12 +548,13 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         message: message,
-                        conversation: conversation.slice(0, -1), // 不包含当前问题
+                        conversation: conversation.slice(0, -1).slice(-(config.context_length * 2)), // 限制上下文长度（每轮2条消息：user+assistant）
                         config: {
                             api_key: config.api_key,
                             api_base_url: config.api_base_url,
                             model: config.model,
-                            use_default_model: config.use_default_model
+                            use_default_model: config.use_default_model,
+                            context_length: config.context_length
                         }
                     })
                 });

@@ -128,7 +128,7 @@ class ChatEngine:
         Args:
             message: 用户问题
             conversation: 对话历史 [{"role": "user|assistant", "content": "..."}]
-            config: LLM 配置 {"api_key", "api_base_url", "model", "use_default_model"}
+            config: LLM 配置 {"api_key", "api_base_url", "model", "use_default_model", "context_length"}
         
         Returns:
             {"answer": str, "sources": List[dict], "tokens": int}
@@ -136,7 +136,16 @@ class ChatEngine:
         # 1. 解析 LLM 配置（优先用户 key，其次默认免费模型）
         resolved_config = self._resolve_llm_config(config)
         
-        # 2. 创建动态 LLM
+        # 2. 获取上下文长度配置（默认为3轮对话）
+        context_length = config.get("context_length", 3)
+        # 限制对话历史长度（每轮对话包含 user 和 assistant 两条消息）
+        limited_conversation = conversation[-(context_length * 2):] if len(conversation) > context_length * 2 else conversation
+        # 2. 获取上下文长度配置（默认为3轮对话）
+        context_length = config.get("context_length", 3)
+        # 限制对话历史长度（每轮对话包含 user 和 assistant 两条消息）
+        limited_conversation = conversation[-(context_length * 2):] if len(conversation) > context_length * 2 else conversation
+        
+        # 3. 创建动态 LLM
         llm = OpenAILike(
             api_key=resolved_config["api_key"],
             api_base=resolved_config["api_base_url"],
@@ -144,30 +153,35 @@ class ChatEngine:
             is_chat_model=True
         )
         
-        # 3. 转换对话历史为 ChatMessage 格式（参考官方文档）
+        # 4. 转换对话历史为 ChatMessage 格式（参考官方文档）
         chat_history = [
             ChatMessage(role=msg["role"], content=msg["content"])
-            for msg in conversation
+            for msg in limited_conversation
+        ]
+        # 4. 转换对话历史为 ChatMessage 格式（参考官方文档）
+        chat_history = [
+            ChatMessage(role=msg["role"], content=msg["content"])
+            for msg in limited_conversation
         ]
         
-        # 4. 重置 token 计数器
+        # 5. 重置 token 计数器
         self.token_counter.reset_counts()
         
-        # 5. 设置全局 callback manager（参考官方文档）
+        # 6. 设置全局 callback manager（参考官方文档）
         original_callback_manager = LlamaSettings.callback_manager
         LlamaSettings.callback_manager = CallbackManager([self.token_counter])
         
         try:
-            # 6. 创建 CondensePlusContextChatEngine（参考官方文档）
+            # 7. 创建 CondensePlusContextChatEngine（参考官方文档）
             chat_engine = self._create_chat_engine(llm, chat_history)
             
-            # 7. 执行查询
+            # 8. 执行查询
             response = chat_engine.chat(message)
             
-            # 8. 提取来源
+            # 9. 提取来源
             sources = self._extract_sources(response.source_nodes)
             
-            # 9. 获取 completion tokens（参考官方文档）
+            # 10. 获取 completion tokens（参考官方文档）
             completion_tokens = self.token_counter.completion_llm_token_count
             
             return {
@@ -185,7 +199,7 @@ class ChatEngine:
         Args:
             message: 用户问题
             conversation: 对话历史 [{"role": "user|assistant", "content": "..."}]
-            config: LLM 配置 {"api_key", "api_base_url", "model", "use_default_model"}
+            config: LLM 配置 {"api_key", "api_base_url", "model", "use_default_model", "context_length"}
         
         Yields:
             SSE 格式的数据流:
@@ -196,7 +210,16 @@ class ChatEngine:
         # 1. 解析 LLM 配置（优先用户 key，其次默认免费模型）
         resolved_config = self._resolve_llm_config(config)
         
-        # 2. 创建动态 LLM
+        # 2. 获取上下文长度配置（默认为3轮对话）
+        context_length = config.get("context_length", 3)
+        # 限制对话历史长度（每轮对话包含 user 和 assistant 两条消息）
+        limited_conversation = conversation[-(context_length * 2):] if len(conversation) > context_length * 2 else conversation
+        # 2. 获取上下文长度配置（默认为3轮对话）
+        context_length = config.get("context_length", 3)
+        # 限制对话历史长度（每轮对话包含 user 和 assistant 两条消息）
+        limited_conversation = conversation[-(context_length * 2):] if len(conversation) > context_length * 2 else conversation
+        
+        # 3. 创建动态 LLM
         llm = OpenAILike(
             api_key=resolved_config["api_key"],
             api_base=resolved_config["api_base_url"],
@@ -204,35 +227,40 @@ class ChatEngine:
             is_chat_model=True
         )
         
-        # 3. 转换对话历史为 ChatMessage 格式
+        # 4. 转换对话历史为 ChatMessage 格式
         chat_history = [
             ChatMessage(role=msg["role"], content=msg["content"])
-            for msg in conversation
+            for msg in limited_conversation
+        ]
+        # 4. 转换对话历史为 ChatMessage 格式
+        chat_history = [
+            ChatMessage(role=msg["role"], content=msg["content"])
+            for msg in limited_conversation
         ]
         
-        # 4. 重置 token 计数器
+        # 5. 重置 token 计数器
         self.token_counter.reset_counts()
         
-        # 5. 设置全局 callback manager
+        # 6. 设置全局 callback manager
         original_callback_manager = LlamaSettings.callback_manager
         LlamaSettings.callback_manager = CallbackManager([self.token_counter])
         
         try:
-            # 6. 创建 chat engine
+            # 7. 创建 chat engine
             chat_engine = self._create_chat_engine(llm, chat_history)
             
-            # 7. 执行流式查询
+            # 8. 执行流式查询
             streaming_response = chat_engine.stream_chat(message)
             
-            # 8. 先发送来源信息
+            # 9. 先发送来源信息
             sources = self._extract_sources(streaming_response.source_nodes)
             yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
             
-            # 9. 流式发送文本
+            # 10. 流式发送文本
             for text_chunk in streaming_response.response_gen:
                 yield f"data: {json.dumps({'type': 'token', 'data': text_chunk}, ensure_ascii=False)}\n\n"
             
-            # 10. 发送完成信号
+            # 11. 发送完成信号
             completion_tokens = self.token_counter.completion_llm_token_count
             yield f"data: {json.dumps({'type': 'done', 'data': {'tokens': completion_tokens}}, ensure_ascii=False)}\n\n"
             
