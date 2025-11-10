@@ -20,6 +20,7 @@ if rag_v1_path not in sys.path:
 
 from typing import List, Dict, Any, Generator
 import json
+import time
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.llms import ChatMessage
 from llama_index.core.chat_engine import CondensePlusContextChatEngine
@@ -194,7 +195,7 @@ class ChatEngine:
             LlamaSettings.callback_manager = original_callback_manager
     
     def chat_stream(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str]) -> Generator[str, None, None]:
-        """执行流式对话查询
+        """执行流式对话查询（带心跳机制防止超时）
         
         Args:
             message: 用户问题
@@ -203,6 +204,7 @@ class ChatEngine:
         
         Yields:
             SSE 格式的数据流:
+            - : heartbeat (心跳注释，保持连接)
             - data: {"type": "sources", "data": [...]}
             - data: {"type": "token", "data": "文本块"}
             - data: {"type": "done", "data": {"tokens": 123}}
@@ -210,10 +212,6 @@ class ChatEngine:
         # 1. 解析 LLM 配置（优先用户 key，其次默认免费模型）
         resolved_config = self._resolve_llm_config(config)
         
-        # 2. 获取上下文长度配置（默认为3轮对话）
-        context_length = config.get("context_length", 3)
-        # 限制对话历史长度（每轮对话包含 user 和 assistant 两条消息）
-        limited_conversation = conversation[-(context_length * 2):] if len(conversation) > context_length * 2 else conversation
         # 2. 获取上下文长度配置（默认为3轮对话）
         context_length = config.get("context_length", 3)
         # 限制对话历史长度（每轮对话包含 user 和 assistant 两条消息）
@@ -232,11 +230,6 @@ class ChatEngine:
             ChatMessage(role=msg["role"], content=msg["content"])
             for msg in limited_conversation
         ]
-        # 4. 转换对话历史为 ChatMessage 格式
-        chat_history = [
-            ChatMessage(role=msg["role"], content=msg["content"])
-            for msg in limited_conversation
-        ]
         
         # 5. 重置 token 计数器
         self.token_counter.reset_counts()
@@ -246,23 +239,47 @@ class ChatEngine:
         LlamaSettings.callback_manager = CallbackManager([self.token_counter])
         
         try:
-            # 7. 创建 chat engine
+            # 发送初始心跳
+            yield ": connected\n\n"
+            last_heartbeat = time.time()
+            
+            # 7. 创建 chat engine（可能耗时较长）
             chat_engine = self._create_chat_engine(llm, chat_history)
             
-            # 8. 执行流式查询
+            # 如果创建 engine 超过 8 秒，发送心跳
+            if time.time() - last_heartbeat > 8:
+                yield ": heartbeat\n\n"
+                last_heartbeat = time.time()
+            
+            # 8. 执行流式查询（检索知识库可能耗时）
             streaming_response = chat_engine.stream_chat(message)
+            
+            # 如果查询准备超过 8 秒，发送心跳
+            if time.time() - last_heartbeat > 8:
+                yield ": heartbeat\n\n"
+                last_heartbeat = time.time()
             
             # 9. 先发送来源信息
             sources = self._extract_sources(streaming_response.source_nodes)
             yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
+            last_heartbeat = time.time()
             
             # 10. 流式发送文本
             for text_chunk in streaming_response.response_gen:
                 yield f"data: {json.dumps({'type': 'token', 'data': text_chunk}, ensure_ascii=False)}\n\n"
+                
+                # 每隔 10 秒发送一次心跳（LLM 生成可能较慢）
+                if time.time() - last_heartbeat > 10:
+                    yield ": heartbeat\n\n"
+                    last_heartbeat = time.time()
             
             # 11. 发送完成信号
             completion_tokens = self.token_counter.completion_llm_token_count
             yield f"data: {json.dumps({'type': 'done', 'data': {'tokens': completion_tokens}}, ensure_ascii=False)}\n\n"
+            
+        except Exception as e:
+            # 发送错误信息
+            yield f"data: {json.dumps({'type': 'error', 'data': str(e)}, ensure_ascii=False)}\n\n"
             
         finally:
             # 恢复原来的 callback manager
