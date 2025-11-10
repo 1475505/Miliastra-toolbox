@@ -31,14 +31,22 @@
     }
   ],
   "config": {
-    "api_key": "string - DeepSeek API Key（必填）",
-    "api_base_url": "string - API 基础 URL（必填，如 https://api.deepseek.com/v1）",
-    "model": "string - 模型名称（必填，如 deepseek-chat）"
+    "api_key": "string - 用户自定义 API Key",
+    "api_base_url": "string - 用户自定义 API 基础 URL",
+    "model": "string - 用户自定义模型名称",
+    "use_default_model": "boolean - 是否使用后端默认免费模型（默认 false）"
   }
 }
 ```
 
+**配置优先级说明**：
+1. **优先使用自定义配置**：若 `api_key`、`api_base_url`、`model` 三者均非空，则使用用户自定义配置
+2. **其次使用默认免费模型**：若自定义配置不完整且 `use_default_model=true`，则使用 `.env` 中的 `DEFAULT_FREE_MODEL_*` 配置
+3. **否则报错**：若以上两种配置都不满足，返回错误
+
 ### 请求示例
+
+**方式1：使用用户自定义配置（优先级最高）**
 ```json
 {
   "id": "session_001",
@@ -56,7 +64,23 @@
   "config": {
     "api_key": "sk-xxxxxxxx",
     "api_base_url": "https://api.deepseek.com/v1",
-    "model": "deepseek-chat"
+    "model": "deepseek-chat",
+    "use_default_model": false
+  }
+}
+```
+
+**方式2：使用后端默认免费模型**
+```json
+{
+  "id": "session_002",
+  "message": "小地图如何使用？",
+  "conversation": [],
+  "config": {
+    "api_key": "",
+    "api_base_url": "",
+    "model": "",
+    "use_default_model": true
   }
 }
 ```

@@ -25,9 +25,10 @@ class Message(BaseModel):
 
 class LLMConfig(BaseModel):
     """LLM 配置"""
-    api_key: str = Field(..., min_length=1)
-    api_base_url: str = Field(..., min_length=1)
-    model: str = Field(..., min_length=1)
+    api_key: str = Field(default="")
+    api_base_url: str = Field(default="")
+    model: str = Field(default="")
+    use_default_model: bool = Field(default=False)
 
 
 class ChatRequest(BaseModel):

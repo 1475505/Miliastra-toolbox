@@ -272,6 +272,21 @@
             font-weight: 500;
         }
 
+        .form-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .form-group label.checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+            color: #666;
+            line-height: 1.5;
+        }
+
         .form-group input {
             width: 100%;
             padding: 10px;
@@ -345,18 +360,29 @@
     <div class="modal" id="config-modal">
         <div class="modal-content">
             <h2>API 配置（浏览器本地保存，后端不保存）</h2>
+            
             <div class="form-group">
-                <label>API Key</label>
-                <input type="password" id="api-key" placeholder="sk-xxxxxxxx">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="use-default-model" onchange="updateConfigHint()">
+                    使用免费模型（若未配置自定义模型，可能存在限额、表现不佳等问题）
+                </label>
             </div>
-            <div class="form-group">
-                <label>API Base URL</label>
-                <input type="text" id="api-base-url" value="https://api.deepseek.com/v1">
+            
+            <div id="custom-config-section">
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" id="api-key" placeholder="sk-xxxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label>API Base URL</label>
+                    <input type="text" id="api-base-url" value="https://api.deepseek.com/v1">
+                </div>
+                <div class="form-group">
+                    <label>Model</label>
+                    <input type="text" id="model" value="deepseek-chat">
+                </div>
             </div>
-            <div class="form-group">
-                <label>Model</label>
-                <input type="text" id="model" value="deepseek-chat">
-            </div>
+            
             <div class="modal-actions">
                 <button class="modal-btn secondary" onclick="closeConfig()">取消</button>
                 <button class="modal-btn primary" onclick="saveConfig()">保存</button>
@@ -372,11 +398,13 @@
         let config = {
             api_key: localStorage.getItem('api_key') || '',
             api_base_url: localStorage.getItem('api_base_url') || 'https://api.deepseek.com/v1',
-            model: localStorage.getItem('model') || 'deepseek-chat'
+            model: localStorage.getItem('model') || 'deepseek-chat',
+            use_default_model: localStorage.getItem('use_default_model') === 'true' || false
         };
 
         // 打开配置弹窗
         function openConfig() {
+            document.getElementById('use-default-model').checked = config.use_default_model;
             document.getElementById('api-key').value = config.api_key;
             document.getElementById('api-base-url').value = config.api_base_url;
             document.getElementById('model').value = config.model;
@@ -388,13 +416,20 @@
             document.getElementById('config-modal').style.display = 'none';
         }
 
+        // 更新配置提示（备用函数，暂时不需要特殊处理）
+        function updateConfigHint() {
+            // 预留：未来可以在这里添加提示逻辑
+        }
+
         // 保存配置
         function saveConfig() {
+            config.use_default_model = document.getElementById('use-default-model').checked;
             config.api_key = document.getElementById('api-key').value;
             config.api_base_url = document.getElementById('api-base-url').value;
             config.model = document.getElementById('model').value;
 
             // 保存到 localStorage
+            localStorage.setItem('use_default_model', config.use_default_model.toString());
             localStorage.setItem('api_key', config.api_key);
             localStorage.setItem('api_base_url', config.api_base_url);
             localStorage.setItem('model', config.model);
@@ -465,8 +500,8 @@
             if (!message) return;
 
             // 检查配置
-            if (!config.api_key) {
-                alert('请先配置 API Key！');
+            if (!config.use_default_model && !config.api_key) {
+                alert('请先配置 API Key 或选择使用免费模型！');
                 openConfig();
                 return;
             }
@@ -505,7 +540,12 @@
                     body: JSON.stringify({
                         message: message,
                         conversation: conversation.slice(0, -1), // 不包含当前问题
-                        config: config
+                        config: {
+                            api_key: config.api_key,
+                            api_base_url: config.api_base_url,
+                            model: config.model,
+                            use_default_model: config.use_default_model
+                        }
                     })
                 });
 
@@ -598,7 +638,7 @@
 
         // 页面加载时检查配置
         window.onload = function() {
-            if (!config.api_key) {
+            if (!config.use_default_model && !config.api_key) {
                 setTimeout(() => {
                     if (confirm('检测到未配置 API Key，是否现在配置？')) {
                         openConfig();
