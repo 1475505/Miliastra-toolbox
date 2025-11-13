@@ -2,7 +2,15 @@
 
 千星奇域工具箱是AI赋能，提升千星沙箱编辑效率的工具集合。
 
+## 前端知识问答
+
 ![demo](https://7s-1304005994.cos.ap-singapore.myqcloud.com/68cd1a565e1334de448e717cceffcc82.png)
+
+## 接入QQ机器人
+
+![对话.gif](https://7s-1304005994.cos.ap-singapore.myqcloud.com/对话.gif)
+
+可以加群1030307936，通过nonebot插件进行知识问答。
 
 ## 开发计划
 
