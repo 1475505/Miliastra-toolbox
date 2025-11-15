@@ -18,7 +18,7 @@
 - 适合命令行测试
 - 兼容性好
 
-## 请求参数
+### 请求参数
 
 ```json
 {
@@ -85,7 +85,7 @@
 }
 ```
 
-## 响应参数
+### 响应参数
 
 ```json
 {
@@ -142,7 +142,7 @@
 }
 ```
 
-## 错误码
+### 错误码
 
 | 状态码 | 说明 |
 |--------|------|
@@ -151,7 +151,7 @@
 | 422 | 对话历史格式错误 |
 | 500 | 服务器内部错误 |
 
-## 客户端调用示例
+### 客户端调用示例
 
 ### 1. 非流式调用
 
@@ -321,15 +321,123 @@ for line in response.iter_lines():
 ```
 ---
 
-## 健康检查
+# 素材分享API文档
+
+## 概述
+
+提供素材分享的基础功能：
+- **查询分享**：支持按标题模糊搜索
+- **创建分享**：添加新的分享内容
+
+---
+
+## 1. 查询分享列表
 
 ### 接口地址
-**GET** `/health`
+**GET** `/api/v1/shares`
 
-### 响应示例
+### 请求参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | string | 否 | 标题关键词（模糊搜索） |
+| limit | integer | 否 | 返回数量限制（默认 20，最大 100） |
+| offset | integer | 否 | 偏移量（默认 0） |
+
+### 请求示例
+
+```bash
+# 获取所有分享
+GET /api/v1/shares
+
+# 按标题搜索
+GET /api/v1/shares?title=教程
+
+# 分页查询
+GET /api/v1/shares?limit=10&offset=20
+```
+
+### 响应参数
+
 ```json
 {
-  "status": "ok",
-  "index_loaded": true
+  "success": true,
+  "data": {
+    "total": 100,
+    "items": [
+      {
+        "id": 1,
+        "created_at": "2024-01-01T12:00:00Z",
+        "title": "角色制作教程",
+        "description": "详细介绍角色制作流程",
+        "bilibili_url": "https://www.bilibili.com/video/BV1xx411c7mD",
+        "gil_url": "https://gil.miliastra.com/share/123"
+      }
+    ]
+  }
 }
 ```
+
+### 错误响应
+
+```json
+{
+  "success": false,
+  "error": "数据库查询失败"
+}
+```
+
+---
+
+## 2. 创建分享
+
+### 接口地址
+**POST** `/api/v1/shares`
+
+### 请求参数
+
+```json
+{
+  "title": "string - 标题（必填）",
+  "description": "string - 描述（可选）",
+  "bilibili_url": "string - B站链接（可选）",
+  "gil_url": "string - GIL链接（可选）"
+}
+```
+
+### 请求示例
+
+```bash
+curl -X POST http://localhost:8000/api/v1/shares \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "角色制作教程",
+    "description": "详细介绍角色制作流程",
+    "bilibili_url": "https://www.bilibili.com/video/BV1xx411c7mD",
+    "gil_url": "https://gil.miliastra.com/share/123"
+  }'
+```
+
+### 响应参数
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "created_at": "2024-01-01T12:00:00Z",
+    "title": "角色制作教程",
+    "description": "详细介绍角色制作流程",
+    "bilibili_url": "https://www.bilibili.com/video/BV1xx411c7mD",
+    "gil_url": "https://gil.miliastra.com/share/123"
+  }
+}
+```
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | 请求参数错误（标题为空等） |
+| 500 | 服务器内部错误 |
+

@@ -2,6 +2,8 @@
 
 负责从网页源爬取内容并转换为 Markdown 格式的核心模块。
 
+目前支持通过firecrawl api进行爬取。
+
 ## 📁 文件结构
 
 ```
@@ -52,7 +54,7 @@ cp .env.example .env
 # Firecrawl API（必需）
 FIRECRAWL_API_KEY=your-firecrawl-key
 
-# 硅基流动 API（用于 Embedding 生成）
+# 硅基流动 API（用于 Embedding 生成），可以通过修改base_url使用其他模型服务
 SILICONFLOW_API_KEY=sk-ltlzeoltdpbjsrhuzbpnkbmvyhruirbpjtyyjekclbofsovc
 SILICONFLOW_BASE_URL=https://api.siliconflow.cn/v1
 EMBEDDING_MODEL=BAAI/bge-m3

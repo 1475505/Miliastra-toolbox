@@ -10,3 +10,4 @@ chromadb
 tiktoken
 pytest
 python-dotenv
+psycopg2-binary
