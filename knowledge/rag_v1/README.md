@@ -1,8 +1,12 @@
-ra# RAG 知识库系统
+# RAG 知识库系统
 
 基于 LlamaIndex 和 ChromaDB 的向量知识库构建和检索系统，专为中文技术文档优化，支持混合召回（向量+BM25）。
 
 ## 🚀 快速开始
+
+### 0.爬取文档
+
+目前仓库里已经放置了爬取好的文档（`guide` `tutorial`目录）。 如需重新爬取，请进入`spider`目录。
 
 ### 1. 环境配置
 
@@ -30,9 +34,9 @@ python3 rag_cli.py init
 
 ```bash
 # 召回测试
-python3 rag_cli.py query "如何开始使用这个系统？" --no-answer
+python3 rag_cli.py retrieve "如何开始使用这个系统？" --no-answer
 
-# LLM问答
+# LLM问答（需要配置CHAT_KEY）
 python3 rag_cli.py query "什么是节点图？"
 ```
 
@@ -58,9 +62,6 @@ python3 rag_cli.py retrieve "查询内容" [--max-results N] [--threshold T]
 # 召回 + LLM生成
 python3 rag_cli.py query "问题内容" [--max-results N] [--threshold T]
 
-# 批量查询
-python3 rag_cli.py batch_query queries.txt [--output results.json]
-
 # 查看状态
 python3 rag_cli.py status
 
@@ -79,7 +80,7 @@ python3 test_rag.py embed --doc path/to/your/document.md
 # 测试检索功能（使用现有知识库）
 python3 test_rag.py retrieve "关键词"
 
-# 测试完整RAG查询功能（使用现有知识库）
+# 测试完整RAG查询 + AI问答 功能（使用现有知识库）
 python3 test_rag.py query "你的问题"
 ```
 
