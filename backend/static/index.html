@@ -334,7 +334,10 @@
                 <h1>🌟 千星知识库问答</h1>
                 <div class="subtitle">（简易版，刷新不保留对话）</div>
             </div>
-            <button class="config-btn" onclick="openConfig()">⚙️ 配置</button>
+            <div style="display: flex; gap: 8px;">
+                <button class="config-btn" onclick="openTools()">🔧 工具导航</button>
+                <button class="config-btn" onclick="openConfig()">⚙️ 配置</button>
+            </div>
         </div>
 
         <div class="chat-area" id="chat-area">
@@ -395,6 +398,27 @@
         </div>
     </div>
 
+    <!-- 工具导航弹窗 -->
+    <div class="modal" id="tools-modal">
+        <div class="modal-content">
+            <h2>🔧 工具导航</h2>
+            
+            <div class="form-group">
+                <div style="padding: 12px; background: #f7f9fc; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <a href="https://ys.keqizu.com/" target="_blank" style="color: #667eea; text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                        <span>✨</span>
+                        <span>千星沙箱全特效预览</span>
+                        <span style="margin-left: auto; font-size: 12px; color: #888;">↗</span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="modal-btn primary" onclick="closeTools()">关闭</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // 会话历史（内存存储，刷新页面会丢失）
         let conversation = [];
@@ -421,6 +445,16 @@
         // 关闭配置弹窗
         function closeConfig() {
             document.getElementById('config-modal').style.display = 'none';
+        }
+
+        // 打开工具导航弹窗
+        function openTools() {
+            document.getElementById('tools-modal').style.display = 'flex';
+        }
+
+        // 关闭工具导航弹窗
+        function closeTools() {
+            document.getElementById('tools-modal').style.display = 'none';
         }
 
         // 更新配置提示（备用函数，暂时不需要特殊处理）
