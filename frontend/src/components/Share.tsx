@@ -73,7 +73,7 @@ export default function ShareComponent() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b border-gray-200 p-6">
+      <div className="border-b border-gray-200 p-6 pl-16 lg:pl-6">
         <h2 className="text-2xl font-semibold mb-4">素材分享</h2>
         <div className="flex gap-3">
           <input

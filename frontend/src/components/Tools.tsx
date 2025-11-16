@@ -9,7 +9,7 @@ export default function Tools() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b border-gray-200 p-6">
+      <div className="border-b border-gray-200 p-6 pl-16 lg:pl-6">
         <h2 className="text-2xl font-semibold">工具链接</h2>
       </div>
 

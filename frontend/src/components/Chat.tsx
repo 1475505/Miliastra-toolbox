@@ -171,7 +171,7 @@ export default function Chat({ configVersion }: ChatProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b border-gray-200 p-6">
+      <div className="border-b border-gray-200 p-6 pl-16 lg:pl-6">
         <h2 className="text-2xl font-semibold">知识库问答</h2>
       </div>
 
@@ -184,10 +184,12 @@ export default function Chat({ configVersion }: ChatProps) {
         )}
 
         {showConfigHint && (
-          <div className="text-center">
-            <div className="inline-block bg-yellow-50 border border-yellow-200 rounded-xl px-6 py-4 text-sm">
-              <div className="text-yellow-800 mb-2">⚠️ 请先配置 API Key</div>
-              <div className="text-yellow-600">请点击左下角「⚙️ OpenAI 配置」按钮进行配置</div>
+          <div className="text-center px-4">
+            <div className="inline-block bg-yellow-50 border border-yellow-200 rounded-xl px-6 py-4 text-sm max-w-md">
+              <div className="text-yellow-800 mb-2 font-medium">⚠️ 请先配置 API Key</div>
+              <div className="text-yellow-600">
+                请点击<span className="hidden lg:inline">左下角</span><span className="lg:hidden">菜单中</span>「⚙️ OpenAI 配置」按钮进行配置
+              </div>
             </div>
           </div>
         )}
