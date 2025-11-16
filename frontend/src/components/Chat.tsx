@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { Message, Source } from '../types'
 import { getConfig } from '../utils/config'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface SourceMessage {
   type: 'sources'
@@ -175,9 +177,9 @@ export default function Chat({ configVersion }: ChatProps) {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {displayMessages.length === 0 && (
-          <div className="text-center text-gray-400 mt-20">
-            <div>你好！我是千星知识库助手，请问有什么可以帮你的？</div>
-            <div className="text-xs mt-2 text-gray-300">刷新页面将清空对话记录</div>
+          <div className="text-center text-slate-700 mt-20">
+            <div className="text-lg font-medium">你好！我是千星知识库助手，请问有什么可以帮你的？</div>
+            <div className="text-sm mt-2 text-slate-500">刷新页面将清空对话记录</div>
           </div>
         )}
 
@@ -230,11 +232,19 @@ export default function Chat({ configVersion }: ChatProps) {
               <div
                 className={`max-w-2xl px-4 py-3 rounded-2xl ${
                   'role' in msg && msg.role === 'user'
-                    ? 'bg-gray-900 text-white'
+                    ? 'bg-amber-50 text-slate-900 border border-amber-50'
                     : 'bg-gray-100 text-gray-900'
                 }`}
               >
-                <div className="whitespace-pre-wrap">{'content' in msg ? msg.content : ''}</div>
+                {'role' in msg && msg.role === 'user' ? (
+                  <div className="whitespace-pre-wrap">{'content' in msg ? msg.content : ''}</div>
+                ) : (
+                  <div className="prose prose-sm max-w-none prose-slate">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {'content' in msg ? msg.content : ''}
+                    </ReactMarkdown>
+                  </div>
+                )}
               </div>
             </div>
           )
@@ -256,12 +266,12 @@ export default function Chat({ configVersion }: ChatProps) {
             onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
             placeholder="输入你的问题..."
             disabled={loading}
-            className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300"
           />
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-3 bg-yellow-300 text-slate-900 rounded-xl hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
           >
             {loading ? '...' : '发送'}
           </button>

@@ -14,9 +14,9 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-transparent">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onConfigSaved={handleConfigSaved} />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden border-l border-white/20 bg-white/35 backdrop-blur-xl">
         <div className={`h-full ${activeTab === 'chat' ? '' : 'hidden'}`}>
           <Chat configVersion={configVersion} />
         </div>
