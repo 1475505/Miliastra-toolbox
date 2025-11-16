@@ -19,9 +19,9 @@ export default function Sidebar({ activeTab, onTabChange, onConfigSaved }: Sideb
 
   return (
     <>
-      <aside className="w-64 border-r border-gray-200 flex flex-col">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-semibold text-gray-900">千星工具箱</h1>
+      <aside className="flex w-64 flex-col border-r border-white/30 bg-white/30 text-slate-900 backdrop-blur-2xl shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+        <div className="border-b border-white/30 p-6">
+          <h1 className="text-xl font-semibold">千星工具箱</h1>
         </div>
 
         <nav className="flex-1 p-4">
@@ -29,10 +29,10 @@ export default function Sidebar({ activeTab, onTabChange, onConfigSaved }: Sideb
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition-colors ${
+              className={`mb-3 w-full rounded-2xl px-4 py-3 text-left text-sm font-medium transition-all ${
                 activeTab === tab.id
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-yellow-200/90 text-slate-900 shadow-lg shadow-yellow-300/30 border border-yellow-300 font-semibold'
+                  : 'text-slate-600 hover:bg-white/30 hover:text-slate-900'
               }`}
             >
               {tab.label}
@@ -40,10 +40,10 @@ export default function Sidebar({ activeTab, onTabChange, onConfigSaved }: Sideb
           ))}
         </nav>
 
-        <div className="p-4 border-t border-gray-200">
+        <div className="border-t border-white/20 p-4">
           <button
             onClick={() => setShowConfig(true)}
-            className="w-full px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+            className="w-full rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 transition-all hover:bg-white/30 hover:text-slate-900"
           >
             ⚙️ OpenAI 配置
           </button>
