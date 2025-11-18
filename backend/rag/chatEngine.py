@@ -140,11 +140,13 @@ class ChatEngine:
         # 2. 获取上下文长度配置（默认为3轮对话）
         context_length = config.get("context_length", 3)
         # 限制对话历史长度（每轮对话包含 user 和 assistant 两条消息）
-        limited_conversation = conversation[-(context_length * 2):] if len(conversation) > context_length * 2 else conversation
-        # 2. 获取上下文长度配置（默认为3轮对话）
-        context_length = config.get("context_length", 3)
-        # 限制对话历史长度（每轮对话包含 user 和 assistant 两条消息）
-        limited_conversation = conversation[-(context_length * 2):] if len(conversation) > context_length * 2 else conversation
+        # 特殊处理：当context_length=0时，不使用任何对话历史
+        if context_length == 0:
+            limited_conversation = []
+        elif len(conversation) > context_length * 2:
+            limited_conversation = conversation[-(context_length * 2):]
+        else:
+            limited_conversation = conversation
         
         # 3. 创建动态 LLM
         llm = OpenAILike(
@@ -215,7 +217,13 @@ class ChatEngine:
         # 2. 获取上下文长度配置（默认为3轮对话）
         context_length = config.get("context_length", 3)
         # 限制对话历史长度（每轮对话包含 user 和 assistant 两条消息）
-        limited_conversation = conversation[-(context_length * 2):] if len(conversation) > context_length * 2 else conversation
+        # 特殊处理：当context_length=0时，不使用任何对话历史
+        if context_length == 0:
+            limited_conversation = []
+        elif len(conversation) > context_length * 2:
+            limited_conversation = conversation[-(context_length * 2):]
+        else:
+            limited_conversation = conversation
         
         # 3. 创建动态 LLM
         llm = OpenAILike(

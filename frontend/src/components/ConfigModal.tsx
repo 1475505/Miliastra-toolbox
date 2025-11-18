@@ -70,15 +70,16 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
           )}
 
           <div>
-            <label className="block text-sm text-gray-600 mb-2">上下文轮数</label>
+            <label className="block text-sm text-gray-600 mb-2">上下文轮数（0表示不使用历史对话）</label>
             <input
               type="number"
-              min="1"
+              min="0"
               max="20"
               value={config.context_length}
-              onChange={(e) =>
-                setConfig({ ...config, context_length: parseInt(e.target.value) || 3 })
-              }
+              onChange={(e) => {
+                const value = parseInt(e.target.value)
+                setConfig({ ...config, context_length: isNaN(value) ? 3 : value })
+              }}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
             />
           </div>

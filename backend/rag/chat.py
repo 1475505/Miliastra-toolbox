@@ -29,7 +29,7 @@ class LLMConfig(BaseModel):
     api_base_url: str = Field(default="")
     model: str = Field(default="")
     use_default_model: bool = Field(default=False)
-    context_length: int = Field(default=3, ge=1, le=20)
+    context_length: int = Field(default=3, ge=0, le=20)
 
 
 class ChatRequest(BaseModel):
