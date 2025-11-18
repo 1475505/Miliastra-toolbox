@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    image: dudukl/miliastra-toolbox:latest
+    ports:
+      - "8000:8000"
+    environment:
+      # ===== 必需配置（嵌入向量） =====
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.siliconflow.cn/v1}
+      
+      # ===== 召回模型配置（这里的CHAT_MODEL不是对话使用的，对话使用的在下一部分） =====
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-m3}
+      CHAT_MODEL: ${CHAT_MODEL:-deepseek-chat}
+      
+      # ===== 默认对话聊天模型（可选，不填的话需要网页配置）=====
+      DEFAULT_FREE_MODEL_KEY: ${DEFAULT_FREE_MODEL_KEY:-}
+      DEFAULT_FREE_MODEL_URL: ${DEFAULT_FREE_MODEL_URL:-}
+      DEFAULT_FREE_MODEL_NAME: ${DEFAULT_FREE_MODEL_NAME:-}
+      
+      # ===== RAG 检索配置（可以不动） =====
+      CHROMA_COLLECTION_NAME: ${CHROMA_COLLECTION_NAME:-guide_docs}
+      TOP_K: ${TOP_K:-5}
+      SIMILARITY_THRESHOLD: ${SIMILARITY_THRESHOLD:-0.6}
+      MAX_CHUNK_SIZE: ${MAX_CHUNK_SIZE:-2048}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-200}
+      USE_H1_ONLY: ${USE_H1_ONLY:-True}
+      RAG_STRATEGY: ${RAG_STRATEGY:-vector}
+      FUSION_MODE: ${FUSION_MODE:-reciprocal_rank}
+      VECTOR_TOP_K: ${VECTOR_TOP_K:-5}
+      BM25_TOP_K: ${BM25_TOP_K:-5}
+      
+      # ===== PostgreSQL（可选）=====
+      PG_URL: ${PG_URL:-}
+      
+      # ===== 日志 =====
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ../knowledge:/app/knowledge:ro

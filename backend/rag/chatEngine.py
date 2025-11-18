@@ -13,8 +13,9 @@ from dotenv import load_dotenv
 # 加载 .env 文件
 load_dotenv()
 
-# 添加 rag_v1 到路径
+# 添加 rag_v1 到路径（兼容 Docker 和本地环境）
 rag_v1_path = os.path.join(os.path.dirname(__file__), "..", "..", "knowledge", "rag_v1")
+rag_v1_path = os.path.abspath(rag_v1_path)
 if rag_v1_path not in sys.path:
     sys.path.insert(0, rag_v1_path)
 
