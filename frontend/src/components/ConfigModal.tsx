@@ -19,7 +19,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-6">OpenAI 配置</h2>
+        <h2 className="text-xl font-semibold mb-6">OpenAI 配置（仅浏览器存储，后端不保存，放心填写）</h2>
 
         <div className="space-y-4">
           <label className="flex items-center">
@@ -31,7 +31,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
               }
               className="mr-2"
             />
-            <span className="text-sm text-gray-600">使用免费模型（可能存在限额或者效果不佳的问题）</span>
+            <span className="text-sm text-gray-600">使用免费模型（限量，且可能效果不佳，建议自带LLM服务）</span>
           </label>
 
           {!config.use_default_model && (

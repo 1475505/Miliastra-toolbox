@@ -40,8 +40,8 @@
 ```
 
 **配置优先级说明**：
-1. **优先使用自定义配置**：若 `api_key`、`api_base_url`、`model` 三者均非空，则使用用户自定义配置
-2. **其次使用默认免费模型**：若自定义配置不完整且 `use_default_model=true`，则使用 `.env` 中的 `DEFAULT_FREE_MODEL_*` 配置
+1. **优先使用免费模型**：若 `use_default_model=true`，则使用 `.env` 中的 `DEFAULT_FREE_MODEL_*` 配置（最高优先级）
+2. **其次使用自定义配置**：若 `api_key`、`api_base_url`、`model` 三者均非空，则使用用户自定义配置
 3. **否则报错**：若以上两种配置都不满足，返回错误
 
 ### 请求示例

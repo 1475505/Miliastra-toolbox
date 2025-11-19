@@ -10,6 +10,7 @@ export default function App() {
   const [configVersion, setConfigVersion] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [currentConversationId, setCurrentConversationId] = useState<string>()
+  const [conversationRefreshTrigger, setConversationRefreshTrigger] = useState(0)
 
   const handleConfigSaved = () => {
     setConfigVersion((v) => v + 1)
@@ -29,6 +30,10 @@ export default function App() {
     setCurrentConversationId(undefined)
   }
 
+  const handleRefreshConversations = () => {
+    setConversationRefreshTrigger((v) => v + 1)
+  }
+
   return (
     <div className="flex h-screen bg-transparent">
       <Sidebar 
@@ -40,6 +45,7 @@ export default function App() {
         currentConversationId={currentConversationId}
         onConversationSelect={handleConversationSelect}
         onConversationDeleted={handleConversationDeleted}
+        conversationRefreshTrigger={conversationRefreshTrigger}
       />
       <main className="flex-1 overflow-hidden border-l border-white/20 bg-white/35 backdrop-blur-xl relative">
         {/* Mobile hamburger button */}
@@ -57,6 +63,7 @@ export default function App() {
             configVersion={configVersion} 
             currentConversationId={currentConversationId}
             onConversationChange={setCurrentConversationId}
+            onRefreshConversations={handleRefreshConversations}
           />
         </div>
         <div className={`h-full ${activeTab === 'share' ? '' : 'hidden'}`}>

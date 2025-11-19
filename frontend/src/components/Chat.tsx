@@ -28,9 +28,10 @@ interface ChatProps {
   configVersion: number
   currentConversationId?: string
   onConversationChange?: (id: string) => void
+  onRefreshConversations?: () => void
 }
 
-export default function Chat({ configVersion, currentConversationId, onConversationChange }: ChatProps) {
+export default function Chat({ configVersion, currentConversationId, onConversationChange, onRefreshConversations }: ChatProps) {
   const [conversationId, setConversationId] = useState<string>('')
   const [messages, setMessages] = useState<ExtendedMessage[]>([])
   const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([])
@@ -101,6 +102,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
     setMessages([])
     setDisplayMessages([])
     onConversationChange?.(newConv.id)
+    onRefreshConversations?.()
   }
 
   const handleDownload = () => {

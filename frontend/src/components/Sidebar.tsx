@@ -12,6 +12,7 @@ interface SidebarProps {
   currentConversationId?: string
   onConversationSelect?: (id: string) => void
   onConversationDeleted?: () => void
+  conversationRefreshTrigger?: number
 }
 
 export default function Sidebar({ 
@@ -22,7 +23,8 @@ export default function Sidebar({
   onToggle,
   currentConversationId,
   onConversationSelect,
-  onConversationDeleted
+  onConversationDeleted,
+  conversationRefreshTrigger
 }: SidebarProps) {
   const [showConfig, setShowConfig] = useState(false)
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -38,7 +40,7 @@ export default function Sidebar({
         localStorage.setItem('chat_clear_hint_seen', 'true')
       }
     }
-  }, [activeTab])
+  }, [activeTab, conversationRefreshTrigger])
 
   const loadConversations = () => {
     setConversations(getAllConversations().sort((a, b) => b.updatedAt - a.updatedAt))
