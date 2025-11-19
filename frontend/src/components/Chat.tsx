@@ -1,6 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { Message, Source } from '../types'
 import { getConfig } from '../utils/config'
+import { 
+  createNewConversation, 
+  saveConversation, 
+  getConversation, 
+  generateConversationTitle,
+  downloadConversation 
+} from '../utils/conversations'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -19,9 +26,12 @@ type ChatMessage = ExtendedMessage | SourceMessage
 
 interface ChatProps {
   configVersion: number
+  currentConversationId?: string
+  onConversationChange?: (id: string) => void
 }
 
-export default function Chat({ configVersion }: ChatProps) {
+export default function Chat({ configVersion, currentConversationId, onConversationChange }: ChatProps) {
+  const [conversationId, setConversationId] = useState<string>('')
   const [messages, setMessages] = useState<ExtendedMessage[]>([])
   const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -32,6 +42,95 @@ export default function Chat({ configVersion }: ChatProps) {
   const [showConfigHint, setShowConfigHint] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
+
+  // 初始化或加载对话
+  useEffect(() => {
+    if (currentConversationId) {
+      const conv = getConversation(currentConversationId)
+      if (conv) {
+        setConversationId(conv.id)
+        // 分离 messages 和 displayMessages
+        const userAssistantMessages = conv.messages.filter((m: any) => 'role' in m) as ExtendedMessage[]
+        setMessages(userAssistantMessages)
+        setDisplayMessages(conv.messages as ChatMessage[])
+      }
+    } else if (!conversationId) {
+      // 创建新对话
+      const newConv = createNewConversation()
+      setConversationId(newConv.id)
+      setMessages([])
+      setDisplayMessages([])
+      onConversationChange?.(newConv.id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentConversationId])
+
+  // 保存对话到 localStorage
+  useEffect(() => {
+    if (conversationId && messages.length > 0) {
+      const title = generateConversationTitle(messages)
+      // 重新排序：将 Sources 移到对应的 A 后面
+      const reorderedMessages: any[] = []
+      let pendingSources: any[] = []
+      
+      displayMessages.forEach((msg) => {
+        if ('type' in msg && msg.type === 'sources') {
+          pendingSources.push(msg)
+        } else if ('role' in msg) {
+          reorderedMessages.push(msg)
+          if (msg.role === 'assistant' && pendingSources.length > 0) {
+            reorderedMessages.push(...pendingSources)
+            pendingSources = []
+          }
+        }
+      })
+      
+      saveConversation({
+        id: conversationId,
+        title,
+        messages: reorderedMessages,
+        createdAt: parseInt(conversationId.split('_')[1]) || Date.now(),
+        updatedAt: Date.now()
+      })
+    }
+  }, [messages, conversationId, displayMessages])
+
+  const handleNewConversation = () => {
+    const newConv = createNewConversation()
+    setConversationId(newConv.id)
+    setMessages([])
+    setDisplayMessages([])
+    onConversationChange?.(newConv.id)
+  }
+
+  const handleDownload = () => {
+    if (conversationId && messages.length > 0) {
+      const title = generateConversationTitle(messages)
+      // 重新排序：将 Sources 移到对应的 A 后面
+      const reorderedMessages: any[] = []
+      let pendingSources: any[] = []
+      
+      displayMessages.forEach((msg) => {
+        if ('type' in msg && msg.type === 'sources') {
+          pendingSources.push(msg)
+        } else if ('role' in msg) {
+          reorderedMessages.push(msg)
+          if (msg.role === 'assistant' && pendingSources.length > 0) {
+            reorderedMessages.push(...pendingSources)
+            pendingSources = []
+          }
+        }
+      })
+      
+      downloadConversation({
+        id: conversationId,
+        title,
+        messages: reorderedMessages,
+        createdAt: parseInt(conversationId.split('_')[1]) || Date.now(),
+        updatedAt: Date.now()
+      })
+    }
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -279,15 +378,32 @@ export default function Chat({ configVersion }: ChatProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b border-gray-200 p-6 pl-16 lg:pl-6">
+      <div className="border-b border-gray-200 p-6 pl-16 lg:pl-6 flex items-center justify-between">
         <h2 className="text-2xl font-semibold">知识库问答</h2>
+        <div className="flex gap-2">
+          {messages.length > 0 && (
+            <button
+              onClick={handleDownload}
+              className="px-3 py-1.5 text-sm bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors text-blue-700 font-medium"
+              title="下载对话为纯文本"
+            >
+              💾 下载对话
+            </button>
+          )}
+          <button
+            onClick={handleNewConversation}
+            className="px-3 py-1.5 text-sm bg-yellow-100 hover:bg-yellow-200 rounded-lg transition-colors font-medium"
+          >
+            ✨ 新对话
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {displayMessages.length === 0 && (
           <div className="text-center text-slate-700 mt-20">
             <div className="text-lg font-medium">你好！我是千星知识库助手，请问有什么可以帮你的？</div>
-            <div className="text-sm mt-2 text-slate-500">刷新页面将清空对话记录</div>
+            <div className="text-sm mt-2 text-slate-500">对话将自动保存到浏览器本地</div>
           </div>
         )}
 

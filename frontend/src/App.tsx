@@ -9,6 +9,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('chat')
   const [configVersion, setConfigVersion] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [currentConversationId, setCurrentConversationId] = useState<string>()
 
   const handleConfigSaved = () => {
     setConfigVersion((v) => v + 1)
@@ -19,6 +20,15 @@ export default function App() {
     setSidebarOpen(false) // Close sidebar on mobile after selecting tab
   }
 
+  const handleConversationSelect = (id: string) => {
+    setCurrentConversationId(id)
+    setSidebarOpen(false)
+  }
+
+  const handleConversationDeleted = () => {
+    setCurrentConversationId(undefined)
+  }
+
   return (
     <div className="flex h-screen bg-transparent">
       <Sidebar 
@@ -27,6 +37,9 @@ export default function App() {
         onConfigSaved={handleConfigSaved}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
+        currentConversationId={currentConversationId}
+        onConversationSelect={handleConversationSelect}
+        onConversationDeleted={handleConversationDeleted}
       />
       <main className="flex-1 overflow-hidden border-l border-white/20 bg-white/35 backdrop-blur-xl relative">
         {/* Mobile hamburger button */}
@@ -40,7 +53,11 @@ export default function App() {
           </svg>
         </button>
         <div className={`h-full ${activeTab === 'chat' ? '' : 'hidden'}`}>
-          <Chat configVersion={configVersion} />
+          <Chat 
+            configVersion={configVersion} 
+            currentConversationId={currentConversationId}
+            onConversationChange={setCurrentConversationId}
+          />
         </div>
         <div className={`h-full ${activeTab === 'share' ? '' : 'hidden'}`}>
           <Share />

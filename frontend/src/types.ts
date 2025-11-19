@@ -28,4 +28,12 @@ export interface Share {
   gil_url?: string
 }
 
+export interface Conversation {
+  id: string
+  title: string
+  messages: any[] // ChatMessage[] - includes both ExtendedMessage and SourceMessage
+  createdAt: number
+  updatedAt: number
+}
+
 export type Tab = 'chat' | 'share' | 'tools'
