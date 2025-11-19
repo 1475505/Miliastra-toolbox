@@ -36,5 +36,20 @@ app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 
 if __name__ == "__main__":
+    import argparse
+    import os
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    parser = argparse.ArgumentParser(description="Run the RAG Chat FastAPI server")
+    parser.add_argument("--host", help="Host to listen on", default=os.environ.get("HOST", "0.0.0.0"))
+    parser.add_argument("--port", help="Port to listen on", type=int, default=int(os.environ.get("PORT", 8000)))
+    parser.add_argument("--reload", help="Enable auto-reload (useful in development)", action="store_true")
+    args = parser.parse_args()
+
+    # 使用 reload 时必须传入导入字符串，否则传入应用实例
+    uvicorn.run(
+        "main:app" if args.reload else app,
+        host=args.host,
+        port=args.port,
+        reload=args.reload
+    )

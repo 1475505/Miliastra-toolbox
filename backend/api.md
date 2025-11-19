@@ -94,6 +94,7 @@
     "id": "string - 会话ID",
     "question": "string - 用户问题",
     "answer": "string - AI 回答",
+    "reasoning": "string - 推理内容（暂不支持）",
     "sources": [
       {
         "title": "string - 文档标题",
@@ -230,13 +231,11 @@ curl -X POST http://localhost:8000/api/v1/rag/chat \
 ### 响应格式（SSE）
 
 ```
-data: {"type": "sources", "data": [{"title": "...", "url": "..."}]}
-
-data: {"type": "token", "data": "文本"}
-
-data: {"type": "token", "data": "片段"}
-
-data: {"type": "done", "data": {"tokens": 123}}
+            - : heartbeat (心跳/状态注释)
+            - data: {"type": "sources", "data": [...]}
+            - data: {"type": "reasoning", "data": "推理内容"}
+            - data: {"type": "token", "data": "文本块"}
+            - data: {"type": "done", "data": {"tokens": 123}}
 ```
 
 ### 事件类型
@@ -244,9 +243,12 @@ data: {"type": "done", "data": {"tokens": 123}}
 | 类型 | 说明 | 数据格式 |
 |------|------|---------|
 | `sources` | 引用来源 | `{"data": [{"title", "url", "similarity"}]}` |
+| `reasoning` | 推理内容（暂不支持） | `{"data": "推理文本"}` |
 | `token` | 文本片段 | `{"data": "文本内容"}` |
 | `done` | 完成信号 | `{"data": {"tokens": 123}}` |
 | `error` | 错误信息 | `{"data": "错误描述"}` |
+
+> 注：以 `: ` 开头的行为心跳或状态更新（如 `: heartbeat`, `: retrieval_done`），前端可用于保活或显示进度。
 
 ### 客户端调用示例
 

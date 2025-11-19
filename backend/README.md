@@ -34,13 +34,28 @@ pip install -r requirements.txt
 
 ### 3. 启动服务
 
+你可以通过运行 `python3 main.py` 启动服务，脚本现在支持 `--port`、`--host` 和 `--reload` 参数；同时支持通过环境变量 `PORT`、`HOST`、`LOG_LEVEL` 设置。
+
 ```bash
+# 默认端口 8000
 python3 main.py
-# 或使用 uvicorn
+
+# 指定端口
+python3 main.py --port 8081
+
+# 指定 host，端口和启用热重载（开发调试）
+python3 main.py --host 127.0.0.1 --port 8001 --reload
+
+# 使用环境变量设置端口
+export PORT=8082 && python3 main.py
+
+# 或者你仍然可以直接用 uvicorn
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 服务将在 `http://localhost:8000` 启动。
+
+注意：命令行选项（如 `--port` / `--host`）会优先于环境变量（`PORT` / `HOST`）。
 
 - **Web 界面**: `http://localhost:8000`
 - **API 文档**: `http://localhost:8000/docs`
@@ -51,7 +66,21 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```bash
 # 启动服务后，在另一个终端执行
 export DEEPSEEK_API_KEY=your_key
+
+# 默认：使用 localhost:8000
 ./tests/test_api.sh
+
+# 指定端口（通过环境变量）
+export PORT=8081 && ./tests/test_api.sh
+
+# 或同时指定 HOST
+export HOST=127.0.0.1 PORT=8082 && ./tests/test_api.sh
+
+# 指定仅运行测试 1（单轮）或 2（多轮）或 3（流式）或 1,2,3（逗号分隔）
+export PORT=8000 && ./tests/test_api.sh 1
+export PORT=8000 && ./tests/test_api.sh 2
+export PORT=8000 && ./tests/test_api.sh 3
+export PORT=8000 && ./tests/test_api.sh 1,2,3
 ```
 
 **使用 pytest 测试**：

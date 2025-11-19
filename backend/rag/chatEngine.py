@@ -10,8 +10,15 @@ import sys
 import os
 from dotenv import load_dotenv
 
-# 加载 .env 文件
+# 加载 backend/.env 文件（如果存在）
 load_dotenv()
+
+# 加载 rag_v1/.env 文件（优先级更高，会覆盖同名变量）
+rag_v1_env_path = os.path.join(os.path.dirname(__file__), "..", "..", "knowledge", "rag_v1", ".env")
+rag_v1_env_path = os.path.abspath(rag_v1_env_path)
+if os.path.exists(rag_v1_env_path):
+    load_dotenv(rag_v1_env_path, override=True)
+    print(f"[ChatEngine] 已加载 rag_v1 环境变量: {rag_v1_env_path}")
 
 # 添加 rag_v1 到路径（兼容 Docker 和本地环境）
 rag_v1_path = os.path.join(os.path.dirname(__file__), "..", "..", "knowledge", "rag_v1")
@@ -21,6 +28,7 @@ if rag_v1_path not in sys.path:
 
 from typing import List, Dict, Any, Generator
 import json
+import asyncio
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.llms import ChatMessage
 from llama_index.core.chat_engine import CondensePlusContextChatEngine
@@ -87,10 +95,14 @@ class ChatEngine:
         Returns:
             CondensePlusContextChatEngine 实例
         """
+        # 从环境变量读取检索参数，提供默认值
+        similarity_top_k = int(os.getenv("TOP_K", "5"))
+        similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.6"))
+        
         return CondensePlusContextChatEngine.from_defaults(
             retriever=self.rag_engine.index.as_retriever(
-                similarity_top_k=5,
-                similarity_cutoff=0.6
+                similarity_top_k=similarity_top_k,
+                similarity_cutoff=similarity_cutoff
             ),
             llm=llm,
             chat_history=chat_history,
@@ -155,6 +167,7 @@ class ChatEngine:
             model=resolved_config["model"],
             is_chat_model=True
         )
+        print(f"[ChatEngine] 使用 LLM 模型: {resolved_config['model']}")
         
         # 4. 转换对话历史为 ChatMessage 格式（参考官方文档）
         chat_history = [
@@ -187,21 +200,36 @@ class ChatEngine:
             # 10. 获取 completion tokens（参考官方文档）
             completion_tokens = self.token_counter.completion_llm_token_count
             
-            return {
+            result = {
                 "answer": response.response,
                 "sources": sources,
                 "tokens": completion_tokens
             }
+
+            # TODO 暂时不支持reasoning_content
+            reasoning = None
+            # 尝试从 metadata 获取
+            if hasattr(response, "metadata") and response.metadata:
+                reasoning = response.metadata.get("reasoning_content")
+            
+            # 如果 response 对象本身有 additional_kwargs
+            if not reasoning and hasattr(response, "additional_kwargs"):
+                reasoning = response.additional_kwargs.get("reasoning_content")
+            
+            if reasoning:
+                result["reasoning"] = reasoning
+            
+            return result
         finally:
             # 恢复原来的 callback manager
             LlamaSettings.callback_manager = original_callback_manager
     
-    def chat_stream(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str]) -> Generator[str, None, None]:
-        """执行流式对话查询（带心跳机制防止超时）
+    async def chat_stream_async(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str]):
+        """执行异步流式对话查询（带心跳机制防止超时）
         
         Args:
             message: 用户问题
-            conversation: 对话历史 [{"role": "user|assistant", "content": "..."}]
+            conversation: 对话历史 [{"role": "user|assistant", "content": "...";}]
             config: LLM 配置 {"api_key", "api_base_url", "model", "use_default_model", "context_length"}
         
         Yields:
@@ -224,7 +252,6 @@ class ChatEngine:
             limited_conversation = conversation[-(context_length * 2):]
         else:
             limited_conversation = conversation
-        
         # 3. 创建动态 LLM
         llm = OpenAILike(
             api_key=resolved_config["api_key"],
@@ -232,6 +259,7 @@ class ChatEngine:
             model=resolved_config["model"],
             is_chat_model=True
         )
+        print(f"[ChatEngine Stream] 使用模型: {resolved_config['model']} (API: {resolved_config['api_base_url']})")
         
         # 4. 转换对话历史为 ChatMessage 格式
         chat_history = [
@@ -256,7 +284,22 @@ class ChatEngine:
             yield ": chat_engine_created\n\n"
             
             # 步骤3：执行流式查询（检索知识库可能耗时）
-            streaming_response = chat_engine.stream_chat(message)
+            # 使用 asyncio.wait_for 实现心跳，每30秒发送一次
+            chat_task = asyncio.create_task(chat_engine.astream_chat(message))
+            streaming_response = None
+            
+            while not chat_task.done():
+                try:
+                    # 等待任务完成，或者超时
+                    streaming_response = await asyncio.wait_for(asyncio.shield(chat_task), timeout=30.0)
+                except asyncio.TimeoutError:
+                    # 超时发送心跳
+                    yield ": heartbeat\n\n"
+            
+            # 确保获取结果（如果循环结束是因为 task done 但 wait_for 还没返回）
+            if streaming_response is None:
+                streaming_response = await chat_task
+
             # 完成后立即发送心跳
             yield ": retrieval_done\n\n"
             
@@ -268,10 +311,14 @@ class ChatEngine:
             
             # 步骤5：流式发送文本
             chunk_count = 0
-            for text_chunk in streaming_response.response_gen:
-                yield f"data: {json.dumps({'type': 'token', 'data': text_chunk}, ensure_ascii=False)}\n\n"
+            # 使用 async_response_gen 获取更详细的响应信息
+            async for response_chunk in streaming_response.async_response_gen():
+                # 发送文本内容
+                if response_chunk:
+                    yield f"data: {json.dumps({'type': 'token', 'data': response_chunk}, ensure_ascii=False)}\n\n"
+                
                 chunk_count += 1
-                # 每10个文本块发送一次心跳（防止 LLM 生成慢）
+                # 每10个文本块发送一次心跳
                 if chunk_count % 10 == 0:
                     yield ": generating\n\n"
             

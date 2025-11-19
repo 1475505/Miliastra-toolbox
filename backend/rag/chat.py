@@ -157,7 +157,7 @@ async def chat_stream(request: ChatRequest):
         
         # 3. 返回流式响应
         return StreamingResponse(
-            engine.chat_stream(
+            engine.chat_stream_async(
                 message=request.message,
                 conversation=conversation,
                 config=llm_config

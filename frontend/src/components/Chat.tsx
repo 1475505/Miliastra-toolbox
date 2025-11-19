@@ -10,19 +10,25 @@ interface SourceMessage {
   tokens?: number
 }
 
-type ChatMessage = Message | SourceMessage
+interface ExtendedMessage extends Message {
+  reasoning?: string
+  isReasoning?: boolean
+}
+
+type ChatMessage = ExtendedMessage | SourceMessage
 
 interface ChatProps {
   configVersion: number
 }
 
 export default function Chat({ configVersion }: ChatProps) {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<ExtendedMessage[]>([])
   const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [timeoutWarning, setTimeoutWarning] = useState('')
+  const [statusMessage, setStatusMessage] = useState('')
   const [showConfigHint, setShowConfigHint] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
@@ -58,6 +64,7 @@ export default function Chat({ configVersion }: ChatProps) {
     setLoading(true)
     setError('')
     setTimeoutWarning('')
+    setStatusMessage('')
 
     let hasCreatedAssistantMessage = false
 
@@ -121,6 +128,34 @@ export default function Chat({ configVersion }: ChatProps) {
         buffer = lines.pop() || ''
 
         for (const line of lines) {
+          if (line.startsWith(':')) {
+            const status = line.slice(1).trim()
+            switch (status) {
+              case 'connected':
+                setStatusMessage('已连接，准备中...')
+                break
+              case 'chat_engine_created':
+                setStatusMessage('对话引擎已就绪，正在检索知识库...')
+                break
+              case 'retrieval_done':
+                setStatusMessage('检索完成，正在生成回答...')
+                break
+              case 'sources_sent':
+                setStatusMessage('已获取引用来源...')
+                break
+              case 'generating':
+                setStatusMessage('正在生成回答...')
+                break
+              case 'heartbeat':
+                setStatusMessage('正在深入思考中，请耐心等待...')
+                break
+              case 'completed':
+                setStatusMessage('')
+                break
+            }
+            continue
+          }
+
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6))
@@ -128,11 +163,56 @@ export default function Chat({ configVersion }: ChatProps) {
               if (data.type === 'sources') {
                 // 先显示来源
                 setDisplayMessages((prev) => [...prev, { type: 'sources', sources: data.data }])
+              } else if (data.type === 'reasoning') {
+                // 处理推理内容
+                if (!hasCreatedAssistantMessage) {
+                  hasCreatedAssistantMessage = true
+                  const assistantMessage: ExtendedMessage = { 
+                    role: 'assistant', 
+                    content: '', 
+                    reasoning: data.data,
+                    isReasoning: true 
+                  }
+                  setMessages((prev) => [...prev, assistantMessage])
+                  setDisplayMessages((prev) => [...prev, assistantMessage])
+                } else {
+                  // 追加推理内容
+                  const updateMsg = (prev: ExtendedMessage[]) => {
+                    const newMessages = [...prev]
+                    const lastMsg = newMessages[newMessages.length - 1]
+                    if (lastMsg && lastMsg.role === 'assistant') {
+                      return [...prev.slice(0, -1), { 
+                        ...lastMsg, 
+                        reasoning: (lastMsg.reasoning || '') + data.data,
+                        isReasoning: true
+                      }]
+                    }
+                    return newMessages
+                  }
+                  setMessages(updateMsg)
+                  setDisplayMessages((prev) => {
+                    for (let i = prev.length - 1; i >= 0; i--) {
+                      const msg = prev[i]
+                      if ('role' in msg && msg.role === 'assistant') {
+                        return [
+                          ...prev.slice(0, i),
+                          { 
+                            ...msg, 
+                            reasoning: (msg.reasoning || '') + data.data,
+                            isReasoning: true
+                          },
+                          ...prev.slice(i + 1)
+                        ]
+                      }
+                    }
+                    return prev
+                  })
+                }
               } else if (data.type === 'token') {
                 // 第一个 token 时创建 assistant 消息
                 if (!hasCreatedAssistantMessage) {
                   hasCreatedAssistantMessage = true
-                  const assistantMessage: Message = { role: 'assistant', content: data.data }
+                  const assistantMessage: ExtendedMessage = { role: 'assistant', content: data.data }
                   setMessages((prev) => [...prev, assistantMessage])
                   setDisplayMessages((prev) => [...prev, assistantMessage])
                 } else {
@@ -141,7 +221,11 @@ export default function Chat({ configVersion }: ChatProps) {
                     const newMessages = [...prev]
                     const lastMsg = newMessages[newMessages.length - 1]
                     if (lastMsg && lastMsg.role === 'assistant') {
-                      return [...prev.slice(0, -1), { ...lastMsg, content: lastMsg.content + data.data }]
+                      return [...prev.slice(0, -1), { 
+                        ...lastMsg, 
+                        content: lastMsg.content + data.data,
+                        isReasoning: false 
+                      }]
                     }
                     return newMessages
                   })
@@ -151,7 +235,11 @@ export default function Chat({ configVersion }: ChatProps) {
                       if ('role' in msg && msg.role === 'assistant') {
                         return [
                           ...prev.slice(0, i),
-                          { ...msg, content: msg.content + data.data },
+                          { 
+                            ...msg, 
+                            content: msg.content + data.data,
+                            isReasoning: false 
+                          },
                           ...prev.slice(i + 1)
                         ]
                       }
@@ -185,6 +273,7 @@ export default function Chat({ configVersion }: ChatProps) {
       setError(err instanceof Error ? err.message : '网络错误')
     } finally {
       setLoading(false)
+      setStatusMessage('')
     }
   }
 
@@ -261,6 +350,19 @@ export default function Chat({ configVersion }: ChatProps) {
                   <div className="whitespace-pre-wrap">{'content' in msg ? msg.content : ''}</div>
                 ) : (
                   <div className="prose prose-sm max-w-none prose-slate">
+                    {'reasoning' in msg && msg.reasoning && (
+                      <details 
+                        className="mb-4 border border-gray-200 rounded-lg bg-white overflow-hidden"
+                        open={msg.isReasoning}
+                      >
+                        <summary className="px-4 py-2 bg-gray-50 cursor-pointer text-xs font-medium text-gray-500 hover:bg-gray-100 select-none flex items-center">
+                          <span>💭 思考过程</span>
+                        </summary>
+                        <div className="px-4 py-3 text-gray-600 text-sm bg-gray-50/50 whitespace-pre-wrap border-t border-gray-100">
+                          {msg.reasoning}
+                        </div>
+                      </details>
+                    )}
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {'content' in msg ? msg.content : ''}
                     </ReactMarkdown>
@@ -270,6 +372,14 @@ export default function Chat({ configVersion }: ChatProps) {
             </div>
           )
         })}
+
+        {statusMessage && (
+          <div className="text-center px-4">
+            <div className="inline-block bg-blue-50 border border-blue-200 rounded-xl px-6 py-3 text-sm text-blue-700 animate-pulse">
+              {statusMessage}
+            </div>
+          </div>
+        )}
 
         {timeoutWarning && (
           <div className="text-center px-4">
