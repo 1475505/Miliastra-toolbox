@@ -22,6 +22,7 @@ export default function Chat({ configVersion }: ChatProps) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [timeoutWarning, setTimeoutWarning] = useState('')
   const [showConfigHint, setShowConfigHint] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
@@ -56,11 +57,15 @@ export default function Chat({ configVersion }: ChatProps) {
     setInput('')
     setLoading(true)
     setError('')
+    setTimeoutWarning('')
 
     let hasCreatedAssistantMessage = false
 
     try {
       const contextMessages = messages.slice(-(config.context_length * 2))
+      
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 20 * 60 * 1000) // 20分钟超时
       
       const response = await fetch('/api/v1/rag/chat/stream', {
         method: 'POST',
@@ -70,7 +75,10 @@ export default function Chat({ configVersion }: ChatProps) {
           conversation: contextMessages,
           config,
         }),
+        signal: controller.signal,
       })
+      
+      clearTimeout(timeoutId)
 
       if (!response.ok) throw new Error('请求失败')
 
@@ -79,12 +87,23 @@ export default function Chat({ configVersion }: ChatProps) {
       let buffer = ''
       
       lastMessageTimeRef.current = Date.now()
+      let hasShownWarning = false
       
       const checkTimeout = setInterval(() => {
-        if (Date.now() - lastMessageTimeRef.current > 5 * 60 * 1000) {
+        const elapsedTime = Date.now() - lastMessageTimeRef.current
+        
+        // 5分钟无响应：显示警告
+        if (elapsedTime > 5 * 60 * 1000 && !hasShownWarning) {
+          hasShownWarning = true
+          setTimeoutWarning('已5分钟无响应，可能问题过于复杂。建议调小上下文轮次、使用非推理模型、或在新标签页开启新对话')
+        }
+        
+        // 20分钟无响应：报错并停止
+        if (elapsedTime > 20 * 60 * 1000) {
           clearInterval(checkTimeout)
           reader?.cancel()
-          setError('连接超时（5分钟无响应）')
+          setError('连接超时（20分钟无响应）')
+          setTimeoutWarning('')
           setLoading(false)
         }
       }, 1000)
@@ -251,6 +270,15 @@ export default function Chat({ configVersion }: ChatProps) {
             </div>
           )
         })}
+
+        {timeoutWarning && (
+          <div className="text-center px-4">
+            <div className="inline-block bg-orange-50 border border-orange-200 rounded-xl px-6 py-4 text-sm max-w-2xl">
+              <div className="text-orange-800 mb-2 font-medium">⏱️ 响应较慢</div>
+              <div className="text-orange-600">{timeoutWarning}</div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="text-center text-red-500 text-sm">{error}</div>
