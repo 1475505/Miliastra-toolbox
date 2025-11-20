@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Tab, Conversation } from '../types'
 import ConfigModal from './ConfigModal'
-import { getAllConversations, deleteConversation } from '../utils/conversations'
+import { getAllConversations, deleteConversation, updateConversationTitle } from '../utils/conversations'
 
 interface SidebarProps {
   activeTab: Tab
@@ -29,6 +29,8 @@ export default function Sidebar({
   const [showConfig, setShowConfig] = useState(false)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [showClearHint, setShowClearHint] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
 
   useEffect(() => {
     if (activeTab === 'chat') {
@@ -55,6 +57,19 @@ export default function Sidebar({
         onConversationDeleted?.()
       }
     }
+  }
+
+  const startEditing = (conv: Conversation) => {
+    setEditingId(conv.id)
+    setEditTitle(conv.title)
+  }
+
+  const handleSaveTitle = (id: string) => {
+    if (editTitle.trim()) {
+      updateConversationTitle(id, editTitle.trim())
+      loadConversations()
+    }
+    setEditingId(null)
   }
 
   const tabs: { id: Tab; label: string }[] = [
@@ -133,13 +148,54 @@ export default function Sidebar({
                               : 'text-slate-600 hover:bg-white/30'
                           }`}
                         >
-                          <span className="truncate flex-1">{conv.title}</span>
-                          <button
-                            onClick={(e) => handleDeleteConversation(conv.id, e)}
-                            className="opacity-0 group-hover:opacity-100 ml-2 text-red-400 hover:text-red-600"
-                          >
-                            🗑️
-                          </button>
+                          {editingId === conv.id ? (
+                            <input
+                              type="text"
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              onBlur={() => handleSaveTitle(conv.id)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveTitle(conv.id)
+                                if (e.key === 'Escape') setEditingId(null)
+                              }}
+                              className="flex-1 bg-white/50 border border-blue-300 rounded px-1 py-0.5 outline-none min-w-0"
+                              autoFocus
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            <span 
+                              className="truncate flex-1" 
+                              onDoubleClick={(e) => {
+                                e.stopPropagation()
+                                startEditing(conv)
+                              }}
+                              title={conv.title}
+                            >
+                              {conv.title}
+                            </span>
+                          )}
+                          
+                          <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2">
+                            {!editingId && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  startEditing(conv)
+                                }}
+                                className="text-slate-400 hover:text-blue-600 mr-1"
+                                title="重命名"
+                              >
+                                ✏️
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => handleDeleteConversation(conv.id, e)}
+                              className="text-red-400 hover:text-red-600"
+                              title="删除"
+                            >
+                                🗑️
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

@@ -37,7 +37,18 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
           {!config.use_default_model && (
             <>
               <div>
-                <label className="block text-sm text-gray-600 mb-2">API Key</label>
+                <label className="block text-sm text-gray-600 mb-2">
+                  API Key（使用Deepseek模型可
+                  <a
+                    href="https://platform.deepseek.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    点此平台获取
+                  </a>
+                  ）
+                </label>
                 <input
                   type="password"
                   value={config.api_key}

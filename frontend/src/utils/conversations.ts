@@ -29,6 +29,16 @@ export function saveConversation(conversation: Conversation): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations))
 }
 
+export function updateConversationTitle(id: string, title: string): void {
+  const conversations = getAllConversations()
+  const index = conversations.findIndex(c => c.id === id)
+  
+  if (index >= 0) {
+    conversations[index] = { ...conversations[index], title, updatedAt: Date.now() }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations))
+  }
+}
+
 export function deleteConversation(id: string): void {
   const conversations = getAllConversations()
   const filtered = conversations.filter(c => c.id !== id)

@@ -405,7 +405,8 @@ export default function Chat({ configVersion, currentConversationId, onConversat
         {displayMessages.length === 0 && (
           <div className="text-center text-slate-700 mt-20">
             <div className="text-lg font-medium">你好！我是千星知识库助手，请问有什么可以帮你的？</div>
-            <div className="text-sm mt-2 text-slate-500">对话将自动保存到浏览器本地</div>
+            <div className="text-sm mt-2 text-slate-500">对话将自动保存到浏览器本地，建议及时删除</div>
+            <div className="text-sm mt-2 text-slate-500">在左下角菜单按需减少上下文轮次可加快生成速度</div>
           </div>
         )}
 
@@ -414,7 +415,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
             <div className="inline-block bg-yellow-50 border border-yellow-200 rounded-xl px-6 py-4 text-sm max-w-md">
               <div className="text-yellow-800 mb-2 font-medium">⚠️ 请先配置 API Key</div>
               <div className="text-yellow-600">
-                请点击<span className="hidden lg:inline">左下角</span><span className="lg:hidden">菜单中</span>「⚙️ OpenAI 配置」按钮进行配置
+                请点击<span className="hidden lg:inline">左下角</span><span className="lg:hidden">菜单中</span>「⚙️ OpenAI 配置」按钮进行配置（或勾选免费模型）
               </div>
             </div>
           </div>
