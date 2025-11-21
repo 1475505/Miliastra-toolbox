@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Sidebar from './components/Sidebar'
 import Chat from './components/Chat'
 import Share from './components/Share'
-import Tools from './components/Tools'
+import Notes from './components/Notes'
 import { Tab } from './types'
 
 export default function App() {
@@ -66,11 +66,11 @@ export default function App() {
             onRefreshConversations={handleRefreshConversations}
           />
         </div>
+        <div className={`h-full ${activeTab === 'notes' ? '' : 'hidden'}`}>
+          <Notes />
+        </div>
         <div className={`h-full ${activeTab === 'share' ? '' : 'hidden'}`}>
           <Share />
-        </div>
-        <div className={`h-full ${activeTab === 'tools' ? '' : 'hidden'}`}>
-          <Tools />
         </div>
       </main>
     </div>

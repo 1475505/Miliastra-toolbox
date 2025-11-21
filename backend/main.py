@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from rag.chat import router as chat_router
 from share.router import router as share_router
+from notes.router import router as notes_router
 
 app = FastAPI(
     title="千星沙箱 RAG Chat API",
@@ -26,6 +27,7 @@ app.add_middleware(
 # 注册 API 路由
 app.include_router(chat_router, prefix="/api/v1")
 app.include_router(share_router, prefix="/api/v1")
+app.include_router(notes_router, prefix="/api/v1")
 
 @app.get("/health")
 async def health():

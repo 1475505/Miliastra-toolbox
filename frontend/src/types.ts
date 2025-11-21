@@ -28,6 +28,15 @@ export interface Share {
   gil_url?: string
 }
 
+export interface Note {
+  id: number
+  created_at: string
+  version: string
+  author?: string
+  content: string
+  likes: number
+}
+
 export interface Conversation {
   id: string
   title: string
@@ -36,4 +45,4 @@ export interface Conversation {
   updatedAt: number
 }
 
-export type Tab = 'chat' | 'share' | 'tools'
+export type Tab = 'chat' | 'notes' | 'share'

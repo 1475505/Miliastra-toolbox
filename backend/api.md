@@ -1,4 +1,23 @@
-# RAG API 文档
+# API 文档
+
+## 目录
+
+- [RAG API](#rag-api)
+  - [1. 非流式接口](#1-非流式接口)
+  - [2. 流式接口](#2-流式接口)
+- [素材分享 API](#素材分享api)
+  - [1. 查询分享列表](#1-查询分享列表)
+  - [2. 创建分享](#2-创建分享)
+- [笔记 API](#笔记api)
+  - [1. 创建笔记](#1-创建笔记)
+  - [2. 修改笔记](#2-修改笔记)
+  - [3. 点赞笔记](#3-点赞笔记)
+  - [4. 查询笔记列表](#4-查询笔记列表)
+  - [5. 获取单个笔记详情](#5-获取单个笔记详情)
+
+---
+
+# RAG API
 
 ## 概述
 
@@ -323,7 +342,7 @@ for line in response.iter_lines():
 ```
 ---
 
-# 素材分享API文档
+# 素材分享API
 
 ## 概述
 
@@ -442,4 +461,432 @@ curl -X POST http://localhost:8000/api/v1/shares \
 |--------|------|
 | 400 | 请求参数错误（标题为空等） |
 | 500 | 服务器内部错误 |
+
+
+# 笔记API
+
+## 概述
+
+提供笔记的完整管理功能：
+- **创建笔记**：新增笔记内容
+- **修改笔记**：更新笔记内容（保留历史版本）
+- **点赞笔记**：为有用的笔记点赞
+- **查询笔记**：支持按点赞数/创建时间排序和搜索
+
+**版本控制说明**：
+- 每次创建或修改笔记时，`version` 字段自动填入当前时间戳
+- 修改笔记时会新建一行记录，沿用原笔记的 `id`，更新 `version` 和修改的字段
+- 查询时只返回每个 `id` 的最新 `version` 记录
+
+---
+
+## 1. 创建笔记
+
+### 接口地址
+**POST** `/api/v1/notes`
+
+### 请求参数
+
+```json
+{
+  "author": "string - 作者（可选）",
+  "content": "string - 笔记内容（必填）"
+}
+```
+
+### 请求示例
+
+```bash
+curl -X POST http://localhost:8000/api/v1/notes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "author": "张三",
+    "content": "小地图可以通过右键点击设置显示范围，非常实用！"
+  }'
+```
+
+### 响应参数
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "created_at": "2024-01-01T12:00:00Z",
+    "version": "2024-01-01T12:00:00",
+    "author": "张三",
+    "content": "小地图可以通过右键点击设置显示范围，非常实用！",
+    "likes": 0
+  }
+}
+```
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | 请求参数错误（内容为空等） |
+| 500 | 服务器内部错误 |
+
+---
+
+## 2. 修改笔记
+
+### 接口地址
+**PUT** `/api/v1/notes/{id}`
+
+### 请求参数
+
+```json
+{
+  "author": "string - 作者（可选）",
+  "content": "string - 笔记内容（可选）"
+}
+```
+
+**注意**：
+- 至少需要提供 `author` 或 `content` 其中之一
+- 修改操作会创建新的版本记录，保留原有数据
+- 未提供的字段会沿用原笔记的值
+
+### 请求示例
+
+```bash
+curl -X PUT http://localhost:8000/api/v1/notes/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "小地图可以通过右键点击设置显示范围和透明度，非常实用！"
+  }'
+```
+
+### 响应参数
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "created_at": "2024-01-01T12:00:00Z",
+    "version": "2024-01-01T12:30:00",
+    "author": "张三",
+    "content": "小地图可以通过右键点击设置显示范围和透明度，非常实用！",
+    "likes": 0
+  }
+}
+```
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | 请求参数错误（未提供任何更新字段等） |
+| 404 | 笔记不存在 |
+| 500 | 服务器内部错误 |
+
+---
+
+## 3. 点赞笔记
+
+### 接口地址
+**POST** `/api/v1/notes/{id}/like`
+
+### 请求参数
+无需请求体
+
+使用浏览器 `localStorage` 存储已点赞的笔记 ID 列表，避免重复点赞
+
+### 请求示例
+
+```bash
+curl -X POST http://localhost:8000/api/v1/notes/1/like
+```
+
+### 响应参数
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "likes": 1
+  }
+}
+```
+
+**添加 IP 限制后的响应示例**：
+```json
+{
+  "success": false,
+  "error": "您已经为该笔记点过赞了"
+}
+```
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 404 | 笔记不存在 |
+| 429 | 重复点赞（已点过赞） |
+| 500 | 服务器内部错误 |
+
+---
+
+## 4. 查询笔记列表
+
+### 接口地址
+**GET** `/api/v1/notes`
+
+### 请求参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| search | string | 否 | 搜索关键词（在内容和作者中模糊搜索） |
+| sort_by | string | 否 | 排序方式：`likes`（按点赞数降序，默认）或 `created_at`（按创建时间降序） |
+| limit | integer | 否 | 返回数量限制（默认 20，最大 100） |
+| offset | integer | 否 | 偏移量（默认 0） |
+
+### 请求示例
+
+```bash
+# 获取所有笔记（按点赞数降序）
+GET /api/v1/notes
+
+# 按创建时间降序
+GET /api/v1/notes?sort_by=created_at
+
+# 搜索笔记
+GET /api/v1/notes?search=小地图
+
+# 组合查询
+GET /api/v1/notes?search=技能&sort_by=likes&limit=10&offset=0
+```
+
+### 响应参数
+
+```json
+{
+  "success": true,
+  "data": {
+    "total": 50,
+    "items": [
+      {
+        "id": 1,
+        "created_at": "2024-01-01T12:00:00Z",
+        "version": "2024-01-01T12:30:00",
+        "author": "张三",
+        "content": "小地图可以通过右键点击设置显示范围和透明度，非常实用！",
+        "likes": 15
+      },
+      {
+        "id": 2,
+        "created_at": "2024-01-01T13:00:00Z",
+        "version": "2024-01-01T13:00:00",
+        "author": "李四",
+        "content": "技能动画可以在节点图中自定义，效果很棒！",
+        "likes": 8
+      }
+    ]
+  }
+}
+```
+
+### 错误响应
+
+```json
+{
+  "success": false,
+  "error": "数据库查询失败"
+}
+```
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | 请求参数错误（sort_by 值不合法等） |
+| 500 | 服务器内部错误 |
+
+---
+
+## 5. 获取单个笔记详情
+
+### 接口地址
+**GET** `/api/v1/notes/{id}`
+
+### 请求参数
+无需查询参数
+
+### 请求示例
+
+```bash
+GET /api/v1/notes/1
+```
+
+### 响应参数
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "created_at": "2024-01-01T12:00:00Z",
+    "version": "2024-01-01T12:30:00",
+    "author": "张三",
+    "content": "小地图可以通过右键点击设置显示范围和透明度，非常实用！",
+    "likes": 15
+  }
+}
+```
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 404 | 笔记不存在 |
+| 500 | 服务器内部错误 |
+
+---
+
+## 客户端调用示例
+
+### JavaScript
+
+```javascript
+// 创建笔记
+const createNote = async () => {
+  const response = await fetch('/api/v1/notes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      author: '张三',
+      content: '这是一条有用的笔记！'
+    })
+  });
+  const data = await response.json();
+  console.log('创建成功:', data.data);
+};
+
+// 修改笔记
+const updateNote = async (id) => {
+  const response = await fetch(`/api/v1/notes/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      content: '更新后的内容'
+    })
+  });
+  const data = await response.json();
+  console.log('更新成功:', data.data);
+};
+
+// 点赞笔记
+const likeNote = async (id) => {
+  const response = await fetch(`/api/v1/notes/${id}/like`, {
+    method: 'POST'
+  });
+  const data = await response.json();
+  console.log('点赞成功，当前点赞数:', data.data.likes);
+};
+
+// 查询笔记列表
+const getNotes = async () => {
+  const response = await fetch('/api/v1/notes?sort_by=likes&limit=10');
+  const data = await response.json();
+  console.log('笔记列表:', data.data.items);
+};
+
+// 搜索笔记
+const searchNotes = async (keyword) => {
+  const response = await fetch(`/api/v1/notes?search=${encodeURIComponent(keyword)}`);
+  const data = await response.json();
+  console.log('搜索结果:', data.data.items);
+};
+```
+
+### Python
+
+```python
+import requests
+
+BASE_URL = 'http://localhost:8000/api/v1'
+
+# 创建笔记
+def create_note():
+    response = requests.post(f'{BASE_URL}/notes', json={
+        'author': '张三',
+        'content': '这是一条有用的笔记！'
+    })
+    data = response.json()
+    print('创建成功:', data['data'])
+
+# 修改笔记
+def update_note(note_id):
+    response = requests.put(f'{BASE_URL}/notes/{note_id}', json={
+        'content': '更新后的内容'
+    })
+    data = response.json()
+    print('更新成功:', data['data'])
+
+# 点赞笔记
+def like_note(note_id):
+    response = requests.post(f'{BASE_URL}/notes/{note_id}/like')
+    data = response.json()
+    print('点赞成功，当前点赞数:', data['data']['likes'])
+
+# 查询笔记列表
+def get_notes():
+    response = requests.get(f'{BASE_URL}/notes', params={
+        'sort_by': 'likes',
+        'limit': 10
+    })
+    data = response.json()
+    print('笔记列表:', data['data']['items'])
+
+# 搜索笔记
+def search_notes(keyword):
+    response = requests.get(f'{BASE_URL}/notes', params={
+        'search': keyword
+    })
+    data = response.json()
+    print('搜索结果:', data['data']['items'])
+```
+
+---
+
+## 数据模型说明
+
+### 版本控制机制
+
+笔记表使用 `(id, version)` 作为联合主键，实现版本控制：
+
+1. **创建笔记**：
+   - 生成新的 `id`
+   - `version` 设置为当前时间戳
+   - `created_at` 设置为当前时间戳
+
+2. **修改笔记**：
+   - 保持原 `id` 不变
+   - 新建一行记录
+   - `version` 更新为当前时间戳
+   - `created_at` 保持原值
+   - 其他字段：修改的字段更新，未修改的字段沿用原值
+
+3. **点赞笔记**：
+   - 找到指定 `id` 的最新 `version` 记录
+   - 直接更新该记录的 `likes` 字段（+1）
+   - 不创建新版本
+
+4. **查询笔记**：
+   - 使用子查询找出每个 `id` 的最新 `version`
+   - 只返回最新版本的记录
+
+### 示例数据
+
+| id | created_at | version | author | content | likes |
+|----|------------|---------|--------|---------|-------|
+| 1 | 2024-01-01 12:00:00 | 2024-01-01 12:00:00 | 张三 | 原始内容 | 0 |
+| 1 | 2024-01-01 12:00:00 | 2024-01-01 12:30:00 | 张三 | 修改后的内容 | 5 |
+| 2 | 2024-01-01 13:00:00 | 2024-01-01 13:00:00 | 李四 | 另一条笔记 | 3 |
+
+查询时只会返回 `id=1` 的第二行（最新版本）和 `id=2` 的记录。
 

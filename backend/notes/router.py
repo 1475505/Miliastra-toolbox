@@ -1,0 +1,348 @@
+"""
+笔记 API 路由
+"""
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+from typing import Optional, List
+import psycopg2
+import os
+from dotenv import load_dotenv
+from datetime import datetime
+
+load_dotenv()
+
+router = APIRouter()
+
+# 数据库连接配置
+DB_URL = os.getenv("PG_URL")
+
+
+class NoteCreate(BaseModel):
+    author: Optional[str] = None
+    content: str
+
+
+class NoteUpdate(BaseModel):
+    author: Optional[str] = None
+    content: Optional[str] = None
+
+
+class NoteResponse(BaseModel):
+    id: int
+    created_at: str
+    version: str
+    author: Optional[str]
+    content: Optional[str]
+    likes: int
+
+
+def get_db():
+    """获取数据库连接"""
+    return psycopg2.connect(DB_URL)
+
+
+@router.post("/notes")
+async def create_note(note: NoteCreate):
+    """创建笔记"""
+    if not note.content or not note.content.strip():
+        raise HTTPException(status_code=400, detail="笔记内容不能为空")
+    
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        query = """
+            INSERT INTO public.notes (created_at, author, content, likes)
+            VALUES (NOW(), %s, %s, 0)
+            RETURNING id, created_at, version, author, content, likes
+        """
+        
+        cur.execute(query, (note.author, note.content))
+        
+        row = cur.fetchone()
+        conn.commit()
+        
+        result = {
+            "id": row[0],
+            "created_at": row[1].isoformat() if row[1] else None,
+            "version": row[2].isoformat() if row[2] else None,
+            "author": row[3],
+            "content": row[4],
+            "likes": row[5] or 0
+        }
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "data": result
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/notes/{note_id}")
+async def update_note(note_id: int, note: NoteUpdate):
+    """修改笔记（创建新版本）"""
+    if not note.author and not note.content:
+        raise HTTPException(status_code=400, detail="至少需要提供 author 或 content 其中之一")
+    
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        # 获取最新版本的笔记
+        query = """
+            SELECT id, created_at, author, content, likes
+            FROM public.notes
+            WHERE id = %s
+            ORDER BY version DESC
+            LIMIT 1
+        """
+        cur.execute(query, (note_id,))
+        row = cur.fetchone()
+        
+        if not row:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="笔记不存在")
+        
+        # 获取原笔记数据
+        old_id, old_created_at, old_author, old_content, old_likes = row
+        
+        # 使用新值或沿用旧值
+        new_author = note.author if note.author is not None else old_author
+        new_content = note.content if note.content is not None else old_content
+        
+        # 插入新版本
+        insert_query = """
+            INSERT INTO public.notes (id, created_at, author, content, likes)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, created_at, version, author, content, likes
+        """
+        
+        cur.execute(insert_query, (
+            old_id,
+            old_created_at,
+            new_author,
+            new_content,
+            old_likes
+        ))
+        
+        new_row = cur.fetchone()
+        conn.commit()
+        
+        result = {
+            "id": new_row[0],
+            "created_at": new_row[1].isoformat() if new_row[1] else None,
+            "version": new_row[2].isoformat() if new_row[2] else None,
+            "author": new_row[3],
+            "content": new_row[4],
+            "likes": new_row[5] or 0
+        }
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "data": result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/notes/{note_id}/like")
+async def like_note(note_id: int):
+    """点赞笔记"""
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        # 找到最新版本并更新点赞数
+        query = """
+            WITH latest_note AS (
+                SELECT id, version
+                FROM public.notes
+                WHERE id = %s
+                ORDER BY version DESC
+                LIMIT 1
+            )
+            UPDATE public.notes
+            SET likes = COALESCE(likes, 0) + 1
+            WHERE id = (SELECT id FROM latest_note)
+                AND version = (SELECT version FROM latest_note)
+            RETURNING id, likes
+        """
+        
+        cur.execute(query, (note_id,))
+        row = cur.fetchone()
+        
+        if not row:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="笔记不存在")
+        
+        conn.commit()
+        
+        result = {
+            "id": row[0],
+            "likes": row[1] or 0
+        }
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "data": result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/notes")
+async def list_notes(
+    search: Optional[str] = Query(None, description="搜索关键词（在内容和作者中模糊搜索）"),
+    sort_by: str = Query("likes", regex="^(likes|created_at)$", description="排序方式"),
+    limit: int = Query(20, ge=1, le=100, description="返回数量限制"),
+    offset: int = Query(0, ge=0, description="偏移量")
+):
+    """查询笔记列表（只返回每个id的最新版本）"""
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        # 构建排序字段
+        order_by = "likes DESC" if sort_by == "likes" else "created_at DESC"
+        
+        # 构建查询（使用子查询获取每个id的最新version）
+        if search:
+            query = f"""
+                WITH latest_notes AS (
+                    SELECT DISTINCT ON (id) 
+                        id, created_at, version, author, content, likes
+                    FROM public.notes
+                    WHERE content ILIKE %s OR author ILIKE %s
+                    ORDER BY id, version DESC
+                )
+                SELECT id, created_at, version, author, content, likes
+                FROM latest_notes
+                ORDER BY {order_by}
+                LIMIT %s OFFSET %s
+            """
+            search_pattern = f"%{search}%"
+            cur.execute(query, (search_pattern, search_pattern, limit, offset))
+            rows = cur.fetchall()
+            
+            count_query = """
+                WITH latest_notes AS (
+                    SELECT DISTINCT ON (id) id
+                    FROM public.notes
+                    WHERE content ILIKE %s OR author ILIKE %s
+                    ORDER BY id, version DESC
+                )
+                SELECT COUNT(*) FROM latest_notes
+            """
+            cur.execute(count_query, (search_pattern, search_pattern))
+            total = cur.fetchone()[0]
+        else:
+            query = f"""
+                WITH latest_notes AS (
+                    SELECT DISTINCT ON (id) 
+                        id, created_at, version, author, content, likes
+                    FROM public.notes
+                    ORDER BY id, version DESC
+                )
+                SELECT id, created_at, version, author, content, likes
+                FROM latest_notes
+                ORDER BY {order_by}
+                LIMIT %s OFFSET %s
+            """
+            cur.execute(query, (limit, offset))
+            rows = cur.fetchall()
+            
+            count_query = """
+                SELECT COUNT(DISTINCT id) FROM public.notes
+            """
+            cur.execute(count_query)
+            total = cur.fetchone()[0]
+        
+        items = [
+            {
+                "id": row[0],
+                "created_at": row[1].isoformat() if row[1] else None,
+                "version": row[2].isoformat() if row[2] else None,
+                "author": row[3],
+                "content": row[4],
+                "likes": row[5] or 0
+            }
+            for row in rows
+        ]
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "data": {
+                "total": total,
+                "items": items
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/notes/{note_id}")
+async def get_note(note_id: int):
+    """获取单个笔记详情（最新版本）"""
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        
+        query = """
+            SELECT id, created_at, version, author, content, likes
+            FROM public.notes
+            WHERE id = %s
+            ORDER BY version DESC
+            LIMIT 1
+        """
+        cur.execute(query, (note_id,))
+        row = cur.fetchone()
+        
+        if not row:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="笔记不存在")
+        
+        result = {
+            "id": row[0],
+            "created_at": row[1].isoformat() if row[1] else None,
+            "version": row[2].isoformat() if row[2] else None,
+            "author": row[3],
+            "content": row[4],
+            "likes": row[5] or 0
+        }
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "data": result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
