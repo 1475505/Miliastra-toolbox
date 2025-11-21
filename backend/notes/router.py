@@ -7,7 +7,7 @@ from typing import Optional, List
 import psycopg2
 import os
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 load_dotenv()
 
@@ -15,6 +15,21 @@ router = APIRouter()
 
 # 数据库连接配置
 DB_URL = os.getenv("PG_URL")
+
+# 北京时区 (UTC+8)
+BEIJING_TZ = timezone(timedelta(hours=8))
+
+
+def to_beijing_time(dt):
+    """将时间转换为北京时区"""
+    if dt is None:
+        return None
+    # 如果是aware datetime，转换到北京时区
+    if dt.tzinfo is not None:
+        return dt.astimezone(BEIJING_TZ).isoformat()
+    # 如果是naive datetime，假设它是UTC时间，然后转换为北京时区
+    else:
+        return dt.replace(tzinfo=timezone.utc).astimezone(BEIJING_TZ).isoformat()
 
 
 class NoteCreate(BaseModel):
@@ -64,8 +79,8 @@ async def create_note(note: NoteCreate):
         
         result = {
             "id": row[0],
-            "created_at": row[1].isoformat() if row[1] else None,
-            "version": row[2].isoformat() if row[2] else None,
+            "created_at": to_beijing_time(row[1]),
+            "version": to_beijing_time(row[2]),
             "author": row[3],
             "content": row[4],
             "likes": row[5] or 0
@@ -136,8 +151,8 @@ async def update_note(note_id: int, note: NoteUpdate):
         
         result = {
             "id": new_row[0],
-            "created_at": new_row[1].isoformat() if new_row[1] else None,
-            "version": new_row[2].isoformat() if new_row[2] else None,
+            "created_at": to_beijing_time(new_row[1]),
+            "version": to_beijing_time(new_row[2]),
             "author": new_row[3],
             "content": new_row[4],
             "likes": new_row[5] or 0
@@ -279,8 +294,8 @@ async def list_notes(
         items = [
             {
                 "id": row[0],
-                "created_at": row[1].isoformat() if row[1] else None,
-                "version": row[2].isoformat() if row[2] else None,
+                "created_at": to_beijing_time(row[1]),
+                "version": to_beijing_time(row[2]),
                 "author": row[3],
                 "content": row[4],
                 "likes": row[5] or 0
@@ -327,8 +342,8 @@ async def get_note(note_id: int):
         
         result = {
             "id": row[0],
-            "created_at": row[1].isoformat() if row[1] else None,
-            "version": row[2].isoformat() if row[2] else None,
+            "created_at": to_beijing_time(row[1]),
+            "version": to_beijing_time(row[2]),
             "author": row[3],
             "content": row[4],
             "likes": row[5] or 0
