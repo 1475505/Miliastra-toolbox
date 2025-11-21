@@ -2,6 +2,8 @@
 
 基于 LlamaIndex 和 ChromaDB 的向量知识库构建和检索系统，专为中文技术文档优化，支持混合召回（向量+BM25）。
 
+> 开发中特性：支持单个文档新增嵌入，未测试，计划「月之三」统一测试。如有bug，请提issue或暂时revert commit "rag support add doc"。
+
 ## 🚀 快速开始
 
 ### 0.爬取文档
@@ -40,17 +42,7 @@ python3 rag_cli.py retrieve "如何开始使用这个系统？" --no-answer
 python3 rag_cli.py query "什么是节点图？"
 ```
 
-## 📖 核心功能
-
-- **向量化存储**: 将文档转换为高维向量，支持语义检索
-- **混合召回**: 支持向量召回+BM25召回，提升精确匹配和语义理解
-- **智能检索**: 基于相似度和关键词匹配的文档片段检索
-- **问答集成**: 结合检索结果生成准确答案
-- **知识库管理**: 支持增量更新、删除和版本管理
-
-## 🛠️ 使用方式
-
-### 命令行工具
+## 🛠️ 具体命令
 
 ```bash
 # 初始化知识库
@@ -71,6 +63,12 @@ python3 rag_cli.py health
 # 重建知识库
 python3 rag_cli.py rebuild [--force]
 
+# 单文档嵌入
+python3 rag_cli.py embed --doc path/to/your/document.md [--force]
+
+# 检查文档是否已嵌入
+python3 rag_cli.py check <doc_id>
+
 # 测试单个文档的分块效果
 python3 test_rag.py parse --doc path/to/your/document.md
 
@@ -80,10 +78,33 @@ python3 test_rag.py embed --doc path/to/your/document.md
 # 测试检索功能（使用现有知识库）
 python3 test_rag.py retrieve "关键词"
 
-# 测试完整RAG查询 + AI问答 功能（使用现有知识库）
+# 测试完整RAG查询 + AI问答 功能（使用现有知识库，需要配置chat key，实际只需要测试到retrieve）
 python3 test_rag.py query "你的问题"
 ```
 
+### 🧩 新增文档嵌入指南
+
+本系统支持新嵌入单个文档进行增量更新，无需重建整个知识库。
+
+#### 文档格式规范
+
+文档必须是 Markdown 格式，且**必须**包含 YAML Frontmatter（头部元数据区），用于定义 ID 和更新策略。
+
+```markdown
+---
+id: mh0pppib5eyc           # [必填] 唯一文档ID。如果未填写，系统将使用文件绝对路径作为ID。
+title: 常见问题的列表        # [选填] 标题
+force: false               # [选填] 更新策略。
+                           # false (默认): 如果库中已有此ID，跳过不处理。
+                           # true: 即使库中已有此ID，删除旧数据并重新嵌入。
+---
+
+# 问题1
+
+答案1...
+```
+
+YAML frontmatter.id → Document.doc_id → Node.ref_doc_id → ChromaDB metadata.ref_doc_id
 
 ## ⚙️ 配置说明
 
@@ -129,10 +150,11 @@ python3 test_rag.py query "你的问题"
    - 将不同检索器的评分映射到相同范围
    - 适合需要精确评分控制的场景
 
-### 文档路径
+### 输入markdown文档路径
 
-- **源文档目录**: `knowledge/guide/` (存放markdown文档)
-- **知识库存储**: `knowledge/rag_v1/data/knowledge_base/` (ChromaDB数据)
+- **综合指南**: `knowledge/guide/`
+- **教程**: `knowledge/tutorial/`
+- **用户（非官方）总结**：`knowledge/user/` 
 
 ### 分块策略说明
 
@@ -175,7 +197,6 @@ knowledge/rag_v1/
 - **向量数据库**: ChromaDB (嵌入式模式)
 - **召回策略**: 向量召回 + BM25召回
 - **嵌入模型**: BAAI/bge-m3 (中文优化)
-- **对话模型**: OpenAI gpt-3.5-turbo
 - **文档处理**: Markdown + YAML frontmatter
 
 ## 🧪 测试功能
@@ -232,3 +253,80 @@ python3 test_rag.py query "小地图标识是什么？"
 - 详细使用指南: 运行 `python example_usage.py` 查看完整示例
 - LlamaIndex文档: https://docs.llamaindex.ai/
 - ChromaDB文档: https://docs.trychroma.com/
+
+## 知识，与你分享
+
+在使用 LlamaIndex 配合嵌入式 Chroma（ChromaDB）时，如何在 SQLite 中进行查询？
+
+### 1. 核心概念映射
+
+在深入 SQL 结构之前，需要理解 LlamaIndex 的对象是如何映射到 Chroma 的：
+
+| LlamaIndex 概念 | Chroma 概念 | 说明 |
+| :--- | :--- | :--- |
+| **VectorStoreIndex** | **Collection** | 对应 Chroma 中的一个集合（表）。默认名字通常是 `quickstart` 或由用户指定。 |
+| **Node (TextNode)** | **Item / Embedding** | LlamaIndex 将文档切分为 Node。**一个 Node 对应 Chroma 中的一行数据**。 |
+| **node_id** | **id** | Node 的唯一标识符（UUID字符串）。这是去重的关键。 |
+| **Node Content** | **document** | 文本块的原始内容。 |
+| **Node Metadata** | **metadata** | 包含 `file_name`, `page_label` 以及 LlamaIndex 的 `_node_content` 等信息。 |
+| **Embedding Vector** | **embedding** | 浮点数列表（向量）。 |
+
+### 2. SQLite 文件中的表结构 (`chroma.sqlite3`)
+
+当你打开持久化目录下的 `chroma.sqlite3` 文件时，最关键的两个表是 `collections` 和 `embeddings`。
+
+#### A. `collections` 表
+这张表存储了集合的信息。
+*   **id**: 集合的 UUID（这是外键，用于关联其他表）。
+*   **name**: 集合名称（你在 LlamaIndex 中定义的 `collection_name`）。
+*   **topic**: (内部使用)
+
+#### B. `embeddings` 表
+这张表存储了具体的文档 ID 和关联信息（注意：在 Chroma 0.4+ 中，向量值本身可能不直接显示在这个表的主列中，或者以二进制 blob 存储，但 ID 在这里）。
+*   **id**: 数据库内部自增主键（Integer）。
+*   **segment_id**: 关联到集合或段的 UUID。
+*   **embedding_id**: **这是关键字段**。它存储的是 LlamaIndex 的 `node_id`（字符串类型）。
+*   **seq_id**: 序列号。
+*   **created_at**: 创建时间。
+
+#### C. `embedding_metadata` 表
+这张表存储了与向量关联的元数据（如文件名）。
+*   **id**: 关联到 `embeddings` 表的内部 id。
+*   **key**: 元数据的键（例如 `file_name`, `ref_doc_id`）。
+*   **string_value**, **int_value**, **float_value**: 元数据的值。
+
+---
+
+### 3. 如何判断文档是否已被嵌入
+
+在 LlamaIndex 中，"文档"（Document）通常被切分为多个"节点"（Node）。
+*   如果你想判断**某个具体的切片（Node）**是否存在，检查 `node_id`。
+*   如果你想判断**某个源文件（Source Document）**是否已被处理，通常检查元数据中的 `ref_doc_id` 或 `file_name`。
+
+LlamaIndex 会自动将源文档的 ID 放入 Node 的元数据中，通常字段名为 `ref_doc_id`，或者你可以使用 `file_name`。这需要关联 `embedding_metadata` 表。
+
+**SQL 查询逻辑（查找特定文件名的文档是否存在）：**
+
+```sql
+SELECT 
+    count(DISTINCT e.embedding_id) as chunk_count
+FROM 
+    embeddings e
+JOIN 
+    embedding_metadata em ON e.id = em.id
+WHERE 
+    em.key = 'file_name' 
+    AND em.string_value = '你的文件名.md';
+```
+
+或者通过 LlamaIndex 的 `ref_doc_id`（源文档 ID）：
+
+```sql
+SELECT 
+    count(*) 
+FROM 
+    embedding_metadata 
+WHERE 
+    key = 'ref_doc_id' 
+    AND string_value = '源文档的_DOC_ID';
+```

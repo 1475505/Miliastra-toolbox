@@ -10,6 +10,7 @@ from .parser import DocumentParser
 from .db import get_storage_context, get_vector_store_index, clear_collection, get_collection_stats
 
 from llama_index.core import Settings as LlamaSettings
+from llama_index.core.schema import Document
 from llama_index.core.query_engine import BaseQueryEngine
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.embeddings.openai import OpenAIEmbedding
@@ -90,45 +91,236 @@ class RAGEngine:
         return None
 
     def build_knowledge_base(self, force_rebuild: bool = False, source_directories: Optional[List[str]] = None):
-        if self.index and not force_rebuild:
-            logging.warning("知识库已存在。使用 'force_rebuild=True' 强制重建。")
-            return {"status": "skipped", "reason": "知识库已存在。"}
-
-        if force_rebuild:
-            logging.info("强制重建：清空现有集合...")
-            clear_collection(config.KNOWLEDGE_BASE_PATH, config.CHROMA_COLLECTION_NAME)
-            self.index = None
-            self.documents = []  # 清空文档节点
-            # 重新创建 storage_context 以确保使用新的 collection
-            self.storage_context = get_storage_context(
-                persist_dir=config.KNOWLEDGE_BASE_PATH,
-                collection_name=config.CHROMA_COLLECTION_NAME
-            )
-
+        """
+        构建知识库，支持增量更新。
+        
+        Args:
+            force_rebuild: 如果为 True，强制重新嵌入所有文档（忽略文档 frontmatter 的 force 标签）
+            source_directories: 要处理的源目录列表
+            
+        Returns:
+            包含处理结果的字典
+        """
+        from .db import check_document_exists, delete_document_by_id
+        
         source_dirs = source_directories or config.KNOWLEDGE_SOURCE_DIRS
-        all_nodes = []
+        
+        # 加载所有文档
+        all_documents = []
         for directory in source_dirs:
-            logging.info(f"解析目录: {directory}")
-            nodes = self.parser.load_and_parse(directory)
-            all_nodes.extend(nodes)
-
-        if not all_nodes:
+            logging.info(f"加载目录: {directory}")
+            docs = self.parser.load_documents(directory)
+            all_documents.extend(docs)
+        
+        if not all_documents:
             logging.error("在指定目录中未找到可处理的文档。")
             return {"status": "error", "message": "未找到文档。"}
-
-        logging.info(f"开始构建新索引，共 {len(all_nodes)} 个节点...")
-        self.index = get_vector_store_index(self.storage_context, embed_model=LlamaSettings.embed_model)
-        self.index.insert_nodes(all_nodes)
-
-        # 保存文档节点用于BM25检索
-        self.documents = all_nodes
-
-        # 索引持久化由ChromaDB自动处理
+        
+        logging.info(f"共加载 {len(all_documents)} 个文档")
+        
+        # 确保索引已初始化
+        self._ensure_index_initialized()
+        
+        # 统计信息
+        processed_count = 0
+        skipped_count = 0
+        updated_count = 0
+        error_count = 0
+        
+        # 逐个文档处理（复用通用方法）
+        for doc in all_documents:
+            try:
+                result = self._process_document_embedding(doc, force=force_rebuild)
+                
+                if result["status"] == "success":
+                    processed_count += 1
+                    if result.get("updated"):
+                        updated_count += 1
+                elif result["status"] == "skipped":
+                    skipped_count += 1
+                else:
+                    error_count += 1
+                    
+            except Exception as e:
+                logging.error(f"❌ 处理文档失败: {e}", exc_info=True)
+                error_count += 1
+                continue
+        
+        # 更新查询引擎
         self.query_engine = self._create_query_engine()
-        logging.info("知识库构建成功并且查询引擎已更新。")
-
+        
+        # 返回统计信息
         stats = get_collection_stats(config.KNOWLEDGE_BASE_PATH, config.CHROMA_COLLECTION_NAME)
-        return {"status": "success", "stats": stats}
+        
+        result = {
+            "status": "success",
+            "stats": stats,
+            "summary": {
+                "total_documents": len(all_documents),
+                "processed": processed_count,
+                "skipped": skipped_count,
+                "updated": updated_count,
+                "errors": error_count
+            }
+        }
+        
+        logging.info(f"\n{'='*60}")
+        logging.info(f"知识库构建完成！")
+        logging.info(f"  总文档数: {len(all_documents)}")
+        logging.info(f"  已处理: {processed_count} ({updated_count} 个更新)")
+        logging.info(f"  已跳过: {skipped_count}")
+        logging.info(f"  失败: {error_count}")
+        logging.info(f"  知识库总节点数: {stats.get('total_documents', 0)}")
+        logging.info(f"{'='*60}\n")
+        
+        return result
+    
+    def _ensure_index_initialized(self):
+        """确保索引已初始化"""
+        if not self.index:
+            logging.info("索引未初始化，正在创建新索引...")
+            self.index = get_vector_store_index(
+                self.storage_context,
+                embed_model=LlamaSettings.embed_model
+            )
+    
+    def _insert_nodes(self, nodes: List):
+        """插入节点到索引并更新查询引擎"""
+        self._ensure_index_initialized()
+        self.index.insert_nodes(nodes)
+        self.documents.extend(nodes)
+        self.query_engine = self._create_query_engine()
+    
+    def _process_document_embedding(self, document: Document, force: bool = False) -> Dict[str, Any]:
+        """
+        通用的文档嵌入处理逻辑（支持增量更新）。
+        
+        Args:
+            document: 要处理的文档
+            force: 是否强制重新嵌入（忽略文档 frontmatter 的 force 标签）
+            
+        Returns:
+            包含处理结果的字典
+        """
+        from .db import check_document_exists, delete_document_by_id
+        
+        doc_id = document.doc_id
+        doc_title = document.metadata.get('title', doc_id)
+        
+        # 检查文档是否已存在
+        exists = check_document_exists(
+            config.KNOWLEDGE_BASE_PATH,
+            config.CHROMA_COLLECTION_NAME,
+            doc_id
+        )
+        
+        # 决定是否需要处理
+        should_process = False
+        reason = ""
+        
+        if force:
+            # 命令行指定了 force，强制重新嵌入
+            should_process = True
+            reason = "命令行指定--force参数"
+        elif not exists:
+            # 文档不存在，需要嵌入
+            should_process = True
+            reason = "文档不存在于知识库"
+        else:
+            # 文档已存在，检查元数据中的 force 标签
+            doc_force = document.metadata.get('force', False)
+            if doc_force:
+                should_process = True
+                reason = "文档元数据force=true"
+            else:
+                should_process = False
+                reason = "文档已存在且force=false"
+        
+        if not should_process:
+            logging.info(f"跳过文档: {doc_title} ({doc_id}) - {reason}")
+            return {
+                "status": "skipped",
+                "doc_id": doc_id,
+                "doc_title": doc_title,
+                "reason": reason,
+                "updated": False
+            }
+        
+        # 如果文档已存在且需要重新嵌入，先删除旧数据
+        if exists:
+            logging.info(f"删除旧数据: {doc_title} ({doc_id})")
+            deleted_count = delete_document_by_id(
+                config.KNOWLEDGE_BASE_PATH,
+                config.CHROMA_COLLECTION_NAME,
+                doc_id
+            )
+            logging.info(f"已删除 {deleted_count} 个节点")
+        
+        # 解析文档为节点
+        nodes = self.parser.parse_documents([document])
+        
+        if not nodes:
+            logging.warning(f"文档解析后没有生成节点: {doc_title}")
+            return {
+                "status": "error",
+                "doc_id": doc_id,
+                "doc_title": doc_title,
+                "message": "文档解析后没有生成节点",
+                "updated": False
+            }
+        
+        # 插入节点到索引（复用通用方法）
+        logging.info(f"嵌入文档: {doc_title} ({doc_id}) - 共 {len(nodes)} 个节点")
+        self._insert_nodes(nodes)
+        
+        logging.info(f"文档嵌入成功: {doc_title} ({doc_id})")
+        
+        return {
+            "status": "success",
+            "doc_id": doc_id,
+            "doc_title": doc_title,
+            "nodes_count": len(nodes),
+            "reason": reason,
+            "updated": exists  # 是否是更新操作
+        }
+    
+    def embed_single_document(self, file_path: str, force: bool = False) -> Dict[str, Any]:
+        """
+        嵌入单个文档到知识库。
+        
+        Args:
+            file_path: 文档文件路径
+            force: 是否强制重新嵌入（忽略文档中的force标签）
+            
+        Returns:
+            包含操作结果的字典
+        """
+        import os
+        
+        try:
+            # 验证文件路径
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"文件不存在: {file_path}")
+            
+            if not file_path.endswith('.md'):
+                raise ValueError(f"只支持.md文件: {file_path}")
+            
+            # 使用统一的加载逻辑：加载文件所在目录，然后过滤出目标文档
+            documents = self.parser.load_documents(os.path.dirname(file_path))
+            document = next((d for d in documents if d.metadata.get('file_path') == file_path), None)
+            
+            if not document:
+                raise ValueError(f"无法加载文档: {file_path}")
+            
+            # 复用通用的文档嵌入逻辑
+            return self._process_document_embedding(document, force=force)
+            
+        except Exception as e:
+            logging.error(f"嵌入文档失败: {e}", exc_info=True)
+            return {
+                "status": "error",
+                "message": str(e)
+            }
 
     def _create_query_engine(self) -> Optional[BaseQueryEngine]:
         """根据配置创建查询引擎"""

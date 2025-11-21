@@ -115,6 +115,56 @@ class RAGAPI:
         except Exception as e:
             self.logger.error(f"获取知识库状态失败: {e}", exc_info=True)
             return {"success": False, "message": str(e)}
+    
+    def check_document(self, doc_id: str) -> Dict[str, Any]:
+        """
+        检查文档ID是否已经嵌入到知识库。
+        
+        Args:
+            doc_id: 文档ID
+            
+        Returns:
+            包含检查结果的字典
+        """
+        try:
+            from .db import check_document_exists
+            exists = check_document_exists(
+                config.KNOWLEDGE_BASE_PATH,
+                config.CHROMA_COLLECTION_NAME,
+                doc_id
+            )
+            return {
+                "success": True,
+                "data": {
+                    "doc_id": doc_id,
+                    "exists": exists
+                }
+            }
+        except Exception as e:
+            self.logger.error(f"检查文档失败: {e}", exc_info=True)
+            return {"success": False, "message": str(e)}
+    
+    def embed_document(
+        self,
+        file_path: str,
+        force: bool = False
+    ) -> Dict[str, Any]:
+        """
+        嵌入单个文档到知识库。
+        
+        Args:
+            file_path: 文档文件路径
+            force: 是否强制重新嵌入
+            
+        Returns:
+            包含操作结果的字典
+        """
+        try:
+            result = self.rag_engine.embed_single_document(file_path, force)
+            return {"success": True, "data": result}
+        except Exception as e:
+            self.logger.error(f"嵌入文档失败: {e}", exc_info=True)
+            return {"success": False, "message": str(e)}
 
 _api_instance: Optional[RAGAPI] = None
 

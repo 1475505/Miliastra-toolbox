@@ -14,7 +14,7 @@
 
 ### 前端知识问答（不保存对话）
 
-[地址](https://ugc.070077.xyz) 。建议BYOK，免费模型的服务承载能力较低。
+[地址](https://ugc.070077.xyz) 。建议Bring Your Own Key，免费模型的服务承载能力较低，且限量。如遇卡顿，建议自己部署~
 
 ![demo](https://7s-1304005994.cos.ap-singapore.myqcloud.com/68cd1a565e1334de448e717cceffcc82.png)
 
@@ -37,12 +37,12 @@
 
 > 仓库里已经有构建好的前端了，此步骤可以跳过
 
-进入`frontend`目录，通过`npm install && npm run build` 得到前端文件，会更新到`backend/static`已经有的前端文件。（前后端一体部署，非分离部署）
+进入`frontend`目录，通过`npm install && npm run build` 得到前端文件，会更新到`backend/static`覆盖已经有的前端文件。（前后端一体部署，非分离部署）
 
 
 ### 3. 部署后端
 
-进入`backend`目录，配置`.env`为自己的大模型chat服务后，则完成后端启动，可参考对应文件夹下的`api.md`进行访问。
+进入`backend`目录，配置`.env`为自己的大模型chat服务后（用于提供免费模型），则完成后端启动，可参考对应文件夹下的`api.md`进行访问。
 
 目前直接访问可以使用一个简易的前端。
 
@@ -54,8 +54,10 @@
 - **召回示例**: `cd knowledge/rag_v1 && python3 rag_cli.py retrieve 小地图`
 
 【2】搭建前后端，需要BYOK。提供限额的openrouter免费模型。
-- **已实现**: Fastapi后端（提供免费模型，未限额）、简易对话前端（待实现对话保存）
+- **已实现**: Fastapi后端（提供免费模型，未限额）、前端
 
 【3】数据问答系统：集合和统计所有方便的参数，可与AI对话设计。比如：一次冲刺可以移动多少坐标距离
 
 【4】素材寻找系统：通过多模态RAG快速寻找符合描述的素材
+
+> 本项目大部分代码由AI生成

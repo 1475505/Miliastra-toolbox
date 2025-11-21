@@ -217,12 +217,21 @@ class DocumentParser:
         docs = reader.load_data()
         
         # 从文档文本中移除 YAML frontmatter（已提取到 metadata 中）
+        # 同时设置 doc_id 属性用于文档级别的管理
         cleaned_docs = []
         for doc in docs:
             _, cleaned_text = extract_yaml_frontmatter(doc.text)
+            
+            # 使用 YAML 中的 id 或文件路径作为 doc_id
+            if 'id' in doc.metadata:
+                doc_id = doc.metadata['id']
+            else:
+                doc_id = doc.metadata.get('file_path', str(Path(directory_path).absolute()))
+            
             cleaned_doc = Document(
                 text=cleaned_text,
-                metadata=doc.metadata
+                metadata=doc.metadata,
+                doc_id=doc_id  # 设置 Document 的 doc_id 属性
             )
             cleaned_docs.append(cleaned_doc)
         

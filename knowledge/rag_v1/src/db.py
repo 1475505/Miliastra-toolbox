@@ -107,3 +107,61 @@ def get_collection_data(persist_dir: str, collection_name: str, limit: int = 10)
         }
     except Exception as e:
         return {"error": str(e), "count": 0}
+
+def check_document_exists(persist_dir: str, collection_name: str, doc_id: str) -> bool:
+    """
+    检查指定的文档ID是否已经嵌入到知识库中。
+    
+    Args:
+        persist_dir: 数据库目录
+        collection_name: 集合名称
+        doc_id: 文档ID（对应 LlamaIndex 的 ref_doc_id）
+        
+    Returns:
+        如果文档ID存在返回True，否则返回False
+    """
+    try:
+        db = chromadb.PersistentClient(path=persist_dir)
+        collection = db.get_collection(name=collection_name)
+        
+        # 查询所有元数据中包含指定 ref_doc_id 的文档
+        results = collection.get(
+            where={"ref_doc_id": doc_id},
+            include=['metadatas']
+        )
+        
+        return len(results['ids']) > 0
+    except Exception as e:
+        # 集合不存在或其他错误，返回False
+        return False
+
+def delete_document_by_id(persist_dir: str, collection_name: str, doc_id: str) -> int:
+    """
+    删除知识库中指定 ref_doc_id 的所有节点。
+    
+    Args:
+        persist_dir: 数据库目录
+        collection_name: 集合名称
+        doc_id: 文档ID（对应 LlamaIndex 的 ref_doc_id）
+        
+    Returns:
+        删除的节点数量
+    """
+    try:
+        db = chromadb.PersistentClient(path=persist_dir)
+        collection = db.get_collection(name=collection_name)
+        
+        # 查询所有包含指定 ref_doc_id 的文档
+        results = collection.get(
+            where={"ref_doc_id": doc_id},
+            include=['metadatas']
+        )
+        
+        if len(results['ids']) > 0:
+            # 删除这些文档
+            collection.delete(ids=results['ids'])
+            return len(results['ids'])
+        
+        return 0
+    except Exception as e:
+        raise Exception(f"删除文档失败: {str(e)}")
