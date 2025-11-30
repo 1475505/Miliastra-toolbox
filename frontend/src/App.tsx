@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import Sidebar from './components/Sidebar'
 import Chat from './components/Chat'
-import Share from './components/Share'
 import Notes from './components/Notes'
 import { Tab } from './types'
 
@@ -68,9 +67,6 @@ export default function App() {
         </div>
         <div className={`h-full ${activeTab === 'notes' ? '' : 'hidden'}`}>
           <Notes />
-        </div>
-        <div className={`h-full ${activeTab === 'share' ? '' : 'hidden'}`}>
-          <Share />
         </div>
       </main>
     </div>

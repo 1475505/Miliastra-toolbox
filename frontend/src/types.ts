@@ -19,15 +19,6 @@ export interface Source {
   url: string
 }
 
-export interface Share {
-  id: number
-  created_at: string
-  title: string
-  description?: string
-  bilibili_url?: string
-  gil_url?: string
-}
-
 export interface Note {
   id: number
   created_at: string
@@ -35,6 +26,8 @@ export interface Note {
   author?: string
   content: string
   likes: number
+  img_url?: string
+  video_url?: string
 }
 
 export interface Conversation {
@@ -45,4 +38,4 @@ export interface Conversation {
   updatedAt: number
 }
 
-export type Tab = 'chat' | 'notes' | 'share'
+export type Tab = 'chat' | 'notes'

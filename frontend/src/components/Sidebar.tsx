@@ -31,6 +31,7 @@ export default function Sidebar({
   const [showClearHint, setShowClearHint] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
+  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false)
 
   useEffect(() => {
     if (activeTab === 'chat') {
@@ -75,7 +76,6 @@ export default function Sidebar({
   const tabs: { id: Tab; label: string }[] = [
     { id: 'chat', label: '知识库问答' },
     { id: 'notes', label: '笔记' },
-    { id: 'share', label: '素材分享' },
   ]
 
   return (
@@ -133,72 +133,82 @@ export default function Sidebar({
                     </div>
                   )}
                   
-                  <div className="text-xs text-slate-500 mb-2 px-2">对话历史</div>
-                  {conversations.length === 0 ? (
-                    <div className="text-xs text-slate-400 px-2 py-2">暂无对话</div>
-                  ) : (
-                    <div className="space-y-1">
-                      {conversations.map((conv) => (
-                        <div
-                          key={conv.id}
-                          onClick={() => onConversationSelect?.(conv.id)}
-                          className={`group flex items-center justify-between px-3 py-2 rounded-xl text-xs cursor-pointer transition-all ${
-                            currentConversationId === conv.id
-                              ? 'bg-blue-100 text-blue-900'
-                              : 'text-slate-600 hover:bg-white/30'
-                          }`}
-                        >
-                          {editingId === conv.id ? (
-                            <input
-                              type="text"
-                              value={editTitle}
-                              onChange={(e) => setEditTitle(e.target.value)}
-                              onBlur={() => handleSaveTitle(conv.id)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSaveTitle(conv.id)
-                                if (e.key === 'Escape') setEditingId(null)
-                              }}
-                              className="flex-1 bg-white/50 border border-blue-300 rounded px-1 py-0.5 outline-none min-w-0"
-                              autoFocus
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          ) : (
-                            <span 
-                              className="truncate flex-1" 
-                              onDoubleClick={(e) => {
-                                e.stopPropagation()
-                                startEditing(conv)
-                              }}
-                              title={conv.title}
-                            >
-                              {conv.title}
-                            </span>
-                          )}
-                          
-                          <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2">
-                            {!editingId && (
-                              <button
-                                onClick={(e) => {
+                  <div 
+                    className="flex items-center justify-between text-xs text-slate-500 mb-2 px-2 cursor-pointer hover:text-slate-700 select-none"
+                    onClick={() => setIsHistoryCollapsed(!isHistoryCollapsed)}
+                  >
+                    <span>对话历史</span>
+                    <span className={`transform transition-transform duration-200 ${isHistoryCollapsed ? '-rotate-90' : 'rotate-0'}`}>
+                      ▼
+                    </span>
+                  </div>
+                  {!isHistoryCollapsed && (
+                    conversations.length === 0 ? (
+                      <div className="text-xs text-slate-400 px-2 py-2">暂无对话</div>
+                    ) : (
+                      <div className="space-y-1">
+                        {conversations.map((conv) => (
+                          <div
+                            key={conv.id}
+                            onClick={() => onConversationSelect?.(conv.id)}
+                            className={`group flex items-center justify-between px-3 py-2 rounded-xl text-xs cursor-pointer transition-all ${
+                              currentConversationId === conv.id
+                                ? 'bg-blue-100 text-blue-900'
+                                : 'text-slate-600 hover:bg-white/30'
+                            }`}
+                          >
+                            {editingId === conv.id ? (
+                              <input
+                                type="text"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                onBlur={() => handleSaveTitle(conv.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveTitle(conv.id)
+                                  if (e.key === 'Escape') setEditingId(null)
+                                }}
+                                className="flex-1 bg-white/50 border border-blue-300 rounded px-1 py-0.5 outline-none min-w-0"
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : (
+                              <span 
+                                className="truncate flex-1" 
+                                onDoubleClick={(e) => {
                                   e.stopPropagation()
                                   startEditing(conv)
                                 }}
-                                className="text-slate-400 hover:text-blue-600 mr-1"
-                                title="重命名"
+                                title={conv.title}
                               >
-                                ✏️
-                              </button>
+                                {conv.title}
+                              </span>
                             )}
-                            <button
-                              onClick={(e) => handleDeleteConversation(conv.id, e)}
-                              className="text-red-400 hover:text-red-600"
-                              title="删除"
-                            >
-                                🗑️
-                            </button>
+                            
+                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2">
+                              {!editingId && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    startEditing(conv)
+                                  }}
+                                  className="text-slate-400 hover:text-blue-600 mr-1"
+                                  title="重命名"
+                                >
+                                  ✏️
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => handleDeleteConversation(conv.id, e)}
+                                className="text-red-400 hover:text-red-600"
+                                title="删除"
+                              >
+                                  🗑️
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )
                   )}
                 </div>
               )}

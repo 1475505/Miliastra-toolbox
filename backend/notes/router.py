@@ -35,11 +35,15 @@ def to_beijing_time(dt):
 class NoteCreate(BaseModel):
     author: Optional[str] = None
     content: str
+    img_url: Optional[str] = None
+    video_url: Optional[str] = None
 
 
 class NoteUpdate(BaseModel):
     author: Optional[str] = None
     content: Optional[str] = None
+    img_url: Optional[str] = None
+    video_url: Optional[str] = None
 
 
 class NoteResponse(BaseModel):
@@ -49,6 +53,8 @@ class NoteResponse(BaseModel):
     author: Optional[str]
     content: Optional[str]
     likes: int
+    img_url: Optional[str]
+    video_url: Optional[str]
 
 
 def get_db():
@@ -67,12 +73,12 @@ async def create_note(note: NoteCreate):
         cur = conn.cursor()
         
         query = """
-            INSERT INTO public.notes (created_at, author, content, likes)
-            VALUES (NOW(), %s, %s, 0)
-            RETURNING id, created_at, version, author, content, likes
+            INSERT INTO public.notes (created_at, author, content, likes, img_url, video_url)
+            VALUES (NOW(), %s, %s, 0, %s, %s)
+            RETURNING id, created_at, version, author, content, likes, img_url, video_url
         """
         
-        cur.execute(query, (note.author, note.content))
+        cur.execute(query, (note.author, note.content, note.img_url, note.video_url))
         
         row = cur.fetchone()
         conn.commit()
@@ -83,7 +89,9 @@ async def create_note(note: NoteCreate):
             "version": to_beijing_time(row[2]),
             "author": row[3],
             "content": row[4],
-            "likes": row[5] or 0
+            "likes": row[5] or 0,
+            "img_url": row[6],
+            "video_url": row[7]
         }
         
         cur.close()
@@ -110,7 +118,7 @@ async def update_note(note_id: int, note: NoteUpdate):
         
         # 获取最新版本的笔记
         query = """
-            SELECT id, created_at, author, content, likes
+            SELECT id, created_at, author, content, likes, img_url, video_url
             FROM public.notes
             WHERE id = %s
             ORDER BY version DESC
@@ -125,17 +133,19 @@ async def update_note(note_id: int, note: NoteUpdate):
             raise HTTPException(status_code=404, detail="笔记不存在")
         
         # 获取原笔记数据
-        old_id, old_created_at, old_author, old_content, old_likes = row
+        old_id, old_created_at, old_author, old_content, old_likes, old_img_url, old_video_url = row
         
         # 使用新值或沿用旧值
         new_author = note.author if note.author is not None else old_author
         new_content = note.content if note.content is not None else old_content
+        new_img_url = note.img_url if note.img_url is not None else old_img_url
+        new_video_url = note.video_url if note.video_url is not None else old_video_url
         
         # 插入新版本
         insert_query = """
-            INSERT INTO public.notes (id, created_at, author, content, likes)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING id, created_at, version, author, content, likes
+            INSERT INTO public.notes (id, created_at, author, content, likes, img_url, video_url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, created_at, version, author, content, likes, img_url, video_url
         """
         
         cur.execute(insert_query, (
@@ -143,7 +153,9 @@ async def update_note(note_id: int, note: NoteUpdate):
             old_created_at,
             new_author,
             new_content,
-            old_likes
+            old_likes,
+            new_img_url,
+            new_video_url
         ))
         
         new_row = cur.fetchone()
@@ -155,7 +167,9 @@ async def update_note(note_id: int, note: NoteUpdate):
             "version": to_beijing_time(new_row[2]),
             "author": new_row[3],
             "content": new_row[4],
-            "likes": new_row[5] or 0
+            "likes": new_row[5] or 0,
+            "img_url": new_row[6],
+            "video_url": new_row[7]
         }
         
         cur.close()
@@ -247,12 +261,12 @@ async def list_notes(
             query = f"""
                 WITH latest_notes AS (
                     SELECT DISTINCT ON (id) 
-                        id, created_at, version, author, content, likes
+                        id, created_at, version, author, content, likes, img_url, video_url
                     FROM public.notes
                     WHERE content ILIKE %s OR author ILIKE %s
                     ORDER BY id, version DESC
                 )
-                SELECT id, created_at, version, author, content, likes
+                SELECT id, created_at, version, author, content, likes, img_url, video_url
                 FROM latest_notes
                 ORDER BY {order_by}
                 LIMIT %s OFFSET %s
@@ -276,11 +290,11 @@ async def list_notes(
             query = f"""
                 WITH latest_notes AS (
                     SELECT DISTINCT ON (id) 
-                        id, created_at, version, author, content, likes
+                        id, created_at, version, author, content, likes, img_url, video_url
                     FROM public.notes
                     ORDER BY id, version DESC
                 )
-                SELECT id, created_at, version, author, content, likes
+                SELECT id, created_at, version, author, content, likes, img_url, video_url
                 FROM latest_notes
                 ORDER BY {order_by}
                 LIMIT %s OFFSET %s
@@ -301,7 +315,9 @@ async def list_notes(
                 "version": to_beijing_time(row[2]),
                 "author": row[3],
                 "content": row[4],
-                "likes": row[5] or 0
+                "likes": row[5] or 0,
+                "img_url": row[6],
+                "video_url": row[7]
             }
             for row in rows
         ]
@@ -329,7 +345,7 @@ async def get_note(note_id: int):
         cur = conn.cursor()
         
         query = """
-            SELECT id, created_at, version, author, content, likes
+            SELECT id, created_at, version, author, content, likes, img_url, video_url
             FROM public.notes
             WHERE id = %s
             ORDER BY version DESC
@@ -349,7 +365,9 @@ async def get_note(note_id: int):
             "version": to_beijing_time(row[2]),
             "author": row[3],
             "content": row[4],
-            "likes": row[5] or 0
+            "likes": row[5] or 0,
+            "img_url": row[6],
+            "video_url": row[7]
         }
         
         cur.close()

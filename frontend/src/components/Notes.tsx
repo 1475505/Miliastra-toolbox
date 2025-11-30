@@ -84,7 +84,7 @@ export default function Notes() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="border-b border-white/30 bg-white/20 p-4 lg:p-6">
+      <div className="border-b border-gray-200 p-6 pl-16 lg:pl-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <h2 className="text-xl lg:text-2xl font-bold text-slate-900">笔记</h2>
           
@@ -98,7 +98,7 @@ export default function Notes() {
                 setSearch(e.target.value)
                 setPage(1)
               }}
-              className="px-4 py-2 rounded-xl border border-white/50 bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              className="px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
             />
             
             {/* 排序选择 */}
@@ -108,7 +108,7 @@ export default function Notes() {
                 setSortBy(e.target.value as 'likes' | 'created_at')
                 setPage(1)
               }}
-              className="px-4 py-2 rounded-xl border border-white/50 bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              className="px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
             >
               <option value="likes">按点赞数排序</option>
               <option value="created_at">按创建时间排序</option>
@@ -132,7 +132,7 @@ export default function Notes() {
       </div>
 
       {/* Notes Grid */}
-      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+      <div className="flex-1 overflow-y-auto p-6">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-slate-500">加载中...</div>
@@ -248,7 +248,11 @@ interface NoteCardProps {
 function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLike, onEdit, onEditComplete, onEditCancel }: NoteCardProps) {
   const [editContent, setEditContent] = useState(note.content)
   const [editAuthor, setEditAuthor] = useState(note.author || '')
+  const [editImgUrl, setEditImgUrl] = useState(note.img_url || '')
+  const [editVideoUrl, setEditVideoUrl] = useState(note.video_url || '')
   const [saving, setSaving] = useState(false)
+  const [showImage, setShowImage] = useState(false)
+  const [imageZoomed, setImageZoomed] = useState(false)
 
   const handleSave = async () => {
     if (!editContent.trim()) {
@@ -264,6 +268,8 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
         body: JSON.stringify({
           content: editContent,
           author: editAuthor || undefined,
+          img_url: editImgUrl || undefined,
+          video_url: editVideoUrl || undefined,
         }),
       })
       
@@ -292,8 +298,16 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
     })
   }
 
+  const ensureProtocol = (url: string) => {
+    if (!url) return ''
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url
+    }
+    return `https://${url}`
+  }
+
   return (
-    <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-white/50 shadow-lg hover:shadow-xl transition-all p-4 flex flex-col">
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all p-4 flex flex-col">
       {isEditing ? (
         <>
           {/* 编辑模式 */}
@@ -311,6 +325,20 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
               placeholder="笔记内容"
               rows={6}
               className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm resize-none"
+            />
+            <input
+              type="text"
+              value={editImgUrl}
+              onChange={(e) => setEditImgUrl(e.target.value)}
+              placeholder="图片链接（可选）"
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+            />
+            <input
+              type="text"
+              value={editVideoUrl}
+              onChange={(e) => setEditVideoUrl(e.target.value)}
+              placeholder="视频链接（可选）"
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
             />
           </div>
           
@@ -343,6 +371,79 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
             >
               {note.content}
             </div>
+            
+            {/* 媒体内容指示器 */}
+            {!isExpanded && (note.img_url || note.video_url) && (
+              <div className="mt-2 flex gap-2">
+                {note.img_url && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                    🖼️ 有图片
+                  </span>
+                )}
+                {note.video_url && (
+                  <a
+                    href={ensureProtocol(note.video_url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    🎥 观看视频
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* 展开后的媒体内容 */}
+            {isExpanded && (
+              <div className="mt-3 space-y-3">
+                {note.img_url && (
+                  <div>
+                    {!showImage ? (
+                      <button
+                        onClick={() => setShowImage(true)}
+                        className="w-full py-8 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-colors flex flex-col items-center gap-2"
+                      >
+                        <span className="text-2xl">🖼️</span>
+                        <span className="text-sm">点击加载图片</span>
+                      </button>
+                    ) : (
+                      <div className="relative group">
+                        <img
+                          src={note.img_url}
+                          alt="笔记图片"
+                          className="w-full rounded-lg cursor-zoom-in hover:opacity-95 transition-opacity"
+                          onClick={() => setImageZoomed(true)}
+                        />
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => setShowImage(false)}
+                            className="bg-black/50 text-white p-1 rounded-full hover:bg-black/70"
+                            title="隐藏图片"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {note.video_url && (
+                  <a
+                    href={ensureProtocol(note.video_url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="text-xl">🎥</span>
+                    <span className="text-sm font-medium truncate flex-1">{note.video_url}</span>
+                    <span className="text-xs opacity-70">点击观看</span>
+                  </a>
+                )}
+              </div>
+            )}
             
             {note.content.length > 100 && (
               <button
@@ -386,7 +487,7 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/80 text-slate-700 hover:bg-blue-50 hover:text-blue-600 text-sm font-medium transition-colors"
             >
               <span>✏️</span>
-              <span>修改</span>
+              <span>修正</span>
             </button>
             
             {!isExpanded && note.author && (
@@ -396,6 +497,26 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
             )}
           </div>
         </>
+      )}
+
+      {/* 图片放大查看 */}
+      {imageZoomed && note.img_url && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setImageZoomed(false)}
+        >
+          <img
+            src={note.img_url}
+            alt="笔记图片大图"
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
+          <button
+            className="absolute top-4 right-4 text-white/70 hover:text-white text-4xl"
+            onClick={() => setImageZoomed(false)}
+          >
+            ×
+          </button>
+        </div>
       )}
     </div>
   )
@@ -409,6 +530,8 @@ interface CreateNoteModalProps {
 function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
   const [author, setAuthor] = useState('')
   const [content, setContent] = useState('')
+  const [imgUrl, setImgUrl] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [creating, setCreating] = useState(false)
 
   const handleCreate = async () => {
@@ -425,6 +548,8 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
         body: JSON.stringify({
           author: author || undefined,
           content: content,
+          img_url: imgUrl || undefined,
+          video_url: videoUrl || undefined,
         }),
       })
       
@@ -444,7 +569,7 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full p-6">
+      <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-bold text-slate-900 mb-4">新增笔记</h3>
         
         <div className="space-y-4">
@@ -471,6 +596,32 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
               placeholder="输入笔记内容..."
               rows={8}
               className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              图片链接（可选）
+            </label>
+            <input
+              type="text"
+              value={imgUrl}
+              onChange={(e) => setImgUrl(e.target.value)}
+              placeholder="输入图片 URL"
+              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              视频链接（可选）
+            </label>
+            <input
+              type="text"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="输入视频 URL"
+              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
         </div>
