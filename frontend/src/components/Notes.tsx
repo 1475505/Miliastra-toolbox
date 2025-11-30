@@ -252,7 +252,7 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
   const [editVideoUrl, setEditVideoUrl] = useState(note.video_url || '')
   const [saving, setSaving] = useState(false)
   const [showImage, setShowImage] = useState(false)
-  const [imageZoomed, setImageZoomed] = useState(false)
+  // Removed overlay zoom - open images in a new tab instead
 
   const handleSave = async () => {
     if (!editContent.trim()) {
@@ -304,6 +304,48 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
       return url
     }
     return `https://${url}`
+  }
+
+  // Open a minimal HTML viewer in a new window to force browsers to render image
+  const openImageInViewer = (url: string) => {
+    if (!url) return
+    const ensured = ensureProtocol(url)
+    // Open a blank page. NOTE: We cannot use 'noopener' because we need to write to the document.
+    const w = window.open('', '_blank')
+    if (!w) {
+      // Popup blocked or failed, fallback to direct navigation
+      window.open(ensured, '_blank', 'noopener,noreferrer')
+      return
+    }
+    
+    const encodedUrl = ensured.replace(/"/g, '&quot;')
+    const html = `<!doctype html>
+      <html lang="zh-CN">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>图片预览</title>
+          <style>
+            html,body{height:100%;margin:0;background:#111;color:#fff;display:flex;align-items:center;justify-content:center}
+            img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 0 20px rgba(0,0,0,0.5)}
+            .wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+          </style>
+        </head>
+        <body>
+          <div class="wrap">
+          <img src="${encodedUrl}" alt="图片预览"/>
+          </div>
+        </body>
+      </html>`
+    
+    try {
+      w.document.open()
+      w.document.write(html)
+      w.document.close()
+    } catch (e) {
+      console.error('Failed to write to new window', e)
+      w.location.href = ensured
+    }
   }
 
   return (
@@ -376,7 +418,21 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
             {!isExpanded && (note.img_url || note.video_url) && (
               <div className="mt-2 flex gap-2">
                 {note.img_url && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onToggleExpand()
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onToggleExpand()
+                      }
+                    }}
+                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200 transition-colors"
+                  >
                     🖼️ 有图片
                   </span>
                 )}
@@ -412,8 +468,13 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
                         <img
                           src={note.img_url}
                           alt="笔记图片"
-                          className="w-full rounded-lg cursor-zoom-in hover:opacity-95 transition-opacity"
-                          onClick={() => setImageZoomed(true)}
+                          className="w-full rounded-lg cursor-pointer hover:opacity-95 transition-opacity"
+                          onClick={(e) => {
+                            // Stop toggling the card expand when clicking the image
+                            e.stopPropagation()
+                            // Open the image inside a minimal viewer page to avoid download
+                            openImageInViewer(note.img_url || '')
+                          }}
                         />
                         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
@@ -499,25 +560,7 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
         </>
       )}
 
-      {/* 图片放大查看 */}
-      {imageZoomed && note.img_url && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
-          onClick={() => setImageZoomed(false)}
-        >
-          <img
-            src={note.img_url}
-            alt="笔记图片大图"
-            className="max-w-full max-h-full object-contain rounded-lg"
-          />
-          <button
-            className="absolute top-4 right-4 text-white/70 hover:text-white text-4xl"
-            onClick={() => setImageZoomed(false)}
-          >
-            ×
-          </button>
-        </div>
-      )}
+      {/* Note: image overlay zoom removed; clicking image opens in new tab */}
     </div>
   )
 }

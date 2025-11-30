@@ -257,7 +257,9 @@ export default function Sidebar({
         <div className="border-t border-white/20 p-4">
           <button
             onClick={() => setShowConfig(true)}
-            className="w-full rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 transition-all hover:bg-white/30 hover:text-slate-900"
+            className="w-full rounded-2xl px-4 py-3 text-sm font-medium bg-green-200 text-slate-900 border border-yellow-300 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-all"
+            title="OpenAI 配置"
+            aria-label="OpenAI 配置"
           >
             ⚙️ OpenAI 配置
           </button>
