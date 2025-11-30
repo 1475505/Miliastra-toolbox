@@ -607,7 +607,7 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
               type="text"
               value={imgUrl}
               onChange={(e) => setImgUrl(e.target.value)}
-              placeholder="输入图片 URL"
+              placeholder="可通过图床功能上传图片"
               className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
@@ -620,7 +620,7 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
               type="text"
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="输入视频 URL"
+              placeholder="输入千星奇域相关的B站视频链接"
               className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>

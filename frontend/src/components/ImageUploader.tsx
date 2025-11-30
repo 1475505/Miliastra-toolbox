@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getCOSConfig, saveCOSConfig } from '../utils/cosConfig'
+import { generateDefaultFileName } from '../utils/file'
 import { COSConfig } from '../types'
 
 export default function ImageUploader() {
@@ -32,7 +33,7 @@ export default function ImageUploader() {
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile)
-    setFileName(selectedFile.name)
+    setFileName(generateDefaultFileName(selectedFile.name, selectedFile.type))
     setResult(null)
     setError(null)
     
@@ -64,7 +65,7 @@ export default function ImageUploader() {
 
   const handleUpload = async () => {
     if (!config.useDefault) {
-      setError('请勾选使用默认配置以进行上传')
+      setError('请勾选默认配置，或配置自己的腾讯云COS服务来继续(后续支持自定义)')
       return
     }
 
@@ -180,6 +181,7 @@ export default function ImageUploader() {
                   onChange={(e) => setFileName(e.target.value)}
                   className="w-full px-3 py-2 bg-white/50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                <p className="mt-1 text-xs text-slate-400">默认生成格式: [源文件名]_<span className="font-mono">yyyyMMdd_hhmmss</span>.[原格式]</p>
               </div>
               <button
                 onClick={handleUpload}
