@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useState, Suspense, lazy } from 'react'
 import Sidebar from './components/Sidebar'
-import Chat from './components/Chat'
-import Notes from './components/Notes'
 import { Tab } from './types'
+
+const Chat = lazy(() => import('./components/Chat'))
+const Notes = lazy(() => import('./components/Notes'))
+const ImageUploader = lazy(() => import('./components/ImageUploader'))
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('chat')
+  const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(new Set(['chat']))
   const [configVersion, setConfigVersion] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [currentConversationId, setCurrentConversationId] = useState<string>()
@@ -17,6 +20,7 @@ export default function App() {
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab)
+    setVisitedTabs((prev) => new Set(prev).add(tab))
     setSidebarOpen(false) // Close sidebar on mobile after selecting tab
   }
 
@@ -58,16 +62,29 @@ export default function App() {
           </svg>
         </button>
         <div className={`h-full ${activeTab === 'chat' ? '' : 'hidden'}`}>
-          <Chat 
-            configVersion={configVersion} 
-            currentConversationId={currentConversationId}
-            onConversationChange={setCurrentConversationId}
-            onRefreshConversations={handleRefreshConversations}
-          />
+          <Suspense fallback={<div className="flex h-full items-center justify-center text-slate-500">加载中...</div>}>
+            <Chat 
+              configVersion={configVersion} 
+              currentConversationId={currentConversationId}
+              onConversationChange={setCurrentConversationId}
+              onRefreshConversations={handleRefreshConversations}
+            />
+          </Suspense>
         </div>
-        <div className={`h-full ${activeTab === 'notes' ? '' : 'hidden'}`}>
-          <Notes />
-        </div>
+        {visitedTabs.has('notes') && (
+          <div className={`h-full ${activeTab === 'notes' ? '' : 'hidden'}`}>
+            <Suspense fallback={<div className="flex h-full items-center justify-center text-slate-500">加载中...</div>}>
+              <Notes />
+            </Suspense>
+          </div>
+        )}
+        {visitedTabs.has('upload') && (
+          <div className={`h-full ${activeTab === 'upload' ? '' : 'hidden'}`}>
+            <Suspense fallback={<div className="flex h-full items-center justify-center text-slate-500">加载中...</div>}>
+              <ImageUploader />
+            </Suspense>
+          </div>
+        )}
       </main>
     </div>
   )

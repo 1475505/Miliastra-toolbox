@@ -38,4 +38,9 @@ export interface Conversation {
   updatedAt: number
 }
 
-export type Tab = 'chat' | 'notes'
+export type Tab = 'chat' | 'notes' | 'upload'
+
+export interface COSConfig {
+  useDefault: boolean
+}
+
