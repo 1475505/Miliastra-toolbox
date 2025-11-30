@@ -523,7 +523,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder="输入你的问题..."
+            placeholder="输入你的问题...(AI回答仅供参考)"
             disabled={loading}
             className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300"
           />
@@ -534,6 +534,9 @@ export default function Chat({ configVersion, currentConversationId, onConversat
           >
             {loading ? '...' : '发送'}
           </button>
+        </div>
+        <div className="text-center text-xs text-gray-500 mt-3">
+          《原神》千星奇域相关文档版权归米哈游所有，本网站为个人兴趣，仅辅助开发使用，与米哈游无关
         </div>
       </div>
     </div>

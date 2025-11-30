@@ -237,7 +237,10 @@ async def list_notes(
         cur = conn.cursor()
         
         # 构建排序字段
-        order_by = "likes DESC" if sort_by == "likes" else "created_at DESC"
+        if sort_by == "likes":
+            order_by = "likes DESC, version DESC"
+        else:
+            order_by = "created_at DESC"
         
         # 构建查询（使用子查询获取每个id的最新version）
         if search:
