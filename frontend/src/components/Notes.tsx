@@ -6,6 +6,7 @@ export default function Notes() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [sortBy, setSortBy] = useState<'likes' | 'created_at'>('likes')
   const [page, setPage] = useState(1)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -17,6 +18,22 @@ export default function Notes() {
   useEffect(() => {
     loadNotes()
   }, [search, sortBy, page])
+
+  // Debounce input: update `search` only when user stops typing or presses Enter / blurs
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      // Only trigger if input changed
+      setSearch((prevSearch) => {
+        if (prevSearch !== searchInput) {
+          setPage(1)
+          return searchInput
+        }
+        return prevSearch
+      })
+    }, 1000)
+
+    return () => clearTimeout(handler)
+  }, [searchInput])
 
   const loadNotes = async () => {
     setLoading(true)
@@ -93,9 +110,18 @@ export default function Notes() {
             <input
               type="text"
               placeholder="搜索笔记内容或作者..."
-              value={search}
+              value={searchInput}
               onChange={(e) => {
-                setSearch(e.target.value)
+                setSearchInput(e.target.value)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearch(searchInput)
+                  setPage(1)
+                }
+              }}
+              onBlur={() => {
+                setSearch(searchInput)
                 setPage(1)
               }}
               className="px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
