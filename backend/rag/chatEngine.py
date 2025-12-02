@@ -72,13 +72,9 @@ class ChatEngine:
                 "model": os.getenv("DEFAULT_FREE_MODEL_NAME", "")
             }
         elif use_default == 2:
-            key = os.getenv("DEFAULT_FREE_MODEL_KEY2", "")
-            url = os.getenv("DEFAULT_FREE_MODEL_URL2", "")
-            name = os.getenv("DEFAULT_FREE_MODEL_NAME2", "")
-            if not key or not url or not name:
-                key = os.getenv("DEFAULT_FREE_MODEL_KEY", "")
-                url = os.getenv("DEFAULT_FREE_MODEL_URL", "")
-                name = os.getenv("DEFAULT_FREE_MODEL_NAME", "")
+            key = os.getenv("DEFAULT_FREE_MODEL_KEY2", "") or os.getenv("DEFAULT_FREE_MODEL_KEY", "")
+            url = os.getenv("DEFAULT_FREE_MODEL_URL2", "") or os.getenv("DEFAULT_FREE_MODEL_URL", "")
+            name = os.getenv("DEFAULT_FREE_MODEL_NAME2", "") or os.getenv("DEFAULT_FREE_MODEL_NAME", "")
             return {
                 "api_key": key,
                 "api_base_url": url,

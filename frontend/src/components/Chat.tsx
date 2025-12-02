@@ -41,6 +41,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   const [timeoutWarning, setTimeoutWarning] = useState('')
   const [statusMessage, setStatusMessage] = useState('')
   const [showConfigHint, setShowConfigHint] = useState(false)
+  const [noticeContent, setNoticeContent] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
 
@@ -147,6 +148,14 @@ export default function Chat({ configVersion, currentConversationId, onConversat
     const needConfig = !config.use_default_model && !config.api_key
     setShowConfigHint(needConfig)
   }, [configVersion])
+
+  // 加载公告内容
+  useEffect(() => {
+    fetch('/NOTICE.md')
+      .then(response => response.text())
+      .then(text => setNoticeContent(text))
+      .catch(err => console.warn('Failed to load NOTICE.md:', err))
+  }, [])
 
   const handleSend = async () => {
     if (!input.trim() || loading) return
@@ -406,7 +415,16 @@ export default function Chat({ configVersion, currentConversationId, onConversat
           <div className="text-center text-slate-700 mt-20">
             <div className="text-lg font-medium">你好！我是千星知识库助手，请问有什么可以帮你的？</div>
             <div className="text-sm mt-2 text-slate-500">对话将自动保存到浏览器本地，建议及时删除</div>
-            <div className="text-sm mt-2 text-slate-500">在左下角菜单按需减少上下文轮次可加快生成速度</div>
+            <div className="text-sm mt-2 text-slate-500">在菜单左下角按需减少上下文轮次可加快生成速度</div>
+            {noticeContent.trim() && (
+              <div className="mt-8 max-w-2xl mx-auto bg-green-50 border border-green-200 rounded-xl p-6 text-left">
+                <div className="prose prose-sm max-w-none prose-slate">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {noticeContent}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -536,7 +554,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
           </button>
         </div>
         <div className="text-center text-xs text-gray-500 mt-3">
-          《原神》千星奇域相关文档版权归米哈游所有，本网站为个人兴趣，仅辅助开发使用，与米哈游无关
+          《原神》千星奇域相关文档版权归米哈游所有，本网站为个人兴趣，仅供辅助个人兴趣使用，与米哈游无关
         </div>
       </div>
     </div>
