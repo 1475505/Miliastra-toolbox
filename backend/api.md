@@ -51,13 +51,13 @@
     "api_key": "string - 用户自定义 API Key",
     "api_base_url": "string - 用户自定义 API 基础 URL",
     "model": "string - 用户自定义模型名称",
-    "use_default_model": "boolean - 是否使用后端默认免费模型（默认 false）"
+    "use_default_model": "number - 0:不使用, 1:默认免费模型, 2:备用免费模型"
   }
 }
 ```
 
 **配置优先级说明**：
-1. **优先使用免费模型**：若 `use_default_model=true`，则使用 `.env` 中的 `DEFAULT_FREE_MODEL_*` 配置（最高优先级）
+1. **优先使用免费模型**：若 `use_default_model` 为 1，使用默认免费模型；若为 2，使用备用免费模型（最高优先级）
 2. **其次使用自定义配置**：若 `api_key`、`api_base_url`、`model` 三者均非空，则使用用户自定义配置
 3. **否则报错**：若以上两种配置都不满足，返回错误
 
@@ -82,7 +82,7 @@
     "api_key": "sk-xxxxxxxx",
     "api_base_url": "https://api.deepseek.com/v1",
     "model": "deepseek-chat",
-    "use_default_model": false
+    "use_default_model": 0
   }
 }
 ```
@@ -97,7 +97,7 @@
     "api_key": "",
     "api_base_url": "",
     "model": "",
-    "use_default_model": true
+    "use_default_model": 1
   }
 }
 ```
