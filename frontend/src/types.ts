@@ -2,7 +2,7 @@ export interface LLMConfig {
   api_key: string
   api_base_url: string
   model: string
-  use_default_model: boolean
+  use_default_model: number
   context_length: number
 }
 

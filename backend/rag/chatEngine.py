@@ -63,12 +63,26 @@ class ChatEngine:
         Returns:
             {"api_key", "api_base_url", "model"}
         """
-        # 优先级1：use_default_model 为 true，使用默认免费模型（最高优先级）
-        if config.get("use_default_model", False):
+        # 优先级1：use_default_model 为 1 或 2，使用默认免费模型（最高优先级）
+        use_default = config.get("use_default_model", 0)
+        if use_default == 1:
             return {
                 "api_key": os.getenv("DEFAULT_FREE_MODEL_KEY", ""),
                 "api_base_url": os.getenv("DEFAULT_FREE_MODEL_URL", ""),
                 "model": os.getenv("DEFAULT_FREE_MODEL_NAME", "")
+            }
+        elif use_default == 2:
+            key = os.getenv("DEFAULT_FREE_MODEL_KEY2", "")
+            url = os.getenv("DEFAULT_FREE_MODEL_URL2", "")
+            name = os.getenv("DEFAULT_FREE_MODEL_NAME2", "")
+            if not key or not url or not name:
+                key = os.getenv("DEFAULT_FREE_MODEL_KEY", "")
+                url = os.getenv("DEFAULT_FREE_MODEL_URL", "")
+                name = os.getenv("DEFAULT_FREE_MODEL_NAME", "")
+            return {
+                "api_key": key,
+                "api_base_url": url,
+                "model": name
             }
         
         # 优先级2：用户提供的配置完整（api_key、api_base_url、model 都非空）

@@ -25,16 +25,30 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
           <label className="flex items-center">
             <input
               type="checkbox"
-              checked={config.use_default_model}
+              checked={config.use_default_model > 0}
               onChange={(e) =>
-                setConfig({ ...config, use_default_model: e.target.checked })
+                setConfig({ ...config, use_default_model: e.target.checked ? 1 : 0 })
               }
               className="mr-2"
             />
             <span className="text-sm text-gray-600">使用免费模型（限量，且可能效果不佳，建议自带LLM服务）</span>
           </label>
 
-          {!config.use_default_model && (
+          {config.use_default_model > 0 && (
+            <label className="flex items-center ml-6">
+              <input
+                type="checkbox"
+                checked={config.use_default_model === 2}
+                onChange={(e) =>
+                  setConfig({ ...config, use_default_model: e.target.checked ? 2 : 1 })
+                }
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-600">降级模型（若当前免费模型无法使用，请勾选，若还是无法使用，请调低轮次，或自定义模型）</span>
+            </label>
+          )}
+
+          {config.use_default_model === 0 && (
             <>
               <div>
                 <label className="block text-sm text-gray-600 mb-2">

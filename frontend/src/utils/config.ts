@@ -6,7 +6,7 @@ const defaultConfig: LLMConfig = {
   api_key: '',
   api_base_url: 'https://api.deepseek.com/v1',
   model: 'deepseek-chat',
-  use_default_model: false,
+  use_default_model: 0,
   context_length: 1,
 }
 
