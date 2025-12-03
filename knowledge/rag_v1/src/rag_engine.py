@@ -307,7 +307,8 @@ class RAGEngine:
             
             # 使用统一的加载逻辑：加载文件所在目录，然后过滤出目标文档
             documents = self.parser.load_documents(os.path.dirname(file_path))
-            document = next((d for d in documents if d.metadata.get('file_path') == file_path), None)
+            abs_file_path = os.path.abspath(file_path)
+            document = next((d for d in documents if os.path.abspath(d.metadata.get('file_path')) == abs_file_path), None)
             
             if not document:
                 raise ValueError(f"无法加载文档: {file_path}")
