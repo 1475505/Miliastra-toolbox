@@ -21,7 +21,8 @@ def run_parse_test(doc_path: str):
     
     docs = parser.load_documents(os.path.dirname(doc_path))
     # 找到我们关心的那一个文档
-    target_doc = next((d for d in docs if d.metadata.get("file_path") == doc_path), None)
+    abs_doc_path = os.path.abspath(doc_path)
+    target_doc = next((d for d in docs if os.path.abspath(d.metadata.get("file_path")) == abs_doc_path), None)
 
     if not target_doc:
         print(f"❌ FAILED: Could not load the specific document from its directory.")
@@ -144,7 +145,8 @@ def run_embed_test(doc_path: str):
         )
         
         docs = parser.load_documents(os.path.dirname(doc_path))
-        target_doc = next((d for d in docs if doc_path in d.metadata.get("file_path", "")), None)
+        abs_doc_path = os.path.abspath(doc_path)
+        target_doc = next((d for d in docs if os.path.abspath(d.metadata.get("file_path")) == abs_doc_path), None)
         
         if not target_doc:
             print(f"❌ FAILED: Could not load the specific document.")

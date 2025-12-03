@@ -60,9 +60,6 @@ python3 rag_cli.py status
 # 健康检查
 python3 rag_cli.py health
 
-# 重建知识库
-python3 rag_cli.py rebuild [--force]
-
 # 单文档嵌入
 python3 rag_cli.py embed --doc path/to/your/document.md [--force]
 
