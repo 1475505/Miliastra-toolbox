@@ -139,7 +139,8 @@ export class FirecrawlClient {
     outputDir?: string;
     documentId?: string;
     title?: string; // 新增：支持传递自定义标题
-  }): Promise<ScrapeResult> {
+    checkChanges?: boolean; // 新增：检查内容是否变化
+  }): Promise<ScrapeResult & { fileSaved?: boolean }> {
     try {
       // 优化的 Firecrawl 配置：只提取 .doc-view 容器内的内容
       const result: Document = await this.client.scrape(url, {
@@ -166,6 +167,7 @@ export class FirecrawlClient {
 
       // 保存 markdown 文件
       const saveMarkdown = options?.saveMarkdown ?? true;
+      let fileSaved = false;
       if (saveMarkdown) {
         const outputDir = options?.outputDir || path.join(__dirname, '..', 'data');
         const documentId = options?.documentId || this.extractIdFromUrl(url);
@@ -173,7 +175,7 @@ export class FirecrawlClient {
         const title = options?.title || metadata.title || '未命名文档'; // 优先使用传入的标题
         
         try {
-          await this.saveMarkdownFile(
+          fileSaved = await this.saveMarkdownFile(
             markdown,
             outputDir,
             scope,
@@ -185,7 +187,8 @@ export class FirecrawlClient {
               sourceURL: metadata.sourceURL || url,
               description: metadata.description,
               language: metadata.language || 'zh',
-            }
+            },
+            options?.checkChanges
           );
         } catch (saveError) {
           console.warn(`警告: 保存 markdown 文件失败 - ${(saveError as Error).message}`);
@@ -201,6 +204,7 @@ export class FirecrawlClient {
           language: metadata.language || 'zh',
           sourceURL: metadata.sourceURL || url,
         },
+        fileSaved
       };
     } catch (error) {
       return {
@@ -235,8 +239,9 @@ export class FirecrawlClient {
       sourceURL?: string;
       description?: string;
       language?: string;
-    }
-  ): Promise<void> {
+    },
+    checkChanges: boolean = false
+  ): Promise<boolean> {
     // 确保 knowledge 目录根路径存在
     const knowledgeDir = path.join(__dirname, '..', '..'); // knowledge/ 目录
     const scopeDir = path.join(knowledgeDir, scope);
@@ -270,6 +275,22 @@ export class FirecrawlClient {
 
     const fileName = `${documentId}_${safeTitle}.md`;
     const filePath = path.join(scopeDir, fileName);
+
+    // 检查内容是否变化
+    if (checkChanges) {
+      try {
+        const existingContent = await fs.readFile(filePath, 'utf-8');
+        // 移除 frontmatter
+        const existingMarkdown = existingContent.replace(/^---\n[\s\S]*?\n---\n\n/, '');
+        if (existingMarkdown.trim() === markdown.trim()) {
+          return false; // 内容未变化，跳过保存
+        }
+      } catch (error) {
+        // 文件不存在或读取失败，继续保存
+      }
+    }
+
     await fs.writeFile(filePath, markdownContent, 'utf-8');
+    return true;
   }
 }

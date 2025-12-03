@@ -73,7 +73,8 @@ class Crawler {
         scope: scope,
         saveMarkdown: true,
         documentId: entry.id,
-        title: entry.title // 传递正确的标题
+        title: entry.title, // 传递正确的标题
+        checkChanges: force // 如果强制重爬，检查内容是否变化
       });
 
       if (!result.success) {
@@ -82,7 +83,11 @@ class Crawler {
       }
 
       console.log(`   ✓ 爬取成功`);
-      console.log(`   ✓ Markdown 文件已保存`);
+      if (result.fileSaved) {
+        console.log(`   ✓ Markdown 文件已保存`);
+      } else {
+        console.log(`   ✓ 内容未变化，跳过覆盖`);
+      }
 
       return { success: true };
     } catch (error) {
