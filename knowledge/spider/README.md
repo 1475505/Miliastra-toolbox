@@ -27,7 +27,8 @@ spider/
 
 ## ✨ 核心功能
 
-- **自动 URL 提取** - 使用 Firecrawl crawl 模式自动发现所有文档链接
+- **自动 URL 提取** - 默认解析官方 JSON 目录接口获取最新文档列表（包含更新时间）
+- **Firecrawl** - 使用 Firecrawl scrape 解析文档内容
 - **批量爬取** - 支持并发爬取，带进度报告和错误处理
 - **Markdown 生成** - 自动生成带前置元数据的 Markdown 文件
 
@@ -55,7 +56,7 @@ cp .env.example .env
 FIRECRAWL_API_KEY=your-firecrawl-key
 
 # 硅基流动 API（用于 Embedding 生成），可以通过修改base_url使用其他模型服务
-SILICONFLOW_API_KEY=sk-ltlzeoltdpbjsrhuzbpnkbmvyhruirbpjtyyjekclbofsovc
+SILICONFLOW_API_KEY=sk-abcdefg
 SILICONFLOW_BASE_URL=https://api.siliconflow.cn/v1
 EMBEDDING_MODEL=BAAI/bge-m3
 ```
@@ -63,6 +64,8 @@ EMBEDDING_MODEL=BAAI/bge-m3
 ## 🚀 使用指南
 
 ### 1. 爬取 URL 列表
+
+默认模式（推荐）：直接解析官方 JSON 目录，速度快且包含更新时间。
 ```bash
 # 爬取综合指南页面
 npm run crawl -- --type=guide
@@ -72,6 +75,15 @@ npm run crawl -- --type=tutorial
 
 # 爬取所有类型（默认）
 npm run crawl
+```
+
+Firecrawl 模式（旧版）：使用 Firecrawl 爬虫自动发现链接。
+```bash
+# 使用 Firecrawl 模式爬取
+npm run crawl -- --mode=firecrawl
+
+# 指定类型并使用 Firecrawl 模式
+npm run crawl -- --type=guide --mode=firecrawl
 ```
 
 ### 2. 执行文档爬取
@@ -159,5 +171,4 @@ knowledge/
 
 ## TODO
 
-- 使用json而非单纯的网页markdown，这样还可以支持图片
 - 增加网页内容哈希值，用于后续增量更新
