@@ -10,6 +10,7 @@ export interface URLEntry {
   url: string;
   scope: string;
   uniqueId: string; // 用于去重的唯一标识符
+  updated_at?: string;
 }
 
 export interface URLConfig {
