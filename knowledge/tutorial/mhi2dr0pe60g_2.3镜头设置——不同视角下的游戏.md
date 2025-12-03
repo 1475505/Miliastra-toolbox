@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhi2dr0pe60g
 description: undefined
 language: zh
 scope: tutorial
-crawledAt: 2025-10-30T19:52:29.780Z
+crawledAt: 2025-12-03T15:15:25.402Z
 ---
 
 # 前言
@@ -79,7 +79,7 @@ _\*\*更多相关信息可自行查阅【综合指南-镜头】_
 
 **效果演示：**
 
-_\*\*演示中的文本显示，需达到Lv.3后解锁【自定义文本外显】功能，教程中以效果展示为主_
+_\*\*演示中的文本显示，需达到特定奇匠等级后解锁【自定义文本外显】功能，教程中以效果展示为主_
 
 **实现步骤：**
 

@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhjdhpi4sd10
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:35:24.107Z
+crawledAt: 2025-12-03T15:06:27.362Z
 ---
 
 # 一、入口所在位置
@@ -73,7 +73,7 @@ _添加_：可在当前选择的赛季中添加想要上架的礼盒
 
 点击左上角或取消勾选可将该礼盒从该赛季中去除，常驻礼盒无法在上架设置中进行下架
 
-# 三、节点图管理奇遇礼盒
+# 三、以节点图管理奇域礼盒
 
 
 

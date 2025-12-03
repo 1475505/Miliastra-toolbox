@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhufb90zbnts
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:35:33.912Z
+crawledAt: 2025-12-03T15:06:48.127Z
 ---
 
 # 一、定时器的功能
@@ -57,6 +57,6 @@ _定时器_提供计时能力，支持操纵计时的启动、终止、暂停、
 
 定时器触发时
 
-定时器运行时，计时到达序列中的时间段，会向挂载该定时器的实体节点图发送_定时器触发时_事件
+定时器运行时，计时到达序列中的时间段，会向挂载该定时器的实体的节点图发送_定时器触发时_事件
 
 定时器序列序号，代表定时器序列的序号

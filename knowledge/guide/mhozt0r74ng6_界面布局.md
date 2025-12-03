@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhozt0r74ng6
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:41:21.719Z
+crawledAt: 2025-12-03T15:07:41.839Z
 ---
 
 # 一、界面布局的定义
@@ -171,10 +171,10 @@ crawledAt: 2025-10-30T19:41:21.719Z
 | 冰 | #99FFFF |
 | 岩 | #FFE699 |
 
-|     |     |     |
-| --- | --- | --- |
-| 品质颜色 | 应用场景 |
-| 灰 | #CCCCCC | 可用于选项卡 |
+|     |     |
+| --- | --- |
+| 品质颜色 |
+| 灰 | #CCCCCC |
 | 绿 | #ACFF44 |
 | 蓝 | #50F4FF |
 | 紫 | #F998FF |

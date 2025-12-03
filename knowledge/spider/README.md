@@ -88,7 +88,7 @@ npm run crawl -- --type=guide --mode=firecrawl
 
 ### 2. 执行文档爬取
 ```bash
-# 完整爬取（推荐，默认并发度=2）
+# 完整爬取（推荐，默认并发度=1）
 npm run scrape
 
 # 测试模式（只处理前5个文档，避免消耗大量API额度）
@@ -98,7 +98,7 @@ npm run scrape -- --test
 npm run scrape -- --test --limit=10
 
 # 自定义并发度（需根据API计划调整）
-npm run scrape -- --concurrency=3
+npm run scrape -- --concurrency=2
 
 # 强制重新爬取（覆盖已存在的文件）
 npm run scrape -- --force
@@ -116,7 +116,7 @@ npm run scrape -- --since=2025.11.01
 **参数说明**：
 - `--test`: 测试模式，限制处理文档数量
 - `--limit=N`: 测试模式下处理的文档数量（默认5）
-- `--concurrency=N`: 并发爬取数量（默认2，Free Plan限制）
+- `--concurrency=N`: 并发爬取数量（默认1，Free Plan限制2）
 - `--force`: 强制覆盖已存在的文件
 - `--filter=pattern`: URL过滤正则表达式
 - `--output=path`: 自定义输出目录

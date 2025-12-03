@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhlcjxr9duvy
 description: undefined
 language: zh
 scope: tutorial
-crawledAt: 2025-10-30T19:50:55.346Z
+crawledAt: 2025-12-03T15:08:10.202Z
 ---
 
 # **前言**
@@ -215,7 +215,7 @@ _\*\*更多镜头信息可自行查阅【综合指南-主镜头】_
 
 ### 功能简述
 
-**客户端节点资源管理器：** 负责运行在客户端（本地）的节点图管理，创建并管理【本地过滤器节点图】和【技能节点图】，及外部相关节点图的导入；
+**客户端节点资源管理器：** 负责运行在客户端（本地）的节点图管理，创建并管理【布尔过滤器节点图】，【整数过滤节点图】和【技能节点图】，及外部相关节点图的导入；
 
 ## 节点管理器
 

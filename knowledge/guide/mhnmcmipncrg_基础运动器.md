@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhnmcmipncrg
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:34:34.348Z
+crawledAt: 2025-12-03T15:06:16.398Z
 ---
 
 # 一、基础运动器组件的功能
@@ -107,7 +107,7 @@ _到达通知节点图_：勾选时，对象到达对应路点会向自身挂载
 
 _初始生效_：实体创建时立即生效
 
-_运动方式_：提供了一下两种运动方式
+_运动方式_：提供了以下两种运动方式
 
 _匀速直线_：以恒定的速率和转向角速率移动到目标位置和目标旋转
 

@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhwe1n94b1x6
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:33:57.548Z
+crawledAt: 2025-12-03T15:05:51.178Z
 ---
 
 地形编辑可用于关卡内场景效果的制作。
@@ -263,7 +263,7 @@ crawledAt: 2025-10-30T19:33:57.548Z
 
 地块选择
 
-操作逻辑：点击后，进入对该地形的“精准编辑”模式，通过指针选择地块，按住Shift，左键点击地块，加入/移除本次选择。
+操作逻辑：点击后，进入对该地形的“精准编辑”模式，通过指针选择地块，按住Shift，左键点击地块，加入本次选择。
 
 抬升：点击后，本次所选地块增高一层
 

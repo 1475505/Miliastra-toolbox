@@ -6,14 +6,14 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhhw2l08o6qo
 description: undefined
 language: zh
 scope: tutorial
-crawledAt: 2025-10-30T20:02:30.995Z
+crawledAt: 2025-12-03T15:17:52.715Z
 ---
 
 欢迎各位关卡创作者（奇匠）使用编辑器和千星沙箱！我们为您提供了一系列教学课程，帮助您更快了解或学习上手原神编辑器。
 
 # 一、声明
 
-目前教程中的内容目前还处于持续更新阶段，会不定时的对内容进行补充以及勘误，如果各位创作者在阅读中发现可以优化和建议之处，欢迎通过【千星奇域创作者中心 \- 创作服务中心 \- 联系客服 \- 奇匠学院（综合指南/教程）问题建议反馈】提交反馈建议。
+目前教程中的内容目前还处于持续更新阶段，会不定时的对内容进行补充以及勘误，如果各位创作者在阅读中发现可以优化和建议之处，欢迎通过【 [千星奇域创作者中心](https://act.mihoyo.com/miliastra_wonderland/developer?mhy_presentation_style=fullscreen&mhy_auth_required=true?utm_source=tutorial&utm_medium=course&utm_campaign=mhhw2l08o6qo)\- 创作服务中心 \- 联系客服 \- 奇匠学院（综合指南/教程）问题建议反馈】提交反馈建议。
 
 # 二、内容概述
 

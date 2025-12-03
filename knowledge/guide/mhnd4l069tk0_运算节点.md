@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhnd4l069tk0
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:46:07.763Z
+crawledAt: 2025-12-03T15:07:54.400Z
 ---
 
 # 一、通用
@@ -787,7 +787,7 @@ crawledAt: 2025-10-30T19:46:07.763Z
 
 **节点功能**
 
-将输入值作为二进制数左移一定位数后输出
+将输入值作为二进制数逻辑左移一定位数后输出
 
 **节点参数**
 
@@ -802,7 +802,7 @@ crawledAt: 2025-10-30T19:46:07.763Z
 
 **节点功能**
 
-将输入值作为二进制数右移一定位数后输出
+将输入值作为二进制数逻辑右移一定位数后输出
 
 **节点参数**
 

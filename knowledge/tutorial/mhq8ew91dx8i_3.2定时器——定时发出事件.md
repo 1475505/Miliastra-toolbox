@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhq8ew91dx8i
 description: undefined
 language: zh
 scope: tutorial
-crawledAt: 2025-10-30T19:57:59.778Z
+crawledAt: 2025-12-03T15:16:53.257Z
 ---
 
 # 前言
@@ -51,7 +51,7 @@ _\*\*定时器无需通过局内编辑器配置，全部通过节点图控制_
 
 **效果演示：**
 
-_\*\*演示中的文本显示，需达到Lv.3后解锁【自定义文本外显】功能，教程中以效果展示为主_
+_\*\*演示中的文本显示，需达到特定奇匠等级后解锁【自定义文本外显】功能，教程中以效果展示为主_
 
 #### 3.操作步骤
 

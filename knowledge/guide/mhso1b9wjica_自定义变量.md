@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhso1b9wjica
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T20:46:25.387Z
+crawledAt: 2025-12-03T15:07:47.227Z
 ---
 
 # 一、自定义变量的定义
@@ -36,6 +36,8 @@ crawledAt: 2025-10-30T20:46:25.387Z
 | 结构体 | 结构体列表 |  |
 
 数据类型的说明见[基础概念](https://act.mihoyo.com/ys/ugc/tutorial//detail/mhk23ora1wom)-节点图中的数据类型
+
+特别地，在自定义变量组件中，整数无法取到-2147483648，即取值范围为-2147483647~2147483647，若填入数据超出该范围，则会返回上一次的合法输入值
 
 ## 2.自定义变量的生命周期与作用域
 
@@ -87,7 +89,7 @@ crawledAt: 2025-10-30T20:46:25.387Z
 
 
 
-自定义变量名：这是自定义变量的唯一序号。同一个组件内，自定义变量不允许重名
+自定义变量名：这是自定义变量的唯一标识。同一个组件内，自定义变量不允许重名
 
 
 

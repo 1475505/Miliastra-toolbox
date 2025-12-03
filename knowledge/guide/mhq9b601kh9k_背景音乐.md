@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhq9b601kh9k
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:42:17.417Z
+crawledAt: 2025-12-03T15:07:47.685Z
 ---
 
 # 一、背景音乐的功能
@@ -31,7 +31,7 @@ _生效时间范围_：可以将整段音乐资产截取其中的一部分作为
 
 _音量_：可以配置背景音乐的音量大小
 
-_播放速度_：默认为1，可配置背景音乐的播放速度，过快或过快可能影响实际的听感
+_播放速度_：默认为1，可配置背景音乐的播放速度，过快或过慢可能影响实际的听感
 
 _是否淡入淡出_：在开始播放和播放结束时，是否有对应的过渡效果
 
