@@ -79,13 +79,26 @@ export default function Chat({ configVersion, currentConversationId, onConversat
         if ('type' in msg && msg.type === 'sources') {
           pendingSources.push(msg)
         } else if ('role' in msg) {
+          // 如果是用户消息，先把之前的 sources 放进去（处理已保存过的对话中 sources 在 assistant 后的情况）
+          if (msg.role === 'user' && pendingSources.length > 0) {
+            reorderedMessages.push(...pendingSources)
+            pendingSources = []
+          }
+
           reorderedMessages.push(msg)
+
+          // 如果是助手消息，把 sources 放到后面（处理新生成的对话中 sources 在 assistant 前的情况）
           if (msg.role === 'assistant' && pendingSources.length > 0) {
             reorderedMessages.push(...pendingSources)
             pendingSources = []
           }
         }
       })
+      
+      // 处理末尾的 sources
+      if (pendingSources.length > 0) {
+        reorderedMessages.push(...pendingSources)
+      }
       
       saveConversation({
         id: conversationId,
@@ -117,13 +130,26 @@ export default function Chat({ configVersion, currentConversationId, onConversat
         if ('type' in msg && msg.type === 'sources') {
           pendingSources.push(msg)
         } else if ('role' in msg) {
+          // 如果是用户消息，先把之前的 sources 放进去
+          if (msg.role === 'user' && pendingSources.length > 0) {
+            reorderedMessages.push(...pendingSources)
+            pendingSources = []
+          }
+
           reorderedMessages.push(msg)
+
+          // 如果是助手消息，把 sources 放到后面
           if (msg.role === 'assistant' && pendingSources.length > 0) {
             reorderedMessages.push(...pendingSources)
             pendingSources = []
           }
         }
       })
+      
+      // 处理末尾的 sources
+      if (pendingSources.length > 0) {
+        reorderedMessages.push(...pendingSources)
+      }
       
       downloadConversation({
         id: conversationId,
