@@ -208,11 +208,25 @@ async function main() {
   const testMode = args.includes('--test');
   const limitArg = args.find(a => a.startsWith('--limit='))?.split('=')[1];
   const concurrencyArg = args.find(a => a.startsWith('--concurrency='))?.split('=')[1];
+  const sinceArg = args.find(a => a.startsWith('--since='))?.split('=')[1];
   
   const testLimit = limitArg ? parseInt(limitArg, 10) : 5;
   const concurrency = concurrencyArg ? parseInt(concurrencyArg, 10) : 2;
   
+  // 处理日期筛选
+  const defaultSinceDate = '2025.10.25';
+  const sinceDateStr = sinceArg || defaultSinceDate;
+  // 将 2025.10.25 格式转换为 2025-10-25 以便 Date 解析
+  const formattedSinceDate = sinceDateStr.replace(/\./g, '-');
+  const sinceDate = new Date(formattedSinceDate);
+  
+  if (isNaN(sinceDate.getTime())) {
+    console.error(`❌ 无效的日期格式: ${sinceDateStr}，请使用 YYYY.MM.DD 或 YYYY-MM-DD 格式`);
+    process.exit(1);
+  }
+
   console.log(`🔄 强制重爬: ${force ? '是' : '否'}`);
+  console.log(`📅 筛选日期: ${sinceDateStr} (只处理更新时间晚于此日期的文档)`);
   console.log(`🧪 测试模式: ${testMode ? '是' : '否'}${testMode ? ` (限制: ${testLimit})` : ''}`);
   console.log(`🚀 并发度: ${concurrency}\n`);
   
@@ -239,8 +253,15 @@ async function main() {
       const config: CrawlConfig = JSON.parse(configFile);
       
       if (config.entries && config.entries.length > 0) {
-        allEntries.push(...config.entries);
-        console.log(`   ✓ 加载 ${config.entries.length} 个条目`);
+        // 根据 updated_at 筛选
+        const filteredEntries = config.entries.filter(entry => {
+          if (!entry.updated_at) return false;
+          const entryDate = new Date(entry.updated_at);
+          return entryDate > sinceDate;
+        });
+
+        allEntries.push(...filteredEntries);
+        console.log(`   ✓ 加载 ${config.entries.length} 个条目 (筛选后: ${filteredEntries.length} 个)`);
       }
     }
     

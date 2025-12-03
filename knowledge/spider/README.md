@@ -108,6 +108,9 @@ npm run scrape -- --filter=pattern
 
 # 自定义输出目录
 npm run scrape -- --output=./custom-data
+
+# 筛选更新时间（默认 2025.10.25）
+npm run scrape -- --since=2025.11.01
 ```
 
 **参数说明**：
@@ -117,6 +120,7 @@ npm run scrape -- --output=./custom-data
 - `--force`: 强制覆盖已存在的文件
 - `--filter=pattern`: URL过滤正则表达式
 - `--output=path`: 自定义输出目录
+- `--since=DATE`: 筛选更新时间晚于该日期的文档（格式：YYYY.MM.DD 或 YYYY-MM-DD，默认 2025.10.25）
 
 ### 3. 构建向量知识库
 ```bash
