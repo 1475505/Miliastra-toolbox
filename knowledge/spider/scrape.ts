@@ -18,6 +18,10 @@ const __dirname = dirname(__filename);
 // 加载环境变量（从 spider 目录）
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+// 速率限制配置
+const RATE_LIMIT_PER_MINUTE = 5;
+const MS_PER_REQUEST = Math.ceil(60000 / RATE_LIMIT_PER_MINUTE); // 15000ms
+
 class Crawler {
   private firecrawl: FirecrawlClient;
   
@@ -101,8 +105,9 @@ class Crawler {
     * 批量爬取（支持并发）
     */
   async scrapeMultiple(entries: URLEntry[], options: { force?: boolean; concurrency?: number } = {}) {
-    const concurrency = options.concurrency || 2;
-    console.log(`\n🚀 开始爬取 ${entries.length} 个文档 (并发度: ${concurrency})\n`);
+    const concurrency = options.concurrency || 1;
+    console.log(`\n🚀 开始爬取 ${entries.length} 个文档 (并发度: ${concurrency})`);
+    console.log(`⏳ 速率限制: ${RATE_LIMIT_PER_MINUTE} 请求/分钟 (每请求间隔 ${MS_PER_REQUEST}ms)\n`);
 
     const startTime = Date.now();
     let successCount = 0;
@@ -115,10 +120,13 @@ class Crawler {
 
     // 分批处理以控制并发
     for (let i = 0; i < entries.length; i += concurrency) {
+      const batchStartTime = Date.now(); // 记录批次开始时间
       const batch = entries.slice(i, i + concurrency);
       const batchPromises = batch.map(entry => this.processEntry(entry, options.force));
 
       const batchResults = await Promise.allSettled(batchPromises);
+      
+      let apiCallsInBatch = 0;
 
       batchResults.forEach((result, index) => {
         processedCount++;
@@ -132,18 +140,21 @@ class Crawler {
             } else {
               successCount++;
               scopeStats[entry.scope] = (scopeStats[entry.scope] || 0) + 1;
+              apiCallsInBatch++;
             }
           } else {
             failCount++;
             const error = value.error;
             console.error(`\n❌ [${entry.scope}] ${entry.title} (${entry.id})`);
             console.error(`   错误: ${error}`);
+            apiCallsInBatch++;
           }
         } else {
           failCount++;
           const error = result.reason;
           console.error(`\n❌ [${entry.scope}] ${entry.title} (${entry.id})`);
           console.error(`   错误: ${error}`);
+          apiCallsInBatch++;
         }
 
         // 进度报告
@@ -156,10 +167,19 @@ class Crawler {
         console.log(`   ${categoriesStr}`);
       });
 
-      // 批次间短暂延迟（避免 API 限流）
+      // 批次间延迟（基于速率限制）
       if (i + concurrency < entries.length) {
-        console.log(`   ⏱️  批次间延迟 0.5 秒...`);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const elapsed = Date.now() - batchStartTime;
+        
+        if (apiCallsInBatch > 0) {
+          const requiredTime = apiCallsInBatch * MS_PER_REQUEST;
+          const waitTime = Math.max(500, requiredTime - elapsed); // 至少等待 500ms
+          console.log(`   ⏱️  速率限制等待: ${(waitTime / 1000).toFixed(1)} 秒...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        } else {
+          // 如果没有 API 调用（全部跳过），仅做极短延迟
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
       }
     }
 
@@ -211,7 +231,7 @@ async function main() {
   const sinceArg = args.find(a => a.startsWith('--since='))?.split('=')[1];
   
   const testLimit = limitArg ? parseInt(limitArg, 10) : 5;
-  const concurrency = concurrencyArg ? parseInt(concurrencyArg, 10) : 2;
+  const concurrency = concurrencyArg ? parseInt(concurrencyArg, 10) : 1;
   
   // 处理日期筛选
   const defaultSinceDate = '2025.10.25';
