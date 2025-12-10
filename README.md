@@ -4,6 +4,12 @@
 
 ## 使用方式
 
+### 前端知识问答
+
+[地址](https://ugc.070077.xyz) 。支持免费模型，但免费模型的服务承载能力较低，且限量。建议Bring Your Own Key，如遇卡顿，建议自己部署~
+
+<img width="2471" height="1103" alt="image" src="https://github.com/user-attachments/assets/2a615629-06d2-490d-8f92-510ac7d8eb8a" />
+
 ### QQ机器人连接后端
 
 通过nonebot插件进行知识问答。已接入的QQ群：
@@ -12,15 +18,9 @@
 
 ![对话.gif](https://7s-1304005994.cos.ap-singapore.myqcloud.com/对话.gif)
 
-### 前端知识问答（不保存对话）
-
-[地址](https://ugc.070077.xyz) 。建议Bring Your Own Key，免费模型的服务承载能力较低，且限量。如遇卡顿，建议自己部署~
-
-![demo](https://7s-1304005994.cos.ap-singapore.myqcloud.com/68cd1a565e1334de448e717cceffcc82.png)
-
 ## 部署方式
 
-### Docker 一键部署（推荐）
+### Docker 一键部署
 
 请进入`docker`文件夹查看具体方式。
 
