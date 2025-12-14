@@ -39,6 +39,107 @@ import tiktoken
 from src.rag_engine import create_rag_engine
 
 
+class CombinedRetriever:
+    """组合检索器：
+    - 优先从指定来源（默认 `source`=`bbs-faq`）召回最多 N 条（bbs_max）
+    - 然后从全量检索中补足至总数 total_k（去重、排除已包含的 bbs 文档）
+
+    该实现优先尝试使用 retriever.retrieve(query, filters=...) 的底层过滤（若支持），
+    若不支持则回退到在应用层根据 metadata 过滤。
+    """
+
+    def __init__(self, index, total_k: int = 5, bbs_max: int = 3, bbs_key: str = "id", bbs_value: str = "bbs-faq", similarity_cutoff: float = None):
+        self.index = index
+        self.total_k = int(total_k)
+        self.bbs_max = int(bbs_max)
+        self.bbs_key = bbs_key
+        self.bbs_value = bbs_value
+        self.similarity_cutoff = similarity_cutoff
+
+    def _call_retrieve(self, retriever, query: str, filters=None):
+        """Call the underlying retriever with the query.
+
+        This implementation no longer attempts to pass `filters` to the
+        underlying retriever. Some deployed llama-index/chroma versions do
+        not support a `filters` kwarg; we ignore `filters` here and always
+        call the basic `retrieve(query)` / `get_relevant_documents(query)`
+        method. Callers may still pass a `filters` argument but it will be
+        ignored.
+
+        metadata:{'file_name': 'bbs-faq.md', 'file_path': '/home/ubuntu/js/Miliastra-toolbox/knowledge/rag_v1/../user/bbs-faq.md', 'source_dir': 'user', 'id': 'bbs-faq-20251201', 'title': '米游社【问答集中楼】开发问题互助专区', 'force': True, 'url': 'https://www.miyoushe.com/ys/article/69834163', 'h1_title': 'Q. A.', 'chunk_index': 173}
+        """
+        # Support different retriever method names but always call with query only
+        if hasattr(retriever, "retrieve"):
+            return retriever.retrieve(query)
+        if hasattr(retriever, "get_relevant_documents"):
+            return retriever.get_relevant_documents(query)
+        raise RuntimeError("base retriever 不支持 retrieve 或 get_relevant_documents 方法")
+
+    def retrieve(self, query: str):
+        # 单次通用检索（top_k=10）。在返回的候选中按原始顺序（相似度从高到低）
+        # 1) 先取最多 2 个非 bbs-faq（按原始顺序）
+        # 2) 然后从剩下的候选中按相似度继续取，补足到 total_k
+        # 不做扩展检索；不在补足阶段强制遵守 bbs_max（允许超过）
+        general_top_k = 10
+        general_retriever = self.index.as_retriever(
+            similarity_top_k=general_top_k,
+            similarity_cutoff=self.similarity_cutoff
+        )
+
+        try:
+            candidates = list(self._call_retrieve(general_retriever, query, filters=None))
+        except Exception:
+            candidates = []
+
+        # 1) 从前10个中按原始顺序先取最多2个非 bbs-faq
+        # 使用包含判断（contains）来识别 bbs 文档：检查 id 字段
+        def _is_bbs_node(node):
+            print(node.metadata)
+            node_id = node.metadata.get(self.bbs_key, "")
+            print(node_id)
+            if isinstance(node_id, str) and self.bbs_value in node_id:
+                return True
+            return False
+
+        non_bbs_top = []
+        for n in candidates:
+            if len(non_bbs_top) >= 2:
+                break
+            if not _is_bbs_node(n):
+                non_bbs_top.append(n)
+
+        combined = []
+
+        # 把 non_bbs_top 放入结果（保持顺序）
+        for n in non_bbs_top:
+            combined.append(n)
+
+        # 2) 从 candidates 中按相似度顺序补足（只需排除已选），直到达到 total_k 或候选耗尽
+        for n in candidates:
+            if len(combined) >= self.total_k:
+                break
+            # 只要已被选入 combined 就跳过（按对象身份/相等比较）
+            if n in combined:
+                continue
+            combined.append(n)
+
+        # 不做扩展检索；直接返回在初始 top_k=10 中选出的结果（可能少于 total_k）
+        return combined[: self.total_k]
+
+    # 适配其他调用方可能使用的方法名
+    def get_relevant_documents(self, query: str):
+        return self.retrieve(query)
+
+    # 异步适配：某些 llama_index 组件会调用 aretrieve / aget_relevant_documents
+    async def aretrieve(self, query: str):
+        """异步包装同步 retrieve，使用线程池执行以兼容同步实现。"""
+        # 延迟导入 asyncio.to_thread 在 Python 3.9+ 可用
+        return await asyncio.to_thread(self.retrieve, query)
+
+    async def aget_relevant_documents(self, query: str):
+        return await self.aretrieve(query)
+
+
 class ChatEngine:
     """轻量级对话引擎"""
     
@@ -110,8 +211,13 @@ class ChatEngine:
         similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.6"))
         
         return CondensePlusContextChatEngine.from_defaults(
-            retriever=self.rag_engine.index.as_retriever(
-                similarity_top_k=similarity_top_k,
+            # retriever=self.rag_engine.index.as_retriever(similarity_top_k=similarity_top_k,
+            retriever=CombinedRetriever(
+                index=self.rag_engine.index,
+                total_k=similarity_top_k,
+                bbs_max=int(os.getenv("BBS_MAX", "3")),
+                bbs_key=os.getenv("BBS_KEY", "id"),
+                bbs_value=os.getenv("BBS_VALUE", "bbs-faq"),
                 similarity_cutoff=similarity_cutoff
             ),
             llm=llm,
