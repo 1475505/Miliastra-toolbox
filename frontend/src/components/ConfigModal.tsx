@@ -27,7 +27,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
               type="checkbox"
               checked={config.use_default_model > 0}
               onChange={(e) =>
-                setConfig({ ...config, use_default_model: e.target.checked ? 1 : 0 })
+                setConfig({ ...config, use_default_model: e.target.checked ? 3 : 0 })
               }
               className="mr-2"
             />
@@ -35,17 +35,23 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
           </label>
 
           {config.use_default_model > 0 && (
-            <label className="flex items-center ml-6">
-              <input
-                type="checkbox"
-                checked={config.use_default_model === 2}
-                onChange={(e) =>
-                  setConfig({ ...config, use_default_model: e.target.checked ? 2 : 1 })
-                }
-                className="mr-2"
-              />
-              <span className="text-sm text-gray-600">降级模型（若当前免费模型无法使用，请勾选，若还是无法使用，请调低轮次，或自定义模型）</span>
-            </label>
+            <div className="ml-6 space-y-3">
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">
+                  渠道（各个渠道无优劣之分，若某渠道无法使用可尝试其他渠道）
+                </label>
+                <select
+                  value={config.use_default_model}
+                  onChange={(e) => setConfig({ ...config, use_default_model: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                >
+                  <option value={1}>渠道 1</option>
+                  <option value={2}>渠道 2</option>
+                  <option value={3}>渠道 3</option>
+                  <option value={4}>渠道 4</option>
+                </select>
+              </div>
+            </div>
           )}
 
           {config.use_default_model === 0 && (

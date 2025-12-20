@@ -164,22 +164,35 @@ class ChatEngine:
         Returns:
             {"api_key", "api_base_url", "model"}
         """
-        # 优先级1：use_default_model 为 1 或 2，使用默认免费模型（最高优先级）
+        # 优先级1：use_default_model 为 1, 2, 3 或 4，使用默认免费模型（最高优先级）
         use_default = config.get("use_default_model", 0)
         if use_default == 1:
+            # 渠道1：使用原有逻辑
             return {
                 "api_key": os.getenv("DEFAULT_FREE_MODEL_KEY", ""),
                 "api_base_url": os.getenv("DEFAULT_FREE_MODEL_URL", ""),
                 "model": os.getenv("DEFAULT_FREE_MODEL_NAME", "")
             }
         elif use_default == 2:
-            key = os.getenv("DEFAULT_FREE_MODEL_KEY2", "") or os.getenv("DEFAULT_FREE_MODEL_KEY", "")
-            url = os.getenv("DEFAULT_FREE_MODEL_URL2", "") or os.getenv("DEFAULT_FREE_MODEL_URL", "")
-            name = os.getenv("DEFAULT_FREE_MODEL_NAME2", "") or os.getenv("DEFAULT_FREE_MODEL_NAME", "")
+            # 渠道2：使用DEFAULT_FREE_MODEL_KEY2/URL2和DEFAULT_FREE_MODEL_NAME2
             return {
-                "api_key": key,
-                "api_base_url": url,
-                "model": name
+                "api_key": os.getenv("DEFAULT_FREE_MODEL_KEY2", ""),
+                "api_base_url": os.getenv("DEFAULT_FREE_MODEL_URL2", ""),
+                "model": os.getenv("DEFAULT_FREE_MODEL_NAME2", "")
+            }
+        elif use_default == 3:
+            # 渠道3：使用DEFAULT_FREE_MODEL_KEY2/URL2和DEFAULT_FREE_MODEL_NAME3
+            return {
+                "api_key": os.getenv("DEFAULT_FREE_MODEL_KEY2", ""),
+                "api_base_url": os.getenv("DEFAULT_FREE_MODEL_URL2", ""),
+                "model": os.getenv("DEFAULT_FREE_MODEL_NAME3", "")
+            }
+        elif use_default == 4:
+            # 渠道4：使用DEFAULT_FREE_MODEL_KEY2/URL2和DEFAULT_FREE_MODEL_NAME4
+            return {
+                "api_key": os.getenv("DEFAULT_FREE_MODEL_KEY2", ""),
+                "api_base_url": os.getenv("DEFAULT_FREE_MODEL_URL2", ""),
+                "model": os.getenv("DEFAULT_FREE_MODEL_NAME4", "")
             }
         
         # 优先级2：用户提供的配置完整（api_key、api_base_url、model 都非空）

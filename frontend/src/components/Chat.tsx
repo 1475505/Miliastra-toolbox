@@ -567,7 +567,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder="输入你的问题...(AI回答仅供参考)"
+            placeholder="AI回答仅供参考，请保持质疑，优先查看来源中的官方文档；建议用相对概念化的方式提问"
             disabled={loading}
             className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300"
           />

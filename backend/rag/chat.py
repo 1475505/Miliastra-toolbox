@@ -28,7 +28,7 @@ class LLMConfig(BaseModel):
     api_key: str = Field(default="")
     api_base_url: str = Field(default="")
     model: str = Field(default="")
-    use_default_model: int = Field(default=0, description="0:不使用, 1:默认免费, 2:备用免费")
+    use_default_model: int = Field(default=0, description="0:不使用, 1/2/3/4:免费模型渠道")
     context_length: int = Field(default=3, ge=0, le=20)
 
 
