@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { LLMConfig } from '../types'
-import { getConfig, saveConfig } from '../utils/config'
+import { getConfig, saveConfig, getRandomChannel } from '../utils/config'
 
 interface ConfigModalProps {
   onClose: () => void
@@ -27,11 +27,11 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
               type="checkbox"
               checked={config.use_default_model > 0}
               onChange={(e) =>
-                setConfig({ ...config, use_default_model: e.target.checked ? 3 : 0 })
+                setConfig({ ...config, use_default_model: e.target.checked ? getRandomChannel() : 0 })
               }
               className="mr-2"
             />
-            <span className="text-sm text-gray-600">使用免费模型（限量，且可能效果不佳，建议自带LLM服务）</span>
+            <span className="text-sm text-gray-600">使用免费模型（限量，且可能效果不佳/对话用于提供商训练，建议自带LLM服务）</span>
           </label>
 
           {config.use_default_model > 0 && (
@@ -45,10 +45,10 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
                   onChange={(e) => setConfig({ ...config, use_default_model: parseInt(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                 >
-                  <option value={1}>渠道 1</option>
-                  <option value={2}>渠道 2</option>
-                  <option value={3}>渠道 3</option>
-                  <option value={4}>渠道 4</option>
+                  <option value={1}>1.火山方舟渠道</option>
+                  <option value={2}>2.QQ机器人专用渠道</option>
+                  <option value={3}>3.openrouter免费模型</option>
+                  <option value={4}>4.国产新模型体验渠道</option>
                 </select>
               </div>
             </div>
@@ -109,7 +109,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
               value={config.context_length}
               onChange={(e) => {
                 const value = parseInt(e.target.value)
-                setConfig({ ...config, context_length: isNaN(value) ? 3 : value })
+                setConfig({ ...config, context_length: isNaN(value) ? getRandomChannel() : value })
               }}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
             />
