@@ -9,6 +9,7 @@ ChatEngine - 封装 LlamaIndex 对话引擎
 import sys
 import os
 from dotenv import load_dotenv
+from datetime import datetime, timezone, timedelta
 
 # 加载 backend/.env 文件（如果存在）
 load_dotenv()
@@ -19,6 +20,12 @@ rag_v1_env_path = os.path.abspath(rag_v1_env_path)
 if os.path.exists(rag_v1_env_path):
     load_dotenv(rag_v1_env_path, override=True)
     print(f"[ChatEngine] 已加载 rag_v1 环境变量: {rag_v1_env_path}")
+
+# 添加 backend/common 到路径以导入限额管理器
+backend_path = os.path.join(os.path.dirname(__file__), "..")
+backend_path = os.path.abspath(backend_path)
+if backend_path not in sys.path:
+    sys.path.insert(0, backend_path)
 
 # 添加 rag_v1 到路径（兼容 Docker 和本地环境）
 rag_v1_path = os.path.join(os.path.dirname(__file__), "..", "..", "knowledge", "rag_v1")
@@ -37,6 +44,7 @@ from llama_index.core import Settings as LlamaSettings
 import tiktoken
 
 from src.rag_engine import create_rag_engine
+from common.pg_client import model_usage_manager
 
 
 class CombinedRetriever:
@@ -162,37 +170,71 @@ class ChatEngine:
             config: 请求中的 config 对象 {"api_key", "api_base_url", "model", "use_default_model"}
             
         Returns:
-            {"api_key", "api_base_url", "model"}
+            {"api_key", "api_base_url", "model", "channel_id"}
+        
+        Raises:
+            ValueError: 当渠道超出限额时抛出异常
         """
-        # 优先级1：use_default_model 为 1, 2, 3 或 4，使用默认免费模型（最高优先级）
+        # 优先级1：use_default_model 为 1, 2, 3, 4 或 5，使用默认免费模型（最高优先级）
         use_default = config.get("use_default_model", 0)
+        channel_id = use_default  # 记录渠道ID用于限额检查
+        
+        if use_default in [1, 2, 3, 4, 5]:
+            # 检查限额（仅渠道1、2、5需要检查）
+            if use_default in [1, 2, 5]:
+                quota_result = model_usage_manager.check_and_increment(use_default)
+                if not quota_result["allowed"]:
+                    raise ValueError(
+                        f"渠道 {use_default} 已达每日限额 {quota_result['limit']} 次，"
+                        f"当前使用 {quota_result['usage']} 次，请明天再试或使用其他渠道"
+                    )
+                print(f"[ChatEngine] 渠道 {use_default} 限额检查通过: "
+                      f"使用 {quota_result['usage']}/{quota_result['limit']}, "
+                      f"剩余 {quota_result['remaining']} 次")
+        
         if use_default == 1:
             # 渠道1：使用原有逻辑
+            hour = datetime.now(timezone(timedelta(hours=8))).hour
+            model = os.getenv("DEFAULT_FREE_MODEL_NAME", "")
+            if 16 <= hour < 24:
+                model = os.getenv("DEFAULT_FREE_MODEL_NAME_PEAK", "")
             return {
                 "api_key": os.getenv("DEFAULT_FREE_MODEL_KEY", ""),
                 "api_base_url": os.getenv("DEFAULT_FREE_MODEL_URL", ""),
-                "model": os.getenv("DEFAULT_FREE_MODEL_NAME", "")
+                "model": model,
+                "channel_id": channel_id
             }
         elif use_default == 2:
             # 渠道2：使用DEFAULT_FREE_MODEL_KEY2/URL2和DEFAULT_FREE_MODEL_NAME2
             return {
                 "api_key": os.getenv("DEFAULT_FREE_MODEL_KEY2", ""),
                 "api_base_url": os.getenv("DEFAULT_FREE_MODEL_URL2", ""),
-                "model": os.getenv("DEFAULT_FREE_MODEL_NAME2", "")
+                "model": os.getenv("DEFAULT_FREE_MODEL_NAME2", ""),
+                "channel_id": channel_id
             }
         elif use_default == 3:
             # 渠道3：使用DEFAULT_FREE_MODEL_KEY2/URL2和DEFAULT_FREE_MODEL_NAME3
             return {
                 "api_key": os.getenv("DEFAULT_FREE_MODEL_KEY2", ""),
                 "api_base_url": os.getenv("DEFAULT_FREE_MODEL_URL2", ""),
-                "model": os.getenv("DEFAULT_FREE_MODEL_NAME3", "")
+                "model": os.getenv("DEFAULT_FREE_MODEL_NAME3", ""),
+                "channel_id": channel_id
             }
         elif use_default == 4:
             # 渠道4：使用DEFAULT_FREE_MODEL_KEY2/URL2和DEFAULT_FREE_MODEL_NAME4
             return {
                 "api_key": os.getenv("DEFAULT_FREE_MODEL_KEY2", ""),
                 "api_base_url": os.getenv("DEFAULT_FREE_MODEL_URL2", ""),
-                "model": os.getenv("DEFAULT_FREE_MODEL_NAME4", "")
+                "model": os.getenv("DEFAULT_FREE_MODEL_NAME4", ""),
+                "channel_id": channel_id
+            }
+        elif use_default == 5:
+            # 渠道5：使用DEFAULT_FREE_MODEL_KEY2/URL2和DEFAULT_FREE_MODEL_NAME5
+            return {
+                "api_key": os.getenv("DEFAULT_FREE_MODEL_KEY2", ""),
+                "api_base_url": os.getenv("DEFAULT_FREE_MODEL_URL2", ""),
+                "model": os.getenv("DEFAULT_FREE_MODEL_NAME5", ""),
+                "channel_id": channel_id
             }
         
         # 优先级2：用户提供的配置完整（api_key、api_base_url、model 都非空）
@@ -202,13 +244,14 @@ class ChatEngine:
             return {
                 "api_key": config["api_key"],
                 "api_base_url": config["api_base_url"],
-                "model": config["model"]
+                "model": config["model"],
+                "channel_id": 0  # 用户自定义配置，不限额
             }
         
         # 如果都没有提供，抛出异常
         raise ValueError("未提供有效的 API 配置，请完整配置 API Key、Base URL、Model，或启用默认免费模型")
     
-    
+        
     def _create_chat_engine(self, llm, chat_history):
         """创建 chat engine（公共方法）
         

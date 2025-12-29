@@ -4,17 +4,11 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, List
-import psycopg2
-import os
-from dotenv import load_dotenv
 from datetime import datetime, timezone, timedelta
 
-load_dotenv()
+from common.pg_client import pg_client
 
 router = APIRouter()
-
-# 数据库连接配置
-DB_URL = os.getenv("PG_URL")
 
 # 北京时区 (UTC+8)
 BEIJING_TZ = timezone(timedelta(hours=8))
@@ -57,11 +51,6 @@ class NoteResponse(BaseModel):
     video_url: Optional[str]
 
 
-def get_db():
-    """获取数据库连接"""
-    return psycopg2.connect(DB_URL)
-
-
 @router.post("/notes")
 async def create_note(note: NoteCreate):
     """创建笔记"""
@@ -69,19 +58,14 @@ async def create_note(note: NoteCreate):
         raise HTTPException(status_code=400, detail="笔记内容不能为空")
     
     try:
-        conn = get_db()
-        cur = conn.cursor()
-        
-        query = """
-            INSERT INTO public.notes (created_at, author, content, likes, img_url, video_url)
-            VALUES (NOW(), %s, %s, 0, %s, %s)
-            RETURNING id, created_at, version, author, content, likes, img_url, video_url
-        """
-        
-        cur.execute(query, (note.author, note.content, note.img_url, note.video_url))
-        
-        row = cur.fetchone()
-        conn.commit()
+        with pg_client.cursor() as cur:
+            query = """
+                INSERT INTO public.notes (created_at, author, content, likes, img_url, video_url)
+                VALUES (NOW(), %s, %s, 0, %s, %s)
+                RETURNING id, created_at, version, author, content, likes, img_url, video_url
+            """
+            cur.execute(query, (note.author, note.content, note.img_url, note.video_url))
+            row = cur.fetchone()
         
         result = {
             "id": row[0],
@@ -93,9 +77,6 @@ async def create_note(note: NoteCreate):
             "img_url": row[6],
             "video_url": row[7]
         }
-        
-        cur.close()
-        conn.close()
         
         return {
             "success": True,
@@ -113,53 +94,41 @@ async def update_note(note_id: int, note: NoteUpdate):
         raise HTTPException(status_code=400, detail="至少需要提供 author 或 content 其中之一")
     
     try:
-        conn = get_db()
-        cur = conn.cursor()
-        
-        # 获取最新版本的笔记
-        query = """
-            SELECT id, created_at, author, content, likes, img_url, video_url
-            FROM public.notes
-            WHERE id = %s
-            ORDER BY version DESC
-            LIMIT 1
-        """
-        cur.execute(query, (note_id,))
-        row = cur.fetchone()
-        
-        if not row:
-            cur.close()
-            conn.close()
-            raise HTTPException(status_code=404, detail="笔记不存在")
-        
-        # 获取原笔记数据
-        old_id, old_created_at, old_author, old_content, old_likes, old_img_url, old_video_url = row
-        
-        # 使用新值或沿用旧值
-        new_author = note.author if note.author is not None else old_author
-        new_content = note.content if note.content is not None else old_content
-        new_img_url = note.img_url if note.img_url is not None else old_img_url
-        new_video_url = note.video_url if note.video_url is not None else old_video_url
-        
-        # 插入新版本
-        insert_query = """
-            INSERT INTO public.notes (id, created_at, author, content, likes, img_url, video_url)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, created_at, version, author, content, likes, img_url, video_url
-        """
-        
-        cur.execute(insert_query, (
-            old_id,
-            old_created_at,
-            new_author,
-            new_content,
-            old_likes,
-            new_img_url,
-            new_video_url
-        ))
-        
-        new_row = cur.fetchone()
-        conn.commit()
+        with pg_client.cursor() as cur:
+            query = """
+                SELECT id, created_at, author, content, likes, img_url, video_url
+                FROM public.notes
+                WHERE id = %s
+                ORDER BY version DESC
+                LIMIT 1
+            """
+            cur.execute(query, (note_id,))
+            row = cur.fetchone()
+            
+            if not row:
+                raise HTTPException(status_code=404, detail="笔记不存在")
+            
+            old_id, old_created_at, old_author, old_content, old_likes, old_img_url, old_video_url = row
+            new_author = note.author if note.author is not None else old_author
+            new_content = note.content if note.content is not None else old_content
+            new_img_url = note.img_url if note.img_url is not None else old_img_url
+            new_video_url = note.video_url if note.video_url is not None else old_video_url
+            
+            insert_query = """
+                INSERT INTO public.notes (id, created_at, author, content, likes, img_url, video_url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, created_at, version, author, content, likes, img_url, video_url
+            """
+            cur.execute(insert_query, (
+                old_id,
+                old_created_at,
+                new_author,
+                new_content,
+                old_likes,
+                new_img_url,
+                new_video_url
+            ))
+            new_row = cur.fetchone()
         
         result = {
             "id": new_row[0],
@@ -171,9 +140,6 @@ async def update_note(note_id: int, note: NoteUpdate):
             "img_url": new_row[6],
             "video_url": new_row[7]
         }
-        
-        cur.close()
-        conn.close()
         
         return {
             "success": True,
@@ -190,42 +156,31 @@ async def update_note(note_id: int, note: NoteUpdate):
 async def like_note(note_id: int):
     """点赞笔记"""
     try:
-        conn = get_db()
-        cur = conn.cursor()
-        
-        # 找到最新版本并更新点赞数
-        query = """
-            WITH latest_note AS (
-                SELECT id, version
-                FROM public.notes
-                WHERE id = %s
-                ORDER BY version DESC
-                LIMIT 1
-            )
-            UPDATE public.notes
-            SET likes = COALESCE(likes, 0) + 1
-            WHERE id = (SELECT id FROM latest_note)
-                AND version = (SELECT version FROM latest_note)
-            RETURNING id, likes
-        """
-        
-        cur.execute(query, (note_id,))
-        row = cur.fetchone()
-        
-        if not row:
-            cur.close()
-            conn.close()
-            raise HTTPException(status_code=404, detail="笔记不存在")
-        
-        conn.commit()
+        with pg_client.cursor() as cur:
+            query = """
+                WITH latest_note AS (
+                    SELECT id, version
+                    FROM public.notes
+                    WHERE id = %s
+                    ORDER BY version DESC
+                    LIMIT 1
+                )
+                UPDATE public.notes
+                SET likes = COALESCE(likes, 0) + 1
+                WHERE id = (SELECT id FROM latest_note)
+                    AND version = (SELECT version FROM latest_note)
+                RETURNING id, likes
+            """
+            cur.execute(query, (note_id,))
+            row = cur.fetchone()
+            
+            if not row:
+                raise HTTPException(status_code=404, detail="笔记不存在")
         
         result = {
             "id": row[0],
             "likes": row[1] or 0
         }
-        
-        cur.close()
-        conn.close()
         
         return {
             "success": True,
@@ -247,66 +202,62 @@ async def list_notes(
 ):
     """查询笔记列表（只返回每个id的最新版本）"""
     try:
-        conn = get_db()
-        cur = conn.cursor()
-        
-        # 构建排序字段
-        if sort_by == "likes":
-            order_by = "likes DESC, version DESC"
-        else:
-            order_by = "created_at DESC"
-        
-        # 构建查询（使用子查询获取每个id的最新version）
-        if search:
-            query = f"""
-                WITH latest_notes AS (
-                    SELECT DISTINCT ON (id) 
-                        id, created_at, version, author, content, likes, img_url, video_url
-                    FROM public.notes
-                    WHERE content ILIKE %s OR author ILIKE %s
-                    ORDER BY id, version DESC
-                )
-                SELECT id, created_at, version, author, content, likes, img_url, video_url
-                FROM latest_notes
-                ORDER BY {order_by}
-                LIMIT %s OFFSET %s
-            """
-            search_pattern = f"%{search}%"
-            cur.execute(query, (search_pattern, search_pattern, limit, offset))
-            rows = cur.fetchall()
+        with pg_client.cursor() as cur:
+            if sort_by == "likes":
+                order_by = "likes DESC, version DESC"
+            else:
+                order_by = "created_at DESC"
             
-            count_query = """
-                WITH latest_notes AS (
-                    SELECT DISTINCT ON (id) id
-                    FROM public.notes
-                    WHERE content ILIKE %s OR author ILIKE %s
-                    ORDER BY id, version DESC
-                )
-                SELECT COUNT(*) FROM latest_notes
-            """
-            cur.execute(count_query, (search_pattern, search_pattern))
-            total = cur.fetchone()[0]
-        else:
-            query = f"""
-                WITH latest_notes AS (
-                    SELECT DISTINCT ON (id) 
-                        id, created_at, version, author, content, likes, img_url, video_url
-                    FROM public.notes
-                    ORDER BY id, version DESC
-                )
-                SELECT id, created_at, version, author, content, likes, img_url, video_url
-                FROM latest_notes
-                ORDER BY {order_by}
-                LIMIT %s OFFSET %s
-            """
-            cur.execute(query, (limit, offset))
-            rows = cur.fetchall()
-            
-            count_query = """
-                SELECT COUNT(DISTINCT id) FROM public.notes
-            """
-            cur.execute(count_query)
-            total = cur.fetchone()[0]
+            if search:
+                query = f"""
+                    WITH latest_notes AS (
+                        SELECT DISTINCT ON (id) 
+                            id, created_at, version, author, content, likes, img_url, video_url
+                        FROM public.notes
+                        WHERE content ILIKE %s OR author ILIKE %s
+                        ORDER BY id, version DESC
+                    )
+                    SELECT id, created_at, version, author, content, likes, img_url, video_url
+                    FROM latest_notes
+                    ORDER BY {order_by}
+                    LIMIT %s OFFSET %s
+                """
+                search_pattern = f"%{search}%"
+                cur.execute(query, (search_pattern, search_pattern, limit, offset))
+                rows = cur.fetchall()
+                
+                count_query = """
+                    WITH latest_notes AS (
+                        SELECT DISTINCT ON (id) id
+                        FROM public.notes
+                        WHERE content ILIKE %s OR author ILIKE %s
+                        ORDER BY id, version DESC
+                    )
+                    SELECT COUNT(*) FROM latest_notes
+                """
+                cur.execute(count_query, (search_pattern, search_pattern))
+                total = cur.fetchone()[0]
+            else:
+                query = f"""
+                    WITH latest_notes AS (
+                        SELECT DISTINCT ON (id) 
+                            id, created_at, version, author, content, likes, img_url, video_url
+                        FROM public.notes
+                        ORDER BY id, version DESC
+                    )
+                    SELECT id, created_at, version, author, content, likes, img_url, video_url
+                    FROM latest_notes
+                    ORDER BY {order_by}
+                    LIMIT %s OFFSET %s
+                """
+                cur.execute(query, (limit, offset))
+                rows = cur.fetchall()
+                
+                count_query = """
+                    SELECT COUNT(DISTINCT id) FROM public.notes
+                """
+                cur.execute(count_query)
+                total = cur.fetchone()[0]
         
         items = [
             {
@@ -321,9 +272,6 @@ async def list_notes(
             }
             for row in rows
         ]
-        
-        cur.close()
-        conn.close()
         
         return {
             "success": True,
@@ -341,23 +289,19 @@ async def list_notes(
 async def get_note(note_id: int):
     """获取单个笔记详情（最新版本）"""
     try:
-        conn = get_db()
-        cur = conn.cursor()
-        
-        query = """
-            SELECT id, created_at, version, author, content, likes, img_url, video_url
-            FROM public.notes
-            WHERE id = %s
-            ORDER BY version DESC
-            LIMIT 1
-        """
-        cur.execute(query, (note_id,))
-        row = cur.fetchone()
-        
-        if not row:
-            cur.close()
-            conn.close()
-            raise HTTPException(status_code=404, detail="笔记不存在")
+        with pg_client.cursor() as cur:
+            query = """
+                SELECT id, created_at, version, author, content, likes, img_url, video_url
+                FROM public.notes
+                WHERE id = %s
+                ORDER BY version DESC
+                LIMIT 1
+            """
+            cur.execute(query, (note_id,))
+            row = cur.fetchone()
+            
+            if not row:
+                raise HTTPException(status_code=404, detail="笔记不存在")
         
         result = {
             "id": row[0],
@@ -369,9 +313,6 @@ async def get_note(note_id: int):
             "img_url": row[6],
             "video_url": row[7]
         }
-        
-        cur.close()
-        conn.close()
         
         return {
             "success": True,
