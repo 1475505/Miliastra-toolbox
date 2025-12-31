@@ -42,6 +42,9 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   const [statusMessage, setStatusMessage] = useState('')
   const [showConfigHint, setShowConfigHint] = useState(false)
   const [noticeContent, setNoticeContent] = useState('')
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageBase64, setImageBase64] = useState<string | null>(null)
+  const [imageInfo, setImageInfo] = useState<string>('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
 
@@ -109,6 +112,99 @@ export default function Chat({ configVersion, currentConversationId, onConversat
       })
     }
   }, [messages, conversationId, displayMessages])
+
+  const MAX_IMAGE_SIZE = 1024 * 1024 // 1MB
+
+  const compressImageToBase64 = (file: File): Promise<{ base64: string; info: string }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            reject(new Error('Canvas 不支持'))
+            return
+          }
+
+          let { width, height } = img
+          const maxDimension = 1280
+          if (width > maxDimension || height > maxDimension) {
+            const ratio = Math.min(maxDimension / width, maxDimension / height)
+            width = Math.round(width * ratio)
+            height = Math.round(height * ratio)
+          }
+
+          canvas.width = width
+          canvas.height = height
+          ctx.drawImage(img, 0, 0, width, height)
+
+          let quality = 0.9
+          let base64 = canvas.toDataURL('image/jpeg', quality)
+
+          // 如仍然大于 1MB，逐步降低质量
+          while (base64.length * 0.75 > MAX_IMAGE_SIZE && quality > 0.3) {
+            quality -= 0.1
+            base64 = canvas.toDataURL('image/jpeg', quality)
+          }
+
+          const sizeKB = Math.round((base64.length * 0.75) / 1024)
+          if (base64.length * 0.75 > MAX_IMAGE_SIZE) {
+            reject(new Error('图片压缩后仍大于 1MB，请选择更小的图片'))
+          } else {
+            resolve({ base64, info: `已压缩至约 ${sizeKB} KB` })
+          }
+        }
+        img.onerror = () => reject(new Error('图片加载失败'))
+        img.src = reader.result as string
+      }
+      reader.onerror = () => reject(new Error('读取图片失败'))
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleImageChange = async (file: File | null) => {
+    if (!file) {
+      setImagePreview(null)
+      setImageBase64(null)
+      setImageInfo('')
+      return
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setError('请选择图片文件')
+      return
+    }
+
+    try {
+      setError('')
+      setImageInfo('正在压缩图片...')
+      const { base64, info } = await compressImageToBase64(file)
+      setImagePreview(base64)
+      setImageBase64(base64)
+      setImageInfo(info)
+    } catch (e) {
+      setImagePreview(null)
+      setImageBase64(null)
+      setImageInfo('')
+      setError(e instanceof Error ? e.message : '图片处理失败')
+    }
+  }
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile()
+        if (file) {
+          e.preventDefault()
+          handleImageChange(file)
+          return
+        }
+      }
+    }
+  }
 
   const handleNewConversation = () => {
     const newConv = createNewConversation()
@@ -184,7 +280,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   }, [])
 
   const handleSend = async () => {
-    if (!input.trim() || loading) return
+    if ((!input.trim() && !imageBase64) || loading) return
 
     const config = getConfig()
     if (!config.use_default_model && !config.api_key) {
@@ -193,10 +289,17 @@ export default function Chat({ configVersion, currentConversationId, onConversat
     }
 
     setShowConfigHint(false)
-    const userMessage: Message = { role: 'user', content: input }
+    const userMessage: Message = { 
+      role: 'user', 
+      content: input || (imageBase64 ? '[图片提问]' : ''),
+      imageBase64: imageBase64 || undefined,
+    }
     setMessages((prev) => [...prev, userMessage])
     setDisplayMessages((prev) => [...prev, userMessage])
     setInput('')
+    setImagePreview(null)
+    setImageBase64(null)
+    setImageInfo('')
     setLoading(true)
     setError('')
     setTimeoutWarning('')
@@ -217,6 +320,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
           message: input,
           conversation: contextMessages,
           config,
+          image_base64: imageBase64,
         }),
         signal: controller.signal,
       })
@@ -510,7 +614,19 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                 }`}
               >
                 {'role' in msg && msg.role === 'user' ? (
-                  <div className="whitespace-pre-wrap">{'content' in msg ? msg.content : ''}</div>
+                  <div className="whitespace-pre-wrap">
+                    {'imageBase64' in msg && msg.imageBase64 && (
+                      <div className="mb-2">
+                        <img 
+                          src={msg.imageBase64} 
+                          alt="用户上传的图片" 
+                          className="max-w-full h-auto rounded-lg border border-white/20"
+                          style={{ maxHeight: '300px' }}
+                        />
+                      </div>
+                    )}
+                    {'content' in msg ? msg.content : ''}
+                  </div>
                 ) : (
                   <div className="prose prose-sm max-w-none prose-slate">
                     {'reasoning' in msg && msg.reasoning && (
@@ -561,23 +677,59 @@ export default function Chat({ configVersion, currentConversationId, onConversat
       </div>
 
       <div className="border-t border-gray-200 p-6">
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder="AI回答仅供参考，请保持质疑，优先查看来源中的官方文档；建议用相对概念化的方式提问"
-            disabled={loading}
-            className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300"
-          />
-          <button
-            onClick={handleSend}
-            disabled={loading || !input.trim()}
-            className="px-6 py-3 bg-yellow-300 text-slate-900 rounded-xl hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
-          >
-            {loading ? '...' : '发送'}
-          </button>
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-3">
+            <label className="px-3 py-3 border border-dashed border-gray-300 rounded-xl bg-white/60 text-sm text-gray-600 cursor-pointer hover:border-yellow-400 hover:bg-white">
+              <span>📷 图片</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImageChange(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+                disabled={loading}
+              />
+            </label>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              onPaste={handlePaste}
+              placeholder="输入问题或粘贴图片；AI回答仅供参考，请保持质疑，优先查看来源中的官方文档"
+              disabled={loading}
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300"
+            />
+            <button
+              onClick={handleSend}
+              disabled={loading || (!input.trim() && !imageBase64)}
+              className="px-6 py-3 bg-yellow-300 text-slate-900 rounded-xl hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
+            >
+              {loading ? '...' : '发送'}
+            </button>
+          </div>
+          {imagePreview && (
+            <div className="flex items-center gap-3">
+              <img
+                src={imagePreview}
+                alt="已选择的图片"
+                className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+              />
+              <div className="flex-1 text-xs text-gray-600">
+                <div>已附带图片发送（{imageInfo || '大小信息计算中...'}）</div>
+                <button
+                  type="button"
+                  onClick={() => handleImageChange(null)}
+                  className="mt-1 text-xs text-red-500 hover:underline"
+                  disabled={loading}
+                >
+                  移除图片
+                </button>
+              </div>
+            </div>
+          )}
+          {!imagePreview && imageInfo && (
+            <div className="text-xs text-gray-500">{imageInfo}</div>
+          )}
         </div>
         <div className="text-center text-xs text-gray-500 mt-3">
           《原神》千星奇域相关文档版权归米哈游所有，本网站为个人兴趣，仅供辅助个人兴趣使用，与米哈游无关

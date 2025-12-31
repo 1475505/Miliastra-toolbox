@@ -9,6 +9,7 @@ export interface LLMConfig {
 export interface Message {
   role: 'user' | 'assistant'
   content: string
+  imageBase64?: string
 }
 
 export interface Source {

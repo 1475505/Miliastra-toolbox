@@ -33,12 +33,12 @@ rag_v1_path = os.path.abspath(rag_v1_path)
 if rag_v1_path not in sys.path:
     sys.path.insert(0, rag_v1_path)
 
-from typing import List, Dict, Any, Generator
+from typing import List, Dict, Any, Generator, Optional
 import json
 import asyncio
+import base64
 from llama_index.llms.openai_like import OpenAILike
-from llama_index.core.llms import ChatMessage
-from llama_index.core.chat_engine import CondensePlusContextChatEngine
+from llama_index.core.llms import ChatMessage, TextBlock, ImageBlock, MessageRole
 from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
 from llama_index.core import Settings as LlamaSettings
 import tiktoken
@@ -162,6 +162,25 @@ class ChatEngine:
             tokenizer=tiktoken.encoding_for_model("gpt-3.5-turbo").encode,
             verbose=False
         )
+
+        self.context_prompt_template = (
+            "千星沙箱是一款游戏UGC编辑器，主要通过配置实体、节点图来进行操作，实现交互和逻辑。接下来，请根据给予的文档内容回答问题。\n"
+            "相关的文档内容：\n"
+            "{context_str}\n"
+            "回答时，若需要出现文档未提及的观点，请简单标注"
+        )
+        
+        # 检索查询生成 prompt
+        self.query_extraction_prompt = (
+            "你是一个知识库检索助手。请分析用户的问题（可能包含图片），提取用于检索的关键词。\n"
+            "背景：千星沙箱是一款游戏UGC编辑器，知识库包含实体、节点图、组件、事件等文档。\n\n"
+            "要求：\n"
+            "1. 识别问题中的核心概念和关键词\n"
+            "2. 如果有图片，识别图片中的关键信息（如错误提示、节点名称、配置项等）\n"
+            "3. 生成 1-5 个简洁的检索关键词或短语\n"
+            "4. 只输出检索词，用空格分隔，不要其他解释\n\n"
+            "用户问题：{message}"
+        )
     
     def _resolve_llm_config(self, config: Dict[str, Any]) -> Dict[str, str]:
         """解析 LLM 配置，优先使用用户提供的配置，否则使用默认免费模型
@@ -251,41 +270,55 @@ class ChatEngine:
         # 如果都没有提供，抛出异常
         raise ValueError("未提供有效的 API 配置，请完整配置 API Key、Base URL、Model，或启用默认免费模型")
     
-        
-    def _create_chat_engine(self, llm, chat_history):
-        """创建 chat engine（公共方法）
+    def _generate_retrieval_query(self, llm, message: str, image_base64: Optional[str] = None) -> str:
+        """阶段1：让 LLM 分析用户问题（+图片），生成检索查询
         
         Args:
             llm: LLM 实例
-            chat_history: ChatMessage 列表
+            message: 用户原始问题
+            image_base64: 可选的图片数据
             
         Returns:
-            CondensePlusContextChatEngine 实例
+            生成的检索查询字符串
         """
-        # 从环境变量读取检索参数，提供默认值
-        similarity_top_k = int(os.getenv("TOP_K", "5"))
-        similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.6"))
+        prompt_text = self.query_extraction_prompt.format(message=message)
         
-        return CondensePlusContextChatEngine.from_defaults(
-            # retriever=self.rag_engine.index.as_retriever(similarity_top_k=similarity_top_k,
-            retriever=CombinedRetriever(
-                index=self.rag_engine.index,
-                total_k=similarity_top_k,
-                bbs_max=int(os.getenv("BBS_MAX", "3")),
-                bbs_key=os.getenv("BBS_KEY", "id"),
-                bbs_value=os.getenv("BBS_VALUE", "bbs-faq"),
-                similarity_cutoff=similarity_cutoff
-            ),
-            llm=llm,
-            chat_history=chat_history,
-            context_prompt=(
-                "千星沙箱是一款游戏UGC编辑器，主要通过配置实体、节点图来进行操作，实现交互和逻辑。接下来，请根据给予的文档内容回答问题。\n"
-                "相关的文档内容：\n"
-                "{context_str}\n"
-                "回答时，若需要出现文档未提及的观点，请简单标注"
-            ),
-            verbose=False
-        )
+        blocks = [TextBlock(text=prompt_text)]
+        if image_base64:
+            blocks.append(ImageBlock(url=image_base64))
+        
+        extract_msg = ChatMessage(role=MessageRole.USER, blocks=blocks)
+        
+        try:
+            response = llm.chat([extract_msg])
+            extracted_query = response.message.content.strip()
+            # 合并原始问题和提取的关键词
+            final_query = f"{message} {extracted_query}"
+            print(f"[ChatEngine] 检索查询生成: {extracted_query}")
+            return final_query
+        except Exception as e:
+            print(f"[ChatEngine] 检索查询生成失败，使用原始问题: {e}")
+            return message
+    
+    async def _generate_retrieval_query_async(self, llm, message: str, image_base64: Optional[str] = None) -> str:
+        """异步版本：让 LLM 分析用户问题（+图片），生成检索查询"""
+        prompt_text = self.query_extraction_prompt.format(message=message)
+        
+        blocks = [TextBlock(text=prompt_text)]
+        if image_base64:
+            blocks.append(ImageBlock(url=image_base64))
+        
+        extract_msg = ChatMessage(role=MessageRole.USER, blocks=blocks)
+        
+        try:
+            response = await llm.achat([extract_msg])
+            extracted_query = response.message.content.strip()
+            final_query = f"{message} {extracted_query}"
+            print(f"[ChatEngine Stream] 检索查询生成: {extracted_query}")
+            return final_query
+        except Exception as e:
+            print(f"[ChatEngine Stream] 检索查询生成失败，使用原始问题: {e}")
+            return message
     
     def _extract_sources(self, source_nodes) -> List[Dict[str, Any]]:
         """提取来源信息（公共方法）
@@ -307,24 +340,23 @@ class ChatEngine:
             for node in source_nodes
         ]
     
-    def chat(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str]) -> Dict[str, Any]:
+    def chat(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str], image_base64: Optional[str] = None) -> Dict[str, Any]:
         """执行对话查询
         
         Args:
             message: 用户问题
             conversation: 对话历史 [{"role": "user|assistant", "content": "..."}]
             config: LLM 配置 {"api_key", "api_base_url", "model", "use_default_model", "context_length"}
+            image_base64: 可选的 Base64 编码图片字符串 (data:image/jpeg;base64,...)
         
         Returns:
             {"answer": str, "sources": List[dict], "tokens": int}
         """
-        # 1. 解析 LLM 配置（优先用户 key，其次默认免费模型）
+        # 1. 解析 LLM 配置
         resolved_config = self._resolve_llm_config(config)
         
-        # 2. 获取上下文长度配置（默认为3轮对话）
+        # 2. 获取上下文长度配置
         context_length = config.get("context_length", 3)
-        # 限制对话历史长度（每轮对话包含 user 和 assistant 两条消息）
-        # 特殊处理：当context_length=0时，不使用任何对话历史
         if context_length == 0:
             limited_conversation = []
         elif len(conversation) > context_length * 2:
@@ -332,7 +364,7 @@ class ChatEngine:
         else:
             limited_conversation = conversation
         
-        # 3. 创建动态 LLM
+        # 3. 创建 LLM
         llm = OpenAILike(
             api_key=resolved_config["api_key"],
             api_base=resolved_config["api_base_url"],
@@ -341,12 +373,7 @@ class ChatEngine:
         )
         print(f"[ChatEngine] 使用 LLM 模型: {resolved_config['model']}")
         
-        # 4. 转换对话历史为 ChatMessage 格式（参考官方文档）
-        chat_history = [
-            ChatMessage(role=msg["role"], content=msg["content"])
-            for msg in limited_conversation
-        ]
-        # 4. 转换对话历史为 ChatMessage 格式（参考官方文档）
+        # 4. 转换对话历史为 ChatMessage 格式
         chat_history = [
             ChatMessage(role=msg["role"], content=msg["content"])
             for msg in limited_conversation
@@ -355,38 +382,59 @@ class ChatEngine:
         # 5. 重置 token 计数器
         self.token_counter.reset_counts()
         
-        # 6. 设置全局 callback manager（参考官方文档）
+        # 6. 设置全局 callback manager
         original_callback_manager = LlamaSettings.callback_manager
         LlamaSettings.callback_manager = CallbackManager([self.token_counter])
         
         try:
-            # 7. 创建 CondensePlusContextChatEngine（参考官方文档）
-            chat_engine = self._create_chat_engine(llm, chat_history)
+            # 7. 阶段1：让 LLM 生成检索查询
+            retrieval_query = self._generate_retrieval_query(llm, message, image_base64)
             
-            # 8. 执行查询
-            response = chat_engine.chat(message)
+            # 8. 阶段2：执行检索
+            similarity_top_k = int(os.getenv("TOP_K", "5"))
+            similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.6"))
             
-            # 9. 提取来源
-            sources = self._extract_sources(response.source_nodes)
+            retriever = CombinedRetriever(
+                index=self.rag_engine.index,
+                total_k=similarity_top_k,
+                bbs_max=int(os.getenv("BBS_MAX", "2")),
+                bbs_key=os.getenv("BBS_KEY", "id"),
+                bbs_value=os.getenv("BBS_VALUE", "bbs-faq"),
+                similarity_cutoff=similarity_cutoff
+            )
+            nodes = retriever.retrieve(retrieval_query)
             
-            # 10. 获取 completion tokens（参考官方文档）
+            # 9. 阶段3：构建 prompt 和消息，让 LLM 根据检索结果回答
+            context_str = "\n\n".join([n.get_content() for n in nodes])
+            fmt_msg = self.context_prompt_template.format(context_str=context_str) + f"\n\n用户问题：{message}"
+            
+            blocks = [TextBlock(text=fmt_msg)]
+            if image_base64:
+                # 使用 url 传递 data URI
+                blocks.append(ImageBlock(url=image_base64))
+            
+            last_msg = ChatMessage(role=MessageRole.USER, blocks=blocks)
+            
+            # 9. 执行查询 (直接调用 LLM)
+            response = llm.chat(chat_history + [last_msg])
+            
+            # 10. 提取来源
+            sources = self._extract_sources(nodes)
+            
+            # 11. 获取 completion tokens
             completion_tokens = self.token_counter.completion_llm_token_count
             
             result = {
-                "answer": response.response,
+                "answer": response.message.content,
                 "sources": sources,
                 "tokens": completion_tokens
             }
 
             # TODO 暂时不支持reasoning_content
             reasoning = None
-            # 尝试从 metadata 获取
-            if hasattr(response, "metadata") and response.metadata:
-                reasoning = response.metadata.get("reasoning_content")
-            
-            # 如果 response 对象本身有 additional_kwargs
-            if not reasoning and hasattr(response, "additional_kwargs"):
-                reasoning = response.additional_kwargs.get("reasoning_content")
+            # 尝试从 additional_kwargs 获取
+            if hasattr(response.message, "additional_kwargs"):
+                reasoning = response.message.additional_kwargs.get("reasoning_content")
             
             if reasoning:
                 result["reasoning"] = reasoning
@@ -396,35 +444,21 @@ class ChatEngine:
             # 恢复原来的 callback manager
             LlamaSettings.callback_manager = original_callback_manager
     
-    async def chat_stream_async(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str]):
-        """执行异步流式对话查询（带心跳机制防止超时）
-        
-        Args:
-            message: 用户问题
-            conversation: 对话历史 [{"role": "user|assistant", "content": "...";}]
-            config: LLM 配置 {"api_key", "api_base_url", "model", "use_default_model", "context_length"}
-        
-        Yields:
-            SSE 格式的数据流:
-            - : heartbeat (心跳注释，保持连接)
-            - data: {"type": "sources", "data": [...]}
-            - data: {"type": "token", "data": "文本块"}
-            - data: {"type": "done", "data": {"tokens": 123}}
-        """
-        # 1. 解析 LLM 配置（优先用户 key，其次默认免费模型）
+    async def chat_stream_async(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str], image_base64: Optional[str] = None):
+        """执行异步流式对话查询（带心跳机制防止超时）"""
+        # 1. 解析 LLM 配置
         resolved_config = self._resolve_llm_config(config)
         
-        # 2. 获取上下文长度配置（默认为3轮对话）
-        context_length = config.get("context_length", 3)
-        # 限制对话历史长度（每轮对话包含 user 和 assistant 两条消息）
-        # 特殊处理：当context_length=0时，不使用任何对话历史
+        # 2. 获取上下文长度配置
+        context_length = config.get("context_length", 1)
         if context_length == 0:
             limited_conversation = []
         elif len(conversation) > context_length * 2:
             limited_conversation = conversation[-(context_length * 2):]
         else:
             limited_conversation = conversation
-        # 3. 创建动态 LLM
+
+        # 3. 创建 LLM
         llm = OpenAILike(
             api_key=resolved_config["api_key"],
             api_base=resolved_config["api_base_url"],
@@ -450,54 +484,64 @@ class ChatEngine:
             # 步骤1：发送初始心跳
             yield ": connected\n\n"
             
-            # 步骤2：创建 chat engine（可能耗时较长）
-            chat_engine = self._create_chat_engine(llm, chat_history)
-            # 完成后立即发送心跳
-            yield ": chat_engine_created\n\n"
+            # 步骤2：阶段1 - 让 LLM 生成检索查询
+            yield f"data: {json.dumps({'type': 'status', 'data': '正在分析问题...'}, ensure_ascii=False)}\n\n"
+            retrieval_query = await self._generate_retrieval_query_async(llm, message, image_base64)
+            yield ": query_generated\n\n"
             
-            # 步骤3：执行流式查询（检索知识库可能耗时）
-            # 使用 asyncio.wait_for 实现心跳，每30秒发送一次
-            chat_task = asyncio.create_task(chat_engine.astream_chat(message))
-            streaming_response = None
+            # 步骤3：阶段2 - 执行检索
+            similarity_top_k = int(os.getenv("TOP_K", "5"))
+            similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.6"))
             
-            while not chat_task.done():
-                try:
-                    # 等待任务完成，或者超时
-                    streaming_response = await asyncio.wait_for(asyncio.shield(chat_task), timeout=30.0)
-                except asyncio.TimeoutError:
-                    # 超时发送心跳
-                    yield ": heartbeat\n\n"
+            retriever = CombinedRetriever(
+                index=self.rag_engine.index,
+                total_k=similarity_top_k,
+                bbs_max=int(os.getenv("BBS_MAX", "2")),
+                bbs_key=os.getenv("BBS_KEY", "id"),
+                bbs_value=os.getenv("BBS_VALUE", "bbs-faq"),
+                similarity_cutoff=similarity_cutoff
+            )
             
-            # 确保获取结果（如果循环结束是因为 task done 但 wait_for 还没返回）
-            if streaming_response is None:
-                streaming_response = await chat_task
-
+            # 使用 LLM 生成的查询进行检索
+            nodes = await asyncio.to_thread(retriever.retrieve, retrieval_query)
+            
             # 完成后立即发送心跳
             yield ": retrieval_done\n\n"
             
             # 步骤4：发送来源信息
-            sources = self._extract_sources(streaming_response.source_nodes)
+            sources = self._extract_sources(nodes)
             yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
-            # 完成后立即发送心跳
             yield ": sources_sent\n\n"
             
-            # 步骤5：流式发送文本
+            # 步骤5：阶段3 - 构建 prompt 和消息，让 LLM 根据检索结果回答
+            context_str = "\n\n".join([n.get_content() for n in nodes])
+            fmt_msg = self.context_prompt_template.format(context_str=context_str) + f"\n\n用户问题：{message}"
+            
+            blocks = [TextBlock(text=fmt_msg)]
+            if image_base64:
+                blocks.append(ImageBlock(url=image_base64))
+                print("[ChatEngine Stream] 已加载图片数据")
+            
+            last_msg = ChatMessage(role=MessageRole.USER, blocks=blocks)
+            
+            # 步骤6：流式发送文本
+            stream_gen = await llm.astream_chat(chat_history + [last_msg])
+            
             chunk_count = 0
-            # 使用 async_response_gen 获取更详细的响应信息
-            async for response_chunk in streaming_response.async_response_gen():
-                # 发送文本内容
-                if response_chunk:
-                    yield f"data: {json.dumps({'type': 'token', 'data': response_chunk}, ensure_ascii=False)}\n\n"
+            async for response_chunk in stream_gen:
+                # response_chunk 是 ChatResponseChunk，包含 delta
+                content = response_chunk.delta
+                
+                if content:
+                    yield f"data: {json.dumps({'type': 'token', 'data': content}, ensure_ascii=False)}\n\n"
                 
                 chunk_count += 1
-                # 每10个文本块发送一次心跳
                 if chunk_count % 10 == 0:
                     yield ": generating\n\n"
             
-            # 步骤6：发送完成信号
+            # 步骤7：发送完成信号
             completion_tokens = self.token_counter.completion_llm_token_count
             yield f"data: {json.dumps({'type': 'done', 'data': {'tokens': completion_tokens}}, ensure_ascii=False)}\n\n"
-            # 完成后发送最终心跳
             yield ": completed\n\n"
             
         except Exception as e:

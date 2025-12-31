@@ -86,7 +86,11 @@ export function downloadConversation(conversation: Conversation): void {
       content += '\n'
     } else if ('role' in msg) {
       if (msg.role === 'user') {
-        content += `Q. ${msg.content}\n\n`
+        content += `Q. ${msg.content}`
+        if ('imageBase64' in msg && msg.imageBase64) {
+          content += '\n[用户发送了图片]'
+        }
+        content += '\n\n'
       } else if (msg.role === 'assistant') {
         content += `A. ${msg.content}\n\n`
       }

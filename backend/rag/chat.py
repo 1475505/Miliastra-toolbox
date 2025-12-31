@@ -38,6 +38,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
     conversation: List[Message] = Field(default_factory=list)
     config: LLMConfig
+    image_base64: Optional[str] = None
 
 
 # ============ 响应模型 ============
@@ -101,7 +102,8 @@ async def chat(request: ChatRequest):
         result = engine.chat(
             message=request.message,
             conversation=conversation,
-            config=llm_config
+            config=llm_config,
+            image_base64=request.image_base64
         )
         
         # 4. 构建响应
@@ -160,7 +162,8 @@ async def chat_stream(request: ChatRequest):
             engine.chat_stream_async(
                 message=request.message,
                 conversation=conversation,
-                config=llm_config
+                config=llm_config,
+                image_base64=request.image_base64
             ),
             media_type="text/event-stream",
             headers={
