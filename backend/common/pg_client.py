@@ -78,6 +78,7 @@ class PGClient:
             查询结果列表，如果数据库不可用则返回空列表
         """
         if not self.is_db_available():
+            print("db not available")
             return []
         
         try:
@@ -117,9 +118,9 @@ class ModelUsageManager:
     其中 channel_id 存储在某个字段中以区分不同渠道
     """
     
-    # 需要限额的渠道（每日200次）
+    # 需要限额的渠道（每日250次）
     RATE_LIMITED_CHANNELS = {1, 2, 5}
-    DAILY_LIMIT = 200
+    DAILY_LIMIT = 250
     
     def __init__(self, pg_client: PGClient):
         self.pg_client = pg_client
@@ -164,6 +165,7 @@ class ModelUsageManager:
         
         # 数据库不可用，认为未限额
         if not self.pg_client.is_db_available():
+            print("pg not available")
             return {
                 "allowed": True,
                 "usage": 0,

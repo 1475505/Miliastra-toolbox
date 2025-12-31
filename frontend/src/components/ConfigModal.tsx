@@ -49,7 +49,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
                   <option value={2}>2.QQ机器人专用渠道</option>
                   <option value={3}>3.openrouter免费模型</option>
                   <option value={4}>4.国产新模型体验渠道</option>
-                  <option value={5}>5.腾讯云deepseek渠道</option>
+                  <option value={5}>5.临时渠道</option>
                 </select>
               </div>
             </div>
