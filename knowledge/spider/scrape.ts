@@ -19,7 +19,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 // 速率限制配置
-const RATE_LIMIT_PER_MINUTE = 5;
+const RATE_LIMIT_PER_MINUTE = 4;
 const MS_PER_REQUEST = Math.ceil(60000 / RATE_LIMIT_PER_MINUTE); // 15000ms
 
 class Crawler {
@@ -42,7 +42,7 @@ class Crawler {
   /**
     * 爬取单个 URL
     */
-  async crawlURL(entry: URLEntry, force: boolean = false) {
+  async crawlURL(entry: URLEntry, force: boolean = false, since?: Date) {
     const { id, title, url, scope } = entry;
 
     console.log(`\n📄 [${scope}] ${title}`);
@@ -63,8 +63,24 @@ class Crawler {
     try {
       await fs.access(filePath);
       if (!force) {
-        console.log(`   ⏭️ 跳过：Markdown 文件已存在`);
-        return { success: true, skipped: true };
+        // 文件已存在，根据 since 参数判断是否跳过
+        if (since) {
+          // since 提供了日期：检查 crawledAt 是否存在且晚于 since 日期
+          const fileContent = await fs.readFile(filePath, 'utf-8');
+          const crawledAtMatch = fileContent.match(/crawledAt:\s*(.+)/);
+          if (crawledAtMatch) {
+            const crawledAtStr = crawledAtMatch[1].trim();
+            const crawledAt = new Date(crawledAtStr);
+            if (!isNaN(crawledAt.getTime()) && crawledAt > since) {
+              console.log(`   ⏭️ 跳过：文件已爬取且时间晚于 ${since.toISOString().split('T')[0]}`);
+              return { success: true, skipped: true };
+            }
+          }
+        } else {
+          // since 未提供：默认不覆盖
+          console.log(`   ⏭️ 跳过：文件已存在（未指定 --since 参数）`);
+          return { success: true, skipped: true };
+        }
       }
     } catch {
       // 文件不存在，继续爬取
@@ -104,7 +120,7 @@ class Crawler {
   /**
     * 批量爬取（支持并发）
     */
-  async scrapeMultiple(entries: URLEntry[], options: { force?: boolean; concurrency?: number } = {}) {
+  async scrapeMultiple(entries: URLEntry[], options: { force?: boolean; concurrency?: number; since?: Date } = {}) {
     const concurrency = options.concurrency || 1;
     console.log(`\n🚀 开始爬取 ${entries.length} 个文档 (并发度: ${concurrency})`);
     console.log(`⏳ 速率限制: ${RATE_LIMIT_PER_MINUTE} 请求/分钟 (每请求间隔 ${MS_PER_REQUEST}ms)\n`);
@@ -122,7 +138,7 @@ class Crawler {
     for (let i = 0; i < entries.length; i += concurrency) {
       const batchStartTime = Date.now(); // 记录批次开始时间
       const batch = entries.slice(i, i + concurrency);
-      const batchPromises = batch.map(entry => this.processEntry(entry, options.force));
+      const batchPromises = batch.map(entry => this.processEntry(entry, options.force, options.since));
 
       const batchResults = await Promise.allSettled(batchPromises);
       
@@ -173,7 +189,7 @@ class Crawler {
         
         if (apiCallsInBatch > 0) {
           const requiredTime = apiCallsInBatch * MS_PER_REQUEST;
-          const waitTime = Math.max(500, requiredTime - elapsed); // 至少等待 500ms
+          const waitTime = Math.max(1000, requiredTime - elapsed); // 至少等待 1000ms
           console.log(`   ⏱️  速率限制等待: ${(waitTime / 1000).toFixed(1)} 秒...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         } else {
@@ -203,9 +219,9 @@ class Crawler {
   /**
    * 处理单个文档条目
    */
-  private async processEntry(entry: URLEntry, force: boolean = false) {
+  private async processEntry(entry: URLEntry, force: boolean = false, since?: Date) {
     try {
-      const result = await this.crawlURL(entry, force);
+      const result = await this.crawlURL(entry, force, since);
       return result;
     } catch (error) {
       return {
@@ -235,18 +251,32 @@ async function main() {
   
   // 处理日期筛选
   const defaultSinceDate = '2025.10.25';
-  const sinceDateStr = sinceArg || defaultSinceDate;
+  const configFilterDateStr = sinceArg || defaultSinceDate;
   // 将 2025.10.25 格式转换为 2025-10-25 以便 Date 解析
-  const formattedSinceDate = sinceDateStr.replace(/\./g, '-');
-  const sinceDate = new Date(formattedSinceDate);
+  const formattedConfigFilterDate = configFilterDateStr.replace(/\./g, '-');
+  const configFilterDate = new Date(formattedConfigFilterDate);
   
-  if (isNaN(sinceDate.getTime())) {
-    console.error(`❌ 无效的日期格式: ${sinceDateStr}，请使用 YYYY.MM.DD 或 YYYY-MM-DD 格式`);
+  if (isNaN(configFilterDate.getTime())) {
+    console.error(`❌ 无效的日期格式: ${configFilterDateStr}，请使用 YYYY.MM.DD 或 YYYY-MM-DD 格式`);
     process.exit(1);
   }
 
+  // 用于比较 crawledAt 的日期（仅当提供了 --since 时）
+  let sinceDate: Date | undefined;
+  let sinceDateStr: string = '';
+  
+  if (sinceArg) {
+    sinceDate = configFilterDate;
+    sinceDateStr = configFilterDateStr;
+  }
+
   console.log(`🔄 强制重爬: ${force ? '是' : '否'}`);
-  console.log(`📅 筛选日期: ${sinceDateStr} (只处理更新时间晚于此日期的文档)`);
+  console.log(`📅 配置筛选日期: ${configFilterDateStr} (只处理配置中更新时间晚于此日期的文档)`);
+  if (sinceDate) {
+    console.log(`📅 爬虫模式: 已指定 --since，文件如果早于 ${sinceDateStr} 则重新爬取`);
+  } else {
+    console.log(`📅 爬虫模式: 未指定 --since，将默认不覆盖现有文件`);
+  }
   console.log(`🧪 测试模式: ${testMode ? '是' : '否'}${testMode ? ` (限制: ${testLimit})` : ''}`);
   console.log(`🚀 并发度: ${concurrency}\n`);
   
@@ -277,7 +307,7 @@ async function main() {
         const filteredEntries = config.entries.filter(entry => {
           if (!entry.updated_at) return false;
           const entryDate = new Date(entry.updated_at);
-          return entryDate > sinceDate;
+          return entryDate > configFilterDate;
         });
 
         allEntries.push(...filteredEntries);
@@ -320,7 +350,7 @@ async function main() {
     
     // 执行爬取
     const crawler = new Crawler();
-    await crawler.scrapeMultiple(entriesToProcess, { force, concurrency });
+    await crawler.scrapeMultiple(entriesToProcess, { force, concurrency, since: sinceDate });
     
     if (testMode) {
       console.log(`\n🧪 测试完成！已处理 ${entriesToProcess.length}/${allEntries.length} 个文档`);

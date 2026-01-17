@@ -1,0 +1,108 @@
+{
+  "entries": [
+    {
+      "id": "mhl3ve9xsz4i",
+      "title": "元件库/元件编辑",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhl3ve9xsz4i",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhl3ve9xsz4i",
+      "scope": "official_faq",
+      "updated_at": "2025-12-23 18:52:40"
+    },
+    {
+      "id": "mhlp1cr71mae",
+      "title": "关卡编辑",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhlp1cr71mae",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhlp1cr71mae",
+      "scope": "official_faq",
+      "updated_at": "2025-12-23 18:09:35"
+    },
+    {
+      "id": "mhlkj59b13vu",
+      "title": "千星沙箱",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhlkj59b13vu",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhlkj59b13vu",
+      "scope": "official_faq",
+      "updated_at": "2025-12-25 14:37:19"
+    },
+    {
+      "id": "mhcqfc0h5aoo",
+      "title": "地形编辑",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhcqfc0h5aoo",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhcqfc0h5aoo",
+      "scope": "official_faq",
+      "updated_at": "2025-12-23 18:09:44"
+    },
+    {
+      "id": "mhlq329fftgy",
+      "title": "存档导出及合并",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhlq329fftgy",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhlq329fftgy",
+      "scope": "official_faq",
+      "updated_at": "2025-12-26 14:57:34"
+    },
+    {
+      "id": "mhut7ai1cnh8",
+      "title": "实体摆放",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhut7ai1cnh8",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhut7ai1cnh8",
+      "scope": "official_faq",
+      "updated_at": "2025-12-25 14:36:55"
+    },
+    {
+      "id": "mhu81c0s40bc",
+      "title": "战斗预设",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhu81c0s40bc",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhu81c0s40bc",
+      "scope": "official_faq",
+      "updated_at": "2025-12-23 18:55:00"
+    },
+    {
+      "id": "mhuj5600xfhk",
+      "title": "界面控件组编辑",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhuj5600xfhk",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhuj5600xfhk",
+      "scope": "official_faq",
+      "updated_at": "2025-12-23 19:08:06"
+    },
+    {
+      "id": "mh3c79rmf1i6",
+      "title": "组件",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mh3c79rmf1i6",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mh3c79rmf1i6",
+      "scope": "official_faq",
+      "updated_at": "2025-12-25 10:51:21"
+    },
+    {
+      "id": "mhudl90wipwg",
+      "title": "结构体",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhudl90wipwg",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhudl90wipwg",
+      "scope": "official_faq",
+      "updated_at": "2025-12-23 19:04:59"
+    },
+    {
+      "id": "mh3nb3rv8goe",
+      "title": "试玩及调试",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mh3nb3rv8goe",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mh3nb3rv8goe",
+      "scope": "official_faq",
+      "updated_at": "2025-12-26 14:57:29"
+    },
+    {
+      "id": "mh3sv0rzn69i",
+      "title": "逻辑自查小贴士",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mh3sv0rzn69i",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mh3sv0rzn69i",
+      "scope": "official_faq",
+      "updated_at": "2025-12-23 16:18:58"
+    }
+  ],
+  "metadata": {
+    "source": "official_faq",
+    "extractedAt": "2026-01-16T03:15:11.201Z",
+    "totalCount": 12,
+    "scopes": {
+      "official_faq": 12
+    }
+  }
+}

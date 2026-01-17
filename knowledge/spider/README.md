@@ -24,6 +24,7 @@ spider/
 
 - **综合指南**: https://act.mihoyo.com/ys/ugc/tutorial/detail/mh29wpicgvh0
 - **教程**: https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhhw2l08o6qo
+- **常见问题**：https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhlp1cr71mae
 
 ## ✨ 核心功能
 
@@ -73,6 +74,9 @@ npm run crawl -- --type=guide
 # 爬取教程页面
 npm run crawl -- --type=tutorial
 
+# 爬取官方常见问题页面
+npm run crawl -- --type=official_faq
+
 # 爬取所有类型（默认）
 npm run crawl
 ```
@@ -109,9 +113,11 @@ npm run scrape -- --filter=pattern
 # 自定义输出目录
 npm run scrape -- --output=./custom-data
 
-# 筛选更新时间（默认 2025.10.25）
+# 筛选更新时间（默认 2025.10.25）推荐使用，配合--force
 npm run scrape -- --since=2025.11.01
 ```
+
+> 上次更新时间: 2026-01-15
 
 **参数说明**：
 - `--test`: 测试模式，限制处理文档数量
@@ -162,9 +168,13 @@ knowledge/
 ├── 📄 tutorial/            # 教程文档
 │   ├── doc_001_教程1.md
 │   └── doc_002_教程2.md
+├── 📄 official_faq/        # 官方常见问题文档
+│   ├── doc_001_问题1.md
+│   └── doc_002_问题2.md
 ├── ⚙️ config/              # URL配置文件
 │   ├── urls-guide.json
-│   └── urls-tutorial.json
+│   ├── urls-tutorial.json
+│   └── urls-official_faq.json
 └── 🕷️ spider/              # 当前模块（独立环境）
     ├── 📦 package.json
     ├── 🔐 .env

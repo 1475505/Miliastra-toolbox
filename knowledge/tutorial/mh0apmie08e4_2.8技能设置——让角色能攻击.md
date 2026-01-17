@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh0apmie08e4
 description: undefined
 language: zh
 scope: tutorial
-crawledAt: 2025-10-30T19:54:14.388Z
+crawledAt: 2026-01-16T03:59:41.178Z
 ---
 
 # 前言
@@ -69,7 +69,7 @@ _\*\*如课程中遇到概念不清等问题或想要了解更多相关信息，
 
 _\*\*配置项说明：_
 
-_技能类型：目前有【普通技能】【顺发技能】【长按技能】三种_
+_技能类型：目前有【普通技能】【瞬发技能】【长按技能】三种_
 
 _瞬发技能：点按施放技能；没有动画；施放后，一次性执行所有技能效果_
 

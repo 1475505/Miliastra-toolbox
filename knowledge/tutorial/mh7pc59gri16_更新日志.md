@@ -6,8 +6,20 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh7pc59gri16
 description: undefined
 language: zh
 scope: tutorial
-crawledAt: 2025-12-03T15:18:01.870Z
+crawledAt: 2026-01-16T04:01:01.189Z
 ---
+
+# 月之四版本-2026/01/14
+
+## 一、新增内容
+
+本次更新新增【经典模式】【场景生成模板管理】【复杂造物】的使用教学内容。
+
+[1.7经典模式](https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhvoc3rviq32)
+
+[2.12场景生成模板管理——快速生成关卡的场景](https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhz6s29zzonm)
+
+[3.19复杂造物——通过状态决策触发自定义造物技能](https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh6riq9wvxqq)
 
 # 月之三版本-2025/12/03
 

@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh53ejiegx0k
 description: undefined
 language: zh
 scope: tutorial
-crawledAt: 2025-10-30T20:01:26.225Z
+crawledAt: 2026-01-16T04:00:10.545Z
 ---
 
 # Step 0 入驻账号准备
@@ -41,7 +41,7 @@ _\*部分截图因演示需要，内容仅供参考，最终请以线上表现�
 
 1.
 
-#### **点击创作者中心链接，点击【立即入驻/登录】，使用米哈游通行证账号登录**
+#### **点击** [**创作者中心链接**](https://act.mihoyo.com/miliastra_wonderland/developer?mhy_presentation_style=fullscreen&mhy_auth_required=true&utm_source=tutorial&utm_medium=course&utm_campaign=mh53ejiegx0k) **，点击【立即入驻/登录】，使用米哈游通行证账号登录**
 
 **_若出现无法正常登录的情况：_**
 

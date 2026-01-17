@@ -50,6 +50,12 @@ def file_metadata_func(file_path: str) -> dict:
     """
     自定义元数据提取函数，用于提取文件基础信息和 YAML frontmatter。
     这个函数会被 SimpleDirectoryReader 调用来生成文档的元数据。
+    
+    提取的元数据包括：
+    - file_name: 文件名
+    - file_path: 文件完整路径
+    - source_dir: 源目录名
+    - 来自 YAML frontmatter 的所有字段（包括 id, title, crawledAt 等）
     """
     path_obj = Path(file_path)
     
@@ -66,7 +72,7 @@ def file_metadata_func(file_path: str) -> dict:
             content = f.read()
         
         yaml_metadata, _ = extract_yaml_frontmatter(content)
-        # 合并 YAML 元数据到基础元数据中
+        # 合并 YAML 元数据到基础元数据中（包括 crawledAt 时间戳）
         metadata.update(yaml_metadata)
     except Exception as e:
         # 如果提取失败，只返回基础元数据
@@ -163,10 +169,13 @@ class DocumentParser:
         
         Args:
             chunks: 文本块列表
-            doc: 原始文档（包含从YAML frontmatter提取的元数据）
+            doc: 原始文档（包含从YAML frontmatter提取的元数据，如 id, title, crawledAt 等）
             
         Returns:
             节点列表
+            
+        注意：每个节点的元数据都包含完整的文档元数据（包括 YAML frontmatter 中的所有字段），
+        可用于后续的时间戳判断、版本控制等功能。
         """
         nodes = []
         for i, chunk in enumerate(chunks):
@@ -174,7 +183,7 @@ class DocumentParser:
             h1_match = re.search(r'^# (.+)$', chunk, re.MULTILINE)
             h1_title = h1_match.group(1).strip() if h1_match else f"Section {i+1}"
             
-            # 合并元数据：原文档元数据（包含YAML frontmatter） + 一级标题
+            # 合并元数据：原文档元数据（包含YAML frontmatter中的id、title、crawledAt等） + 一级标题
             chunk_metadata = {
                 **doc.metadata,
                 "h1_title": h1_title,

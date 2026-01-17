@@ -43,11 +43,13 @@ class Config:
     KNOWLEDGE_ROOT_PATH: str = os.path.join(os.path.dirname(__file__), "..", "..", "..", "knowledge")
     GUIDE_DOCS_PATH: str = os.path.join(KNOWLEDGE_ROOT_PATH, "guide")
     TUTORIAL_DOCS_PATH: str = os.path.join(KNOWLEDGE_ROOT_PATH, "tutorial")
+    OFFICIAL_FAQ_DOCS_PATH: str = os.path.join(KNOWLEDGE_ROOT_PATH, "official_faq")
     
     # 支持的所有知识源目录列表
     KNOWLEDGE_SOURCE_DIRS: List[str] = [
         GUIDE_DOCS_PATH,
-        TUTORIAL_DOCS_PATH
+        TUTORIAL_DOCS_PATH,
+        OFFICIAL_FAQ_DOCS_PATH
     ]
     
     KNOWLEDGE_BASE_PATH: str = os.path.join(os.path.dirname(__file__), "..", "db")

@@ -6,14 +6,14 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhgf8i0hvzag
 description: undefined
 language: zh
 scope: tutorial
-crawledAt: 2025-12-03T15:14:53.643Z
+crawledAt: 2026-01-16T03:59:02.398Z
 ---
 
 # **前言**
 
 ## 课程说明：
 
-**课程内容：** 奇域资产中心的了解与使用
+**课程内容：** 奇域资产中心的了解与使用。
 
 **学习目标：** 了解奇域资产中心的进入方式，了解其作用，并学会上传下载与收藏资产/关卡，并能将资产/关卡文件导入到编辑器进行使用。
 

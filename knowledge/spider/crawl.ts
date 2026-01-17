@@ -40,6 +40,11 @@ const CATALOG_SOURCES = {
     baseUrl: 'https://act.mihoyo.com/ys/ugc/tutorial/course/detail/',
     name: '教程',
   },
+  official_faq: {
+    jsonUrl: 'https://act-webstatic.mihoyo.com/ugc-tutorial/faq/cn/zh-cn/catalog.json?game_biz=hk4eugc_cn&lang=zh-cn',
+    baseUrl: 'https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/',
+    name: '官方常见问题',
+  },
 };
 
 // 源页面配置
@@ -51,6 +56,10 @@ const SOURCES = {
   tutorial: {
     url: 'https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhhw2l08o6qo',
     name: '教程',
+  },
+  official_faq: {
+    url: 'https://act.mihoyo.com/ys/ugc/tutorial/faq/detail/mhlp1cr71mae',
+    name: '官方常见问题',
   },
 };
 
@@ -143,12 +152,12 @@ class URLGenerator {
   /**
    * 生成 URL 配置文件
    */
-  async generate(scopes: string[] = ['guide', 'tutorial'], useFirecrawl: boolean = false) {
+  async generate(scopes: string[] = ['guide', 'tutorial', 'official_faq'], useFirecrawl: boolean = false) {
     console.log(`🚀 开始生成 URL 列表 (${useFirecrawl ? 'Firecrawl 模式' : 'JSON 目录模式'})\n`);
     console.log(`📋 类型: ${scopes.join(', ')}\n`);
 
     const allEntries: URLEntry[] = [];
-    const scopeStats: Record<string, number> = { guide: 0, tutorial: 0 };
+    const scopeStats: Record<string, number> = { guide: 0, tutorial: 0, official_faq: 0 };
 
     for (const scope of scopes) {
       let entries: URLEntry[] = [];
@@ -182,6 +191,7 @@ class URLGenerator {
     console.log(`   总提取: ${allEntries.length} 个`);
     console.log(`   guide: ${scopeStats.guide} 个`);
     console.log(`   tutorial: ${scopeStats.tutorial} 个`);
+    console.log(`   official_faq: ${scopeStats.official_faq} 个`);
 
     console.log(`\n✅ JSON配置文件生成完成`);
     console.log(`   共 ${allEntries.length} 个条目\n`);
@@ -231,7 +241,7 @@ async function main() {
     scopes = [typeArg];
   } else {
     // 默认生成所有类型
-    scopes = ['guide', 'tutorial'];
+    scopes = ['guide', 'tutorial', 'official_faq'];
   }
 
   console.log(`📝 生成类型: ${scopes.join(', ')}\n`);

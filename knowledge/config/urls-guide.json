@@ -14,7 +14,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhn7ko01v3yw",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhn7ko01v3yw",
       "scope": "guide",
-      "updated_at": "2025-11-17 11:31:20"
+      "updated_at": "2026-01-08 15:46:34"
     },
     {
       "id": "mhwkfsitckrw",
@@ -86,7 +86,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhx1du08nhwo",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhx1du08nhwo",
       "scope": "guide",
-      "updated_at": "2025-10-21 10:50:08"
+      "updated_at": "2025-12-23 11:37:13"
     },
     {
       "id": "mhn9vpia00qc",
@@ -94,7 +94,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhn9vpia00qc",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhn9vpia00qc",
       "scope": "guide",
-      "updated_at": "2025-10-17 11:22:49"
+      "updated_at": "2025-12-23 11:55:48"
     },
     {
       "id": "mhh5zgirw9cc",
@@ -110,7 +110,39 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhor3u09y7u0",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhor3u09y7u0",
       "scope": "guide",
-      "updated_at": "2025-09-25 11:15:21"
+      "updated_at": "2025-12-10 16:46:31"
+    },
+    {
+      "id": "mh84c29jwjgy",
+      "title": "其它节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh84c29jwjgy",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh84c29jwjgy",
+      "scope": "guide",
+      "updated_at": "2025-12-09 16:55:05"
+    },
+    {
+      "id": "mht31vila3ms",
+      "title": "其它节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mht31vila3ms",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mht31vila3ms",
+      "scope": "guide",
+      "updated_at": "2025-12-19 12:05:28"
+    },
+    {
+      "id": "mhbbdr09w60g",
+      "title": "其它节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhbbdr09w60g",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhbbdr09w60g",
+      "scope": "guide",
+      "updated_at": "2025-12-23 10:48:34"
+    },
+    {
+      "id": "mhbgxo0eavlk",
+      "title": "其它节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhbgxo0eavlk",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhbgxo0eavlk",
+      "scope": "guide",
+      "updated_at": "2025-12-10 16:46:16"
     },
     {
       "id": "mhjx2miruaos",
@@ -126,7 +158,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mho777i0ga90",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mho777i0ga90",
       "scope": "guide",
-      "updated_at": "2025-09-10 17:47:22"
+      "updated_at": "2025-12-12 16:33:52"
     },
     {
       "id": "mh2xoxrop0la",
@@ -145,14 +177,6 @@
       "updated_at": "2025-09-22 10:37:25"
     },
     {
-      "id": "mh6rh59iil2i",
-      "title": "单位状态",
-      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh6rh59iil2i",
-      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh6rh59iil2i",
-      "scope": "guide",
-      "updated_at": "2025-10-21 10:34:23"
-    },
-    {
       "id": "mhd7nxrfa8im",
       "title": "单位状态",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhd7nxrfa8im",
@@ -161,12 +185,20 @@
       "updated_at": "2025-10-17 11:43:00"
     },
     {
+      "id": "mh6rh59iil2i",
+      "title": "单位状态",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh6rh59iil2i",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh6rh59iil2i",
+      "scope": "guide",
+      "updated_at": "2025-12-19 17:05:28"
+    },
+    {
       "id": "mhou93r2pxv2",
       "title": "单位状态效果池",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhou93r2pxv2",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhou93r2pxv2",
       "scope": "guide",
-      "updated_at": "2025-11-07 10:34:05"
+      "updated_at": "2026-01-05 10:36:54"
     },
     {
       "id": "mh2teu0bmfbc",
@@ -225,6 +257,14 @@
       "updated_at": "2025-11-07 14:38:08"
     },
     {
+      "id": "mhjk3t996oiy",
+      "title": "场景生成模板",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhjk3t996oiy",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhjk3t996oiy",
+      "scope": "guide",
+      "updated_at": "2025-12-23 11:01:37"
+    },
+    {
       "id": "mh3oxo0ojgxk",
       "title": "基础信息",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh3oxo0ojgxk",
@@ -271,6 +311,22 @@
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhip8yit341o",
       "scope": "guide",
       "updated_at": "2025-10-21 20:07:28"
+    },
+    {
+      "id": "mhb8nl0w8cao",
+      "title": "复杂造物",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhb8nl0w8cao",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhb8nl0w8cao",
+      "scope": "guide",
+      "updated_at": "2026-01-09 17:56:21"
+    },
+    {
+      "id": "mhftoirpwd46",
+      "title": "复杂造物技能",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhftoirpwd46",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhftoirpwd46",
+      "scope": "guide",
+      "updated_at": "2025-12-10 18:00:46"
     },
     {
       "id": "mh796lr44x0e",
@@ -358,7 +414,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhlv230i3opc",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhlv230i3opc",
       "scope": "guide",
-      "updated_at": "2025-10-24 11:46:28"
+      "updated_at": "2025-12-09 14:59:26"
     },
     {
       "id": "mhrnuz9izfne",
@@ -367,6 +423,14 @@
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhrnuz9izfne",
       "scope": "guide",
       "updated_at": "2025-10-17 11:53:38"
+    },
+    {
+      "id": "mh6c3uri84h2",
+      "title": "寻路阻挡",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh6c3uri84h2",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh6c3uri84h2",
+      "scope": "guide",
+      "updated_at": "2025-12-11 11:56:37"
     },
     {
       "id": "mh0pppib5eyc",
@@ -438,7 +502,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhw66orrrfkm",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhw66orrrfkm",
       "scope": "guide",
-      "updated_at": "2025-11-17 15:58:10"
+      "updated_at": "2025-12-23 11:31:28"
     },
     {
       "id": "mh6obvipqv1g",
@@ -446,7 +510,31 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh6obvipqv1g",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh6obvipqv1g",
       "scope": "guide",
-      "updated_at": "2025-11-07 14:31:49"
+      "updated_at": "2025-12-11 16:33:24"
+    },
+    {
+      "id": "mhz064iplia4",
+      "title": "执行节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhz064iplia4",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhz064iplia4",
+      "scope": "guide",
+      "updated_at": "2025-12-24 20:11:49"
+    },
+    {
+      "id": "mhb09x012qu8",
+      "title": "执行节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhb09x012qu8",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhb09x012qu8",
+      "scope": "guide",
+      "updated_at": "2025-12-24 22:52:15"
+    },
+    {
+      "id": "mh277t9fl4tm",
+      "title": "执行节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh277t9fl4tm",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh277t9fl4tm",
+      "scope": "guide",
+      "updated_at": "2025-12-23 11:38:53"
     },
     {
       "id": "mhfc0lr1tcke",
@@ -462,7 +550,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mho81frl33im",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mho81frl33im",
       "scope": "guide",
-      "updated_at": "2025-11-17 11:10:05"
+      "updated_at": "2025-12-31 17:11:37"
     },
     {
       "id": "mh57xz9afh7e",
@@ -470,7 +558,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh57xz9afh7e",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh57xz9afh7e",
       "scope": "guide",
-      "updated_at": "2025-09-22 11:04:55"
+      "updated_at": "2025-12-10 17:58:34"
     },
     {
       "id": "mh6ate95agb6",
@@ -558,7 +646,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhwtz297kp6a",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhwtz297kp6a",
       "scope": "guide",
-      "updated_at": "2025-10-17 11:45:52"
+      "updated_at": "2026-01-05 14:12:39"
     },
     {
       "id": "mhs2w008wf14",
@@ -566,7 +654,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhs2w008wf14",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhs2w008wf14",
       "scope": "guide",
-      "updated_at": "2025-11-27 14:28:51"
+      "updated_at": "2025-12-23 11:46:56"
     },
     {
       "id": "mhuto3r800b2",
@@ -590,7 +678,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhwbqlrw655q",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhwbqlrw655q",
       "scope": "guide",
-      "updated_at": "2025-10-30 17:21:51"
+      "updated_at": "2025-12-19 10:43:31"
     },
     {
       "id": "mholjx05ji8w",
@@ -598,7 +686,39 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mholjx05ji8w",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mholjx05ji8w",
       "scope": "guide",
-      "updated_at": "2025-09-25 11:49:47"
+      "updated_at": "2026-01-08 14:41:04"
+    },
+    {
+      "id": "mhpw06rvah3a",
+      "title": "查询节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhpw06rvah3a",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhpw06rvah3a",
+      "scope": "guide",
+      "updated_at": "2026-01-08 14:56:21"
+    },
+    {
+      "id": "mh1w3z96rpne",
+      "title": "查询节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh1w3z96rpne",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh1w3z96rpne",
+      "scope": "guide",
+      "updated_at": "2025-12-19 11:48:37"
+    },
+    {
+      "id": "mhk4furvds12",
+      "title": "查询节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhk4furvds12",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhk4furvds12",
+      "scope": "guide",
+      "updated_at": "2025-12-19 11:46:55"
+    },
+    {
+      "id": "mh2crq9jzueq",
+      "title": "查询节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh2crq9jzueq",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh2crq9jzueq",
+      "scope": "guide",
+      "updated_at": "2026-01-08 15:04:46"
     },
     {
       "id": "mhdtk89yhd6q",
@@ -639,6 +759,30 @@
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhxppurzujfq",
       "scope": "guide",
       "updated_at": "2025-09-18 10:43:55"
+    },
+    {
+      "id": "mhq1k3rzp6oe",
+      "title": "流程控制节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhq1k3rzp6oe",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhq1k3rzp6oe",
+      "scope": "guide",
+      "updated_at": "2025-12-09 16:54:56"
+    },
+    {
+      "id": "mh21nw9b6f8i",
+      "title": "流程控制节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh21nw9b6f8i",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh21nw9b6f8i",
+      "scope": "guide",
+      "updated_at": "2025-12-10 15:52:55"
+    },
+    {
+      "id": "mhk9zrrzshm6",
+      "title": "流程控制节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhk9zrrzshm6",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhk9zrrzshm6",
+      "scope": "guide",
+      "updated_at": "2025-12-10 14:31:49"
     },
     {
       "id": "mhlh4n9m4i56",
@@ -753,12 +897,28 @@
       "updated_at": "2025-09-22 17:43:55"
     },
     {
+      "id": "mh4imrrhzdzi",
+      "title": "经典模式角色编号一览",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh4imrrhzdzi",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh4imrrhzdzi",
+      "scope": "guide",
+      "updated_at": "2025-12-18 17:50:06"
+    },
+    {
       "id": "mh3fmi0t99ns",
       "title": "结构体",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh3fmi0t99ns",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh3fmi0t99ns",
       "scope": "guide",
-      "updated_at": "2025-09-22 11:52:36"
+      "updated_at": "2025-12-09 10:22:04"
+    },
+    {
+      "id": "mh74ae9fsg8i",
+      "title": "编辑项范围限制",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh74ae9fsg8i",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh74ae9fsg8i",
+      "scope": "guide",
+      "updated_at": "2025-12-18 19:03:06"
     },
     {
       "id": "mhodlcrpht3q",
@@ -806,7 +966,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhrvqvioautg",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhrvqvioautg",
       "scope": "guide",
-      "updated_at": "2025-09-22 11:45:04"
+      "updated_at": "2025-12-11 17:56:00"
     },
     {
       "id": "mhso1b9wjica",
@@ -814,7 +974,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhso1b9wjica",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhso1b9wjica",
       "scope": "guide",
-      "updated_at": "2025-10-28 14:47:46"
+      "updated_at": "2025-12-09 10:37:13"
     },
     {
       "id": "mhmshmimtegs",
@@ -838,7 +998,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhjwjrr5n73i",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhjwjrr5n73i",
       "scope": "guide",
-      "updated_at": "2025-10-16 18:15:16"
+      "updated_at": "2025-12-23 17:36:55"
     },
     {
       "id": "mhtshailzs7w",
@@ -897,6 +1057,14 @@
       "updated_at": "2025-10-20 10:50:46"
     },
     {
+      "id": "mhuf56rvxhgm",
+      "title": "角色技能节点图",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhuf56rvxhgm",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhuf56rvxhgm",
+      "scope": "guide",
+      "updated_at": "2025-12-09 15:05:36"
+    },
+    {
       "id": "mhesro0hyn5k",
       "title": "计分板界面控件",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhesro0hyn5k",
@@ -918,7 +1086,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhie54ik9ovg",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhie54ik9ovg",
       "scope": "guide",
-      "updated_at": "2025-10-16 14:01:44"
+      "updated_at": "2025-12-18 14:27:42"
     },
     {
       "id": "mh29wpicgvh0",
@@ -926,7 +1094,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh29wpicgvh0",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh29wpicgvh0",
       "scope": "guide",
-      "updated_at": "2025-10-17 11:14:42"
+      "updated_at": "2025-12-18 12:07:37"
     },
     {
       "id": "mhlb1vivioys",
@@ -934,7 +1102,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhlb1vivioys",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhlb1vivioys",
       "scope": "guide",
-      "updated_at": "2025-09-22 10:38:08"
+      "updated_at": "2025-12-08 16:01:42"
     },
     {
       "id": "mho2hirgodxi",
@@ -982,7 +1150,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhuts59m9gju",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhuts59m9gju",
       "scope": "guide",
-      "updated_at": "2025-09-22 10:52:43"
+      "updated_at": "2025-12-12 11:55:55"
     },
     {
       "id": "mh333vim2h44",
@@ -1001,12 +1169,20 @@
       "updated_at": "2025-09-17 18:00:01"
     },
     {
+      "id": "mhcnh29kjjua",
+      "title": "过滤器节点图",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhcnh29kjjua",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhcnh29kjjua",
+      "scope": "guide",
+      "updated_at": "2025-12-10 16:47:01"
+    },
+    {
       "id": "mhnd4l069tk0",
       "title": "运算节点",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhnd4l069tk0",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhnd4l069tk0",
       "scope": "guide",
-      "updated_at": "2025-10-30 16:21:18"
+      "updated_at": "2025-12-09 14:11:51"
     },
     {
       "id": "mhfmxw9fn6n6",
@@ -1014,7 +1190,39 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhfmxw9fn6n6",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhfmxw9fn6n6",
       "scope": "guide",
-      "updated_at": "2025-09-25 11:57:23"
+      "updated_at": "2025-12-10 10:31:59"
+    },
+    {
+      "id": "mh7ys59fhtvu",
+      "title": "运算节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh7ys59fhtvu",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh7ys59fhtvu",
+      "scope": "guide",
+      "updated_at": "2025-12-10 11:21:59"
+    },
+    {
+      "id": "mhjyvxrqz2fy",
+      "title": "运算节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhjyvxrqz2fy",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhjyvxrqz2fy",
+      "scope": "guide",
+      "updated_at": "2025-12-19 15:18:22"
+    },
+    {
+      "id": "mhb5tu05hgfc",
+      "title": "运算节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhb5tu05hgfc",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhb5tu05hgfc",
+      "scope": "guide",
+      "updated_at": "2025-12-19 15:16:12"
+    },
+    {
+      "id": "mhte5piu3it0",
+      "title": "运算节点",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhte5piu3it0",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhte5piu3it0",
+      "scope": "guide",
+      "updated_at": "2025-12-10 17:13:48"
     },
     {
       "id": "mhwpzpixrad0",
@@ -1049,12 +1257,36 @@
       "updated_at": "2025-09-22 10:31:17"
     },
     {
+      "id": "mhlgj60615uw",
+      "title": "造物技能节点图",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhlgj60615uw",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhlgj60615uw",
+      "scope": "guide",
+      "updated_at": "2025-12-10 14:19:58"
+    },
+    {
       "id": "mhzys1ic5eok",
       "title": "造物技能说明",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhzys1ic5eok",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhzys1ic5eok",
       "scope": "guide",
-      "updated_at": "2025-10-22 09:41:08"
+      "updated_at": "2025-12-23 10:35:47"
+    },
+    {
+      "id": "mhukp3r0c71q",
+      "title": "造物状态决策节点图",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhukp3r0c71q",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhukp3r0c71q",
+      "scope": "guide",
+      "updated_at": "2025-12-10 14:30:32"
+    },
+    {
+      "id": "mhchx59g4u96",
+      "title": "造物状态节点图",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhchx59g4u96",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhchx59g4u96",
+      "scope": "guide",
+      "updated_at": "2025-12-10 16:44:26"
     },
     {
       "id": "mhyg4i0inazs",
@@ -1102,7 +1334,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhe1ixri46ta",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhe1ixri46ta",
       "scope": "guide",
-      "updated_at": "2025-09-22 10:36:50"
+      "updated_at": "2025-12-22 18:30:26"
     },
     {
       "id": "mhsumxr9cf3y",
@@ -1155,10 +1387,10 @@
   ],
   "metadata": {
     "source": "guide",
-    "extractedAt": "2025-12-03T14:47:22.479Z",
-    "totalCount": 144,
+    "extractedAt": "2026-01-16T03:15:09.143Z",
+    "totalCount": 173,
     "scopes": {
-      "guide": 144
+      "guide": 173
     }
   }
 }

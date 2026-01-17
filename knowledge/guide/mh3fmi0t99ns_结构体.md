@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mh3fmi0t99ns
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:41:52.107Z
+crawledAt: 2026-01-16T03:29:24.742Z
 ---
 
 # 一、结构体是什么
@@ -80,7 +80,7 @@ _结构体_是一种允许创作者(奇匠)将一组不同类型的数据整合�
 
 与列表相似，结构体在节点图中也是以引用的方式进行传递的。因此结构体相关的修改节点会直接作用于自定义变量、节点图变量内的结构体数据，具体见[自定义变量](https://act.mihoyo.com/ys/ugc/tutorial//detail/mhso1b9wjica)
 
-同理，_自定义变量变化时_事件中不会传出【_变化前值_】和【_变化后值_】字段，需要使用_获取自定义变量_来获取变化后的值
+同理，该修改方式不会触发【自定义变量变化时】事件，需要通过【获取自定义变量】节点来获取变化后的值
 
 # 二、创建结构体
 

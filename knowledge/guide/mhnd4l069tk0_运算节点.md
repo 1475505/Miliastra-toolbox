@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhnd4l069tk0
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-12-03T15:07:54.400Z
+crawledAt: 2026-01-16T03:32:42.111Z
 ---
 
 # 一、通用
@@ -67,6 +67,8 @@ crawledAt: 2025-12-03T15:07:54.400Z
 
 将输入的参数类型转换为另一种类型输出。具体规则见[基础概念](https://act.mihoyo.com/ys/ugc/tutorial//detail/mhk23ora1wom)-【基础数据类型之间的转换规则】
 
+针对浮点数转整数，会通过四舍五入取整
+
 **节点参数**
 
 |     |     |     |     |
@@ -114,7 +116,9 @@ crawledAt: 2025-12-03T15:07:54.400Z
 
 除法运算，支持浮点数除法和整数除法。整数除法返回整除结果
 
-除数不应为0，否则可能返回非法值
+除数为0时，结果为0
+
+-2147483648除以-1的结果为0
 
 **节点参数**
 

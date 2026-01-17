@@ -49,14 +49,14 @@ from common.pg_client import model_usage_manager
 
 class CombinedRetriever:
     """组合检索器：
-    - 优先从指定来源（默认 `source`=`bbs-faq`）召回最多 N 条（bbs_max）
-    - 然后从全量检索中补足至总数 total_k（去重、排除已包含的 bbs 文档）
+    - 优先从非指定来源（默认 `source`=`bbs-faq`）召回最多 N 条（bbs_max）
+    - 然后从全量检索中补足至总数 total_k（去重）
 
     该实现优先尝试使用 retriever.retrieve(query, filters=...) 的底层过滤（若支持），
     若不支持则回退到在应用层根据 metadata 过滤。
     """
 
-    def __init__(self, index, total_k: int = 5, bbs_max: int = 3, bbs_key: str = "id", bbs_value: str = "bbs-faq", similarity_cutoff: float = None):
+    def __init__(self, index, total_k: int = 5, bbs_max: int = 2, bbs_key: str = "id", bbs_value: str = "bbs-faq", similarity_cutoff: float = None):
         self.index = index
         self.total_k = int(total_k)
         self.bbs_max = int(bbs_max)
@@ -85,7 +85,7 @@ class CombinedRetriever:
 
     def retrieve(self, query: str):
         # 单次通用检索（top_k=10）。在返回的候选中按原始顺序（相似度从高到低）
-        # 1) 先取最多 2 个非 bbs-faq（按原始顺序）
+        # 1) 先取最多 3 个非 bbs-faq（按原始顺序）
         # 2) 然后从剩下的候选中按相似度继续取，补足到 total_k
         # 不做扩展检索；不在补足阶段强制遵守 bbs_max（允许超过）
         general_top_k = 10
@@ -111,7 +111,7 @@ class CombinedRetriever:
 
         non_bbs_top = []
         for n in candidates:
-            if len(non_bbs_top) >= 2:
+            if len(non_bbs_top) >= 3:
                 break
             if not _is_bbs_node(n):
                 non_bbs_top.append(n)

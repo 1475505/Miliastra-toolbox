@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhn9vpia00qc
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:31:00.534Z
+crawledAt: 2026-01-16T03:20:34.167Z
 ---
 
 # 一、入口所在位置
@@ -105,7 +105,7 @@ b.自定义：可进行物件、造物、职业、能力单元的仇恨相关设
 
 ### (4)选择点位
 
-选择在关卡中预设好的预设点，将该点位设置为出生点。预设点相关内容可查看[预设点](https://act.mihoyo.com/ys/ugc/tutorial//detail/mhdyy7ico090)
+选择在关卡中预设好的预设点，将该点位设置为出生点。预设点相关内容可查看[预设点](https://act.mihoyo.com/ys/ugc/tutorial//detail/mhfvn30ctm9c)
 
 ### (5)添加出生点
 
@@ -148,6 +148,20 @@ _人数_：该分组的人数
 _包含的玩家_：配置该分组中的对应ID的玩家
 
 _是否为必要分组_：关闭后，没有该分组时也能够开始游戏
+
+当前匹配策略：
+
+
+
+优先将玩家放入必要分组中当前玩家数量距离满足最小玩家数量最近的分组
+
+
+
+然后优先将玩家放入必要队伍
+
+
+
+所有必要队伍均达满员后将玩家按顺序填入分组中
 
 ## 6.加载界面
 

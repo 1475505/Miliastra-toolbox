@@ -9,20 +9,12 @@
       "updated_at": "2025-11-11 18:08:03"
     },
     {
-      "id": "mhjtk90iodts",
-      "title": "《原神》编辑器和千星沙箱常见问题",
-      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhjtk90iodts",
-      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhjtk90iodts",
-      "scope": "tutorial",
-      "updated_at": "2025-10-31 10:29:20"
-    },
-    {
       "id": "mhlcjxr9duvy",
       "title": "1.1编辑器界面基础认识",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhlcjxr9duvy",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhlcjxr9duvy",
       "scope": "tutorial",
-      "updated_at": "2025-10-31 10:47:17"
+      "updated_at": "2026-01-14 10:45:50"
     },
     {
       "id": "mhcegrr5omvi",
@@ -30,7 +22,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhcegrr5omvi",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhcegrr5omvi",
       "scope": "tutorial",
-      "updated_at": "2025-10-11 11:02:53"
+      "updated_at": "2026-01-14 10:50:10"
     },
     {
       "id": "mhzu1vi0s3ms",
@@ -62,7 +54,15 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhgf8i0hvzag",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhgf8i0hvzag",
       "scope": "tutorial",
-      "updated_at": "2025-11-27 16:59:28"
+      "updated_at": "2026-01-08 14:24:30"
+    },
+    {
+      "id": "mhvoc3rviq32",
+      "title": "1.7经典模式",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhvoc3rviq32",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhvoc3rviq32",
+      "scope": "tutorial",
+      "updated_at": "2026-01-09 16:29:19"
     },
     {
       "id": "mhw64cr51fue",
@@ -79,6 +79,14 @@
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhv3ufrgotny",
       "scope": "tutorial",
       "updated_at": "2025-11-21 14:25:05"
+    },
+    {
+      "id": "mhz6s29zzonm",
+      "title": "2.12场景生成模板管理——快速生成关卡的场景",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhz6s29zzonm",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhz6s29zzonm",
+      "scope": "tutorial",
+      "updated_at": "2026-01-08 16:27:22"
     },
     {
       "id": "mhumsn9uap96",
@@ -142,7 +150,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh0apmie08e4",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh0apmie08e4",
       "scope": "tutorial",
-      "updated_at": "2025-10-24 18:35:09"
+      "updated_at": "2026-01-06 15:52:29"
     },
     {
       "id": "mh09qf0mc628",
@@ -223,6 +231,14 @@
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhhe9ji9ysn8",
       "scope": "tutorial",
       "updated_at": "2025-10-16 18:19:49"
+    },
+    {
+      "id": "mh6riq9wvxqq",
+      "title": "3.19复杂造物——通过状态决策触发自定义造物技能",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh6riq9wvxqq",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh6riq9wvxqq",
+      "scope": "tutorial",
+      "updated_at": "2026-01-14 08:12:35"
     },
     {
       "id": "mhflri07dzd4",
@@ -350,7 +366,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh53ejiegx0k",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh53ejiegx0k",
       "scope": "tutorial",
-      "updated_at": "2025-10-22 15:46:26"
+      "updated_at": "2025-12-26 15:23:00"
     },
     {
       "id": "mhv8u3r4y8r2",
@@ -382,7 +398,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhhw2l08o6qo",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhhw2l08o6qo",
       "scope": "tutorial",
-      "updated_at": "2025-11-07 18:03:02"
+      "updated_at": "2025-12-26 15:22:09"
     },
     {
       "id": "mhdbm29p5ljm",
@@ -406,7 +422,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh7pc59gri16",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh7pc59gri16",
       "scope": "tutorial",
-      "updated_at": "2025-11-27 12:01:11"
+      "updated_at": "2026-01-13 15:04:12"
     },
     {
       "id": "mh7g2diffho4",
@@ -531,10 +547,10 @@
   ],
   "metadata": {
     "source": "tutorial",
-    "extractedAt": "2025-12-03T14:47:23.571Z",
-    "totalCount": 66,
+    "extractedAt": "2026-01-16T03:15:10.163Z",
+    "totalCount": 68,
     "scopes": {
-      "tutorial": 66
+      "tutorial": 68
     }
   }
 }
