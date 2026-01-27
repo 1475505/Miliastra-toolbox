@@ -6,7 +6,7 @@
 
 ### 前端知识问答
 
-[地址](https://ugc.070077.xyz) 。支持免费模型，但免费模型的服务承载能力较低，且限量。建议Bring Your Own Key，如遇卡顿，建议自己部署~
+[地址](https://ugc.070077.xyz) 。支持免费模型，但免费模型的服务承载能力较低，且限量。建议自带API使用，如遇卡顿，建议自己部署~
 
 <img width="2471" height="1103" alt="image" src="https://github.com/user-attachments/assets/2a615629-06d2-490d-8f92-510ac7d8eb8a" />
 
@@ -30,7 +30,7 @@
 
 ### 1. 完成知识库构建
 
-进入`knowledge/rag_v1`目录，配置`.env`为自己的嵌入模型服务后，初始化知识库。
+进入`knowledge/rag_v1`目录，配置`.env`为自己的嵌入模型服务后，参考README初始化知识库。
 
 
 ### 2. 完成前端构建（可选）

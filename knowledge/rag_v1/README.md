@@ -112,7 +112,7 @@ YAML frontmatter.id → Document.doc_id → Node.ref_doc_id → ChromaDB metadat
 | `OPENAI_BASE_URL` | OpenAI API基础URL | https://api.openai.com/v1 |
 | **RAG配置** |  |  |
 | `TOP_K` | 检索结果数量 | 5 |
-| `SIMILARITY_THRESHOLD` | 相似度阈值 | 0.6 |
+| `SIMILARITY_THRESHOLD` | 相似度阈值 | 0.3 |
 | `MAX_CHUNK_SIZE` | 文本块大小 | 512 |
 | `CHUNK_OVERLAP` | 块重叠大小 | 100 |
 | `CHUNKING_STRATEGY` | 分块策略 | structure |

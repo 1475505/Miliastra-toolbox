@@ -36,7 +36,7 @@ export OPENAI_API_KEY=your-api-key
 - `DEFAULT_FREE_MODEL_URL2` - 默认免费模型2 URL
 - `DEFAULT_FREE_MODEL_NAME2` - 默认免费模型2名称
 - `TOP_K` - 检索文档数（默认: 5）
-- `SIMILARITY_THRESHOLD` - 相似度阈值（默认: 0.6）
+- `SIMILARITY_THRESHOLD` - 相似度阈值（默认: 0.3）
 - `PG_URL` - PostgreSQL URL（仅分享功能需要）
 
 ### Step3. 部署服务

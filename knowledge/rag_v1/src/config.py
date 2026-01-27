@@ -24,7 +24,7 @@ class Config:
     
     # RAG 配置 - 针对中文技术文档优化（按一级标题分块）
     TOP_K: int = int(os.getenv("TOP_K", "5"))  # 增加检索结果数量，获取更丰富上下文
-    SIMILARITY_THRESHOLD: float = float(os.getenv("SIMILARITY_THRESHOLD", "0.6"))  # 降低阈值，适合技术概念检索
+    SIMILARITY_THRESHOLD: float = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))  # 降低阈值，适合技术概念检索
     MAX_CHUNK_SIZE: int = int(os.getenv("MAX_CHUNK_SIZE", "2048"))  # 增大chunk_size以保持一级标题内容完整性
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "200"))  # 增加重叠以保持上下文连贯性
     USE_H1_ONLY: bool = os.getenv("USE_H1_ONLY", "True").lower() == "true"  # 只按一级标题分块

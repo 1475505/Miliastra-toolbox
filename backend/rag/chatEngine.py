@@ -41,6 +41,7 @@ from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.llms import ChatMessage, TextBlock, ImageBlock, MessageRole
 from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
 from llama_index.core import Settings as LlamaSettings
+from llama_index.core.vector_stores.types import MetadataFilters, MetadataFilter, FilterOperator
 import tiktoken
 
 from src.rag_engine import create_rag_engine
@@ -49,17 +50,14 @@ from common.pg_client import model_usage_manager
 
 class CombinedRetriever:
     """组合检索器：
-    - 优先从非指定来源（默认 `source`=`bbs-faq`）召回最多 N 条（bbs_max）
-    - 然后从全量检索中补足至总数 total_k（去重）
-
-    该实现优先尝试使用 retriever.retrieve(query, filters=...) 的底层过滤（若支持），
-    若不支持则回退到在应用层根据 metadata 过滤。
+    - 先从非user来源召回 N 条（doc_max 的部分）
+    - 再从user来源召回,补足到 total_k
     """
 
-    def __init__(self, index, total_k: int = 5, bbs_max: int = 2, bbs_key: str = "id", bbs_value: str = "bbs-faq", similarity_cutoff: float = None):
+    def __init__(self, index, total_k: int = 5, doc_max: int = 4, bbs_key: str = "source_dir", bbs_value: str = "user", similarity_cutoff: float = None):
         self.index = index
         self.total_k = int(total_k)
-        self.bbs_max = int(bbs_max)
+        self.doc_max = int(doc_max)
         self.bbs_key = bbs_key
         self.bbs_value = bbs_value
         self.similarity_cutoff = similarity_cutoff
@@ -84,55 +82,60 @@ class CombinedRetriever:
         raise RuntimeError("base retriever 不支持 retrieve 或 get_relevant_documents 方法")
 
     def retrieve(self, query: str):
-        # 单次通用检索（top_k=10）。在返回的候选中按原始顺序（相似度从高到低）
-        # 1) 先取最多 3 个非 bbs-faq（按原始顺序）
-        # 2) 然后从剩下的候选中按相似度继续取，补足到 total_k
-        # 不做扩展检索；不在补足阶段强制遵守 bbs_max（允许超过）
-        general_top_k = 10
-        general_retriever = self.index.as_retriever(
-            similarity_top_k=general_top_k,
-            similarity_cutoff=self.similarity_cutoff
-        )
+        total_k = max(self.total_k, 0)
+        preferred_k = max(min(self.doc_max, total_k), 0)
+
+        preferred_nodes = []
+        non_preferred_nodes = []
 
         try:
-            candidates = list(self._call_retrieve(general_retriever, query, filters=None))
+            preferred_filters = MetadataFilters(
+                filters=[MetadataFilter(key=self.bbs_key, value=self.bbs_value, operator=FilterOperator.NE)]
+            )
+            preferred_retriever = self.index.as_retriever(
+                similarity_top_k=max(preferred_k, 4) if preferred_k > 0 else 4,
+                similarity_cutoff=self.similarity_cutoff,
+                filters=preferred_filters
+            )
+            preferred_nodes = list(self._call_retrieve(preferred_retriever, query))
         except Exception:
-            candidates = []
+            preferred_nodes = []
 
-        # 1) 从前10个中按原始顺序先取最多2个非 bbs-faq
-        # 使用包含判断（contains）来识别 bbs 文档：检查 id 字段
-        def _is_bbs_node(node):
-            print(node.metadata)
-            node_id = node.metadata.get(self.bbs_key, "")
-            print(node_id)
-            if isinstance(node_id, str) and self.bbs_value in node_id:
-                return True
-            return False
-
-        non_bbs_top = []
-        for n in candidates:
-            if len(non_bbs_top) >= 3:
-                break
-            if not _is_bbs_node(n):
-                non_bbs_top.append(n)
+        non_preferred_k = total_k - len(preferred_nodes)
+        try:
+            non_preferred_filters = MetadataFilters(
+                filters=[MetadataFilter(key=self.bbs_key, value=self.bbs_value, operator=FilterOperator.EQ)]
+            )
+            non_preferred_retriever = self.index.as_retriever(
+                similarity_top_k=max(non_preferred_k, 1),
+                similarity_cutoff=self.similarity_cutoff,
+                filters=non_preferred_filters
+            )
+            non_preferred_nodes = list(self._call_retrieve(non_preferred_retriever, query))
+        except Exception:
+            non_preferred_nodes = []
 
         combined = []
+        seen = set()
 
-        # 把 non_bbs_top 放入结果（保持顺序）
-        for n in non_bbs_top:
-            combined.append(n)
+        def _add_nodes(nodes, limit):
+            for node in nodes:
+                if len(combined) >= limit:
+                    break
+                node_id = getattr(node, "node_id", None) or id(node)
+                if node_id in seen:
+                    continue
+                seen.add(node_id)
+                combined.append(node)
 
-        # 2) 从 candidates 中按相似度顺序补足（只需排除已选），直到达到 total_k 或候选耗尽
-        for n in candidates:
-            if len(combined) >= self.total_k:
-                break
-            # 只要已被选入 combined 就跳过（按对象身份/相等比较）
-            if n in combined:
-                continue
-            combined.append(n)
+        _add_nodes(non_preferred_nodes, non_preferred_k)
+        _add_nodes(preferred_nodes, non_preferred_k + preferred_k)
 
-        # 不做扩展检索；直接返回在初始 top_k=10 中选出的结果（可能少于 total_k）
-        return combined[: self.total_k]
+        if len(combined) < total_k:
+            _add_nodes(non_preferred_nodes, total_k)
+            _add_nodes(preferred_nodes, total_k)
+
+        return combined[:total_k]
 
     # 适配其他调用方可能使用的方法名
     def get_relevant_documents(self, query: str):
@@ -392,14 +395,14 @@ class ChatEngine:
             
             # 8. 阶段2：执行检索
             similarity_top_k = int(os.getenv("TOP_K", "5"))
-            similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.6"))
+            similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
             
             retriever = CombinedRetriever(
                 index=self.rag_engine.index,
                 total_k=similarity_top_k,
-                bbs_max=int(os.getenv("BBS_MAX", "2")),
-                bbs_key=os.getenv("BBS_KEY", "id"),
-                bbs_value=os.getenv("BBS_VALUE", "bbs-faq"),
+                doc_max=int(os.getenv("DOC_MAX", "4")),
+                bbs_key=os.getenv("BBS_KEY", "source_dir"),
+                bbs_value=os.getenv("BBS_VALUE", "user"),
                 similarity_cutoff=similarity_cutoff
             )
             nodes = retriever.retrieve(retrieval_query)
@@ -491,12 +494,12 @@ class ChatEngine:
             
             # 步骤3：阶段2 - 执行检索
             similarity_top_k = int(os.getenv("TOP_K", "5"))
-            similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.6"))
+            similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
             
             retriever = CombinedRetriever(
                 index=self.rag_engine.index,
                 total_k=similarity_top_k,
-                bbs_max=int(os.getenv("BBS_MAX", "2")),
+                doc_max=int(os.getenv("DOC_MAX", "4")),
                 bbs_key=os.getenv("BBS_KEY", "id"),
                 bbs_value=os.getenv("BBS_VALUE", "bbs-faq"),
                 similarity_cutoff=similarity_cutoff
