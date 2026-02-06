@@ -45,6 +45,10 @@ export function deleteConversation(id: string): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered))
 }
 
+export function deleteAllConversations(): void {
+  localStorage.removeItem(STORAGE_KEY)
+}
+
 export function createNewConversation(): Conversation {
   const now = Date.now()
   return {

@@ -5,6 +5,7 @@ FastAPI 启动文件
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from rag.chat import router as chat_router
 from notes.router import router as notes_router
 from upload.router import router as upload_router
@@ -13,6 +14,11 @@ app = FastAPI(
     title="千星沙箱 RAG Chat API",
     description="基于 LlamaIndex 的知识库问答系统",
     version="1.0.0"
+)
+
+app.add_middleware(
+    GZipMiddleware, 
+    minimum_size=500
 )
 
 # CORS 配置

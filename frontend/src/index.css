@@ -35,15 +35,12 @@ body::after {
 }
 
 body::before {
-  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Cfilter id="f" x="0" y="0" width="1" height="1"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="200" height="200" filter="url(%23f)" opacity="0.08"/%3E%3C/svg%3E');
-  mix-blend-mode: soft-light;
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Cfilter id="f"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="200" height="200" filter="url(%23f)" opacity="0.15"/%3E%3C/svg%3E');
+  mix-blend-mode: overlay;
+  opacity: 0.5;
 }
 
-body::after {
-  background: rgba(255, 255, 255, 0.32);
-  -webkit-backdrop-filter: blur(18px);
-  backdrop-filter: blur(18px);
-}
+/* Removed exprensive body::after global blur */
 
 #root {
   position: relative;

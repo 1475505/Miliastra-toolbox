@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Tab, Conversation } from '../types'
 import ConfigModal from './ConfigModal'
-import { getAllConversations, deleteConversation, updateConversationTitle } from '../utils/conversations'
+import { getAllConversations, deleteConversation, updateConversationTitle, deleteAllConversations } from '../utils/conversations'
 
 interface SidebarProps {
   activeTab: Tab
@@ -31,11 +31,15 @@ export default function Sidebar({
   const [showClearHint, setShowClearHint] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
-  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false)
+  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(true)
 
   useEffect(() => {
     if (activeTab === 'chat') {
-      loadConversations()
+      // 只有在展开时才加载列表
+      if (!isHistoryCollapsed) {
+        loadConversations()
+      }
+      
       // 首次进入时显示清理提醒
       const hasSeenHint = localStorage.getItem('chat_clear_hint_seen')
       if (!hasSeenHint) {
@@ -43,7 +47,7 @@ export default function Sidebar({
         localStorage.setItem('chat_clear_hint_seen', 'true')
       }
     }
-  }, [activeTab, conversationRefreshTrigger])
+  }, [activeTab, conversationRefreshTrigger, isHistoryCollapsed])
 
   const loadConversations = () => {
     setConversations(getAllConversations().sort((a, b) => b.updatedAt - a.updatedAt))
@@ -57,6 +61,15 @@ export default function Sidebar({
       if (currentConversationId === id) {
         onConversationDeleted?.()
       }
+    }
+  }
+
+  const handleClearAll = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (confirm('确定要清空所有历史对话吗？此操作不可恢复。')) {
+      deleteAllConversations()
+      loadConversations()
+      onConversationDeleted?.()
     }
   }
 
@@ -89,15 +102,15 @@ export default function Sidebar({
         />
       )}
       
-      <aside className={`flex w-64 flex-col border-r border-white/30 bg-white/30 text-slate-900 backdrop-blur-2xl shadow-[0_20px_60px_rgba(15,23,42,0.12)] transition-transform duration-300 lg:translate-x-0 ${
+      <aside className={`flex w-64 flex-col border-r border-emerald-100 bg-emerald-50/80 text-slate-900 shadow-sm transition-transform duration-300 lg:translate-x-0 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } fixed lg:relative h-full z-50 lg:z-auto`}>
-        <div className="border-b border-white/30 p-4 lg:p-6 flex items-center justify-between">
-          <h1 className="text-lg lg:text-xl font-semibold">千星工具箱</h1>
+        <div className="border-b border-emerald-100 p-4 lg:p-6 flex items-center justify-between">
+          <h1 className="text-lg lg:text-xl font-semibold">千星奇域工具箱</h1>
           {/* Mobile close button */}
           <button
             onClick={onToggle}
-            className="lg:hidden p-1 hover:bg-white/30 rounded-lg transition-colors"
+            className="lg:hidden p-1 hover:bg-emerald-100 rounded-lg transition-colors"
             aria-label="Close menu"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,10 +124,10 @@ export default function Sidebar({
             <div key={tab.id}>
               <button
                 onClick={() => onTabChange(tab.id)}
-                className={`mb-3 w-full rounded-2xl px-4 py-3 text-left text-sm font-medium transition-all ${
+                className={`mb-3 w-full rounded-xl px-4 py-2.5 text-left text-sm font-medium transition-all ${
                   activeTab === tab.id
-                    ? 'bg-yellow-200/90 text-slate-900 shadow-lg shadow-yellow-300/30 border border-yellow-300 font-semibold'
-                    : 'text-slate-600 hover:bg-white/30 hover:text-slate-900'
+                    ? 'bg-emerald-200/70 text-emerald-900 shadow-sm border border-emerald-200 font-semibold'
+                    : 'text-slate-600 hover:bg-emerald-100/60 hover:text-slate-900'
                 }`}
               >
                 {tab.label}
@@ -135,13 +148,24 @@ export default function Sidebar({
                   )}
                   
                   <div 
-                    className="flex items-center justify-between text-xs text-slate-500 mb-2 px-2 cursor-pointer hover:text-slate-700 select-none"
+                    className="flex items-center justify-between text-xs text-slate-500 mb-2 px-2 cursor-pointer hover:text-slate-700 select-none group/header"
                     onClick={() => setIsHistoryCollapsed(!isHistoryCollapsed)}
                   >
-                    <span>对话历史</span>
-                    <span className={`transform transition-transform duration-200 ${isHistoryCollapsed ? '-rotate-90' : 'rotate-0'}`}>
-                      ▼
-                    </span>
+                    <div className="flex items-center gap-2">
+                       <span>对话历史</span>
+                       <span className={`transform transition-transform duration-200 ${isHistoryCollapsed ? '-rotate-90' : 'rotate-0'}`}>
+                         ▼
+                       </span>
+                    </div>
+                    {!isHistoryCollapsed && conversations.length > 0 && (
+                      <button
+                        onClick={handleClearAll}
+                        className="opacity-0 group-hover/header:opacity-100 transition-opacity text-red-400 hover:text-red-600 px-1 rounded hover:bg-red-50"
+                        title="清空所有历史"
+                      >
+                        清空
+                      </button>
+                    )}
                   </div>
                   {!isHistoryCollapsed && (
                     conversations.length === 0 ? (
@@ -152,10 +176,10 @@ export default function Sidebar({
                           <div
                             key={conv.id}
                             onClick={() => onConversationSelect?.(conv.id)}
-                            className={`group flex items-center justify-between px-3 py-2 rounded-xl text-xs cursor-pointer transition-all ${
+                            className={`group flex items-center justify-between px-3 py-2 rounded-lg text-xs cursor-pointer transition-all ${
                               currentConversationId === conv.id
-                                ? 'bg-blue-100 text-blue-900'
-                                : 'text-slate-600 hover:bg-white/30'
+                                ? 'bg-emerald-100 text-emerald-900'
+                                : 'text-slate-600 hover:bg-emerald-100/50'
                             }`}
                           >
                             {editingId === conv.id ? (
@@ -217,12 +241,12 @@ export default function Sidebar({
           ))}
         </nav>
 
-        <div className="border-t border-white/20 p-4 space-y-2">
+        <div className="border-t border-emerald-100 p-4 space-y-2">
           <a
             href="https://github.com/1475505/Miliastra-toolbox"
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full rounded-2xl px-4 py-2.5 text-sm text-slate-600 transition-all hover:bg-white/30 hover:text-slate-900"
+            className="block w-full rounded-xl px-4 py-2.5 text-sm text-slate-600 transition-all hover:bg-emerald-100/50 hover:text-slate-900"
           >
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -236,7 +260,7 @@ export default function Sidebar({
             href="https://qm.qq.com/q/M1mCoQN8ki"
             target="_blank"
             rel="noopener noreferrer"
-            className="block rounded-2xl px-4 py-2.5 text-sm text-slate-600 transition-all hover:bg-white/30 hover:text-slate-900"
+            className="block rounded-xl px-4 py-2.5 text-sm text-slate-600 transition-all hover:bg-emerald-100/50 hover:text-slate-900"
           >
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -254,10 +278,10 @@ export default function Sidebar({
           </div>
         </div>
 
-        <div className="border-t border-white/20 p-4">
+        <div className="border-t border-emerald-100 p-4">
           <button
             onClick={() => setShowConfig(true)}
-            className="w-full rounded-2xl px-4 py-3 text-sm font-medium bg-green-200 text-slate-900 border border-yellow-300 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-all"
+            className="w-full rounded-xl px-4 py-2.5 text-sm font-medium bg-emerald-200/80 text-emerald-900 border border-emerald-300 hover:bg-emerald-300/80 focus:outline-none focus:ring-2 focus:ring-emerald-300 transition-all"
             title="OpenAI 配置"
             aria-label="OpenAI 配置"
           >

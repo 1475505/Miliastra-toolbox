@@ -732,7 +732,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
           )}
         </div>
         <div className="text-center text-xs text-gray-500 mt-3">
-          《原神》千星奇域相关文档版权归米哈游所有，本网站为个人兴趣，仅供辅助个人兴趣使用，与米哈游无关
+          《原神》千星奇域相关文档版权归米哈游所有，本网站为个人兴趣，与米哈游无关
         </div>
       </div>
     </div>
