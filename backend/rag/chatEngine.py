@@ -324,24 +324,35 @@ class ChatEngine:
             return message
     
     def _extract_sources(self, source_nodes) -> List[Dict[str, Any]]:
-        """提取来源信息（公共方法）
+        """提取来源信息（公共方法），按URL去重
         
         Args:
             source_nodes: 源节点列表
             
         Returns:
-            来源信息列表
+            来源信息列表（按URL去重后）
         """
-        return [
-            {
+        sources = []
+        seen_urls = set()
+        
+        for node in source_nodes:
+            url = node.metadata.get("url", node.metadata.get("sourceURL", node.metadata.get("file_path", "")))
+            
+            # 按URL去重
+            if url and url in seen_urls:
+                continue
+            if url:
+                seen_urls.add(url)
+            
+            sources.append({
                 "title": node.metadata.get("title", node.metadata.get("file_name", "未知文档")),
                 "doc_id": node.metadata.get("id", node.metadata.get("doc_id", "")),
                 "similarity": round(node.score or 0.0, 2),
                 "text_snippet": node.get_text()[:200] + "...",
-                "url": node.metadata.get("url", node.metadata.get("sourceURL", node.metadata.get("file_path", "")))
-            }
-            for node in source_nodes
-        ]
+                "url": url
+            })
+        
+        return sources
     
     def chat(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str], image_base64: Optional[str] = None) -> Dict[str, Any]:
         """执行对话查询
@@ -393,14 +404,14 @@ class ChatEngine:
             # 7. 阶段1：让 LLM 生成检索查询
             retrieval_query = self._generate_retrieval_query(llm, message, image_base64)
             
-            # 8. 阶段2：执行检索
-            similarity_top_k = int(os.getenv("TOP_K", "5"))
+            # 8. 阶段2：执行检索 - 总共8条，优先7条官方文档，再从user补齐
+            similarity_top_k = int(os.getenv("TOP_K", "8"))
             similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
             
             retriever = CombinedRetriever(
                 index=self.rag_engine.index,
                 total_k=similarity_top_k,
-                doc_max=int(os.getenv("DOC_MAX", "4")),
+                doc_max=int(os.getenv("DOC_MAX", "7")),
                 bbs_key=os.getenv("BBS_KEY", "source_dir"),
                 bbs_value=os.getenv("BBS_VALUE", "user"),
                 similarity_cutoff=similarity_cutoff
@@ -492,14 +503,14 @@ class ChatEngine:
             retrieval_query = await self._generate_retrieval_query_async(llm, message, image_base64)
             yield ": query_generated\n\n"
             
-            # 步骤3：阶段2 - 执行检索
-            similarity_top_k = int(os.getenv("TOP_K", "5"))
+            # 步骤3：阶段2 - 执行检索 - 总共8条，优先7条官方文档，再从user补齐
+            similarity_top_k = int(os.getenv("TOP_K", "8"))
             similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
             
             retriever = CombinedRetriever(
                 index=self.rag_engine.index,
                 total_k=similarity_top_k,
-                doc_max=int(os.getenv("DOC_MAX", "4")),
+                doc_max=int(os.getenv("DOC_MAX", "7")),
                 bbs_key=os.getenv("BBS_KEY", "id"),
                 bbs_value=os.getenv("BBS_VALUE", "bbs-faq"),
                 similarity_cutoff=similarity_cutoff
