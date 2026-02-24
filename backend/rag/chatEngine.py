@@ -404,14 +404,14 @@ class ChatEngine:
             # 7. 阶段1：让 LLM 生成检索查询
             retrieval_query = self._generate_retrieval_query(llm, message, image_base64)
             
-            # 8. 阶段2：执行检索 - 总共8条，优先7条官方文档，再从user补齐
-            similarity_top_k = int(os.getenv("TOP_K", "8"))
+            # 8. 阶段2：执行检索 - 总共10条，优先9条官方文档，再从user补齐
+            similarity_top_k = int(os.getenv("TOP_K", "10"))
             similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
             
             retriever = CombinedRetriever(
                 index=self.rag_engine.index,
                 total_k=similarity_top_k,
-                doc_max=int(os.getenv("DOC_MAX", "7")),
+                doc_max=int(os.getenv("DOC_MAX", "9")),
                 bbs_key=os.getenv("BBS_KEY", "source_dir"),
                 bbs_value=os.getenv("BBS_VALUE", "user"),
                 similarity_cutoff=similarity_cutoff
@@ -498,19 +498,22 @@ class ChatEngine:
             # 步骤1：发送初始心跳
             yield ": connected\n\n"
             
+            # 步骤1.5：发送对话引擎就绪状态
+            yield ": chat_engine_created\n\n"
+            
             # 步骤2：阶段1 - 让 LLM 生成检索查询
             yield f"data: {json.dumps({'type': 'status', 'data': '正在分析问题...'}, ensure_ascii=False)}\n\n"
             retrieval_query = await self._generate_retrieval_query_async(llm, message, image_base64)
             yield ": query_generated\n\n"
             
-            # 步骤3：阶段2 - 执行检索 - 总共8条，优先7条官方文档，再从user补齐
-            similarity_top_k = int(os.getenv("TOP_K", "8"))
+            # 步骤3：阶段2 - 执行检索 - 总共10条，优先9条官方文档，再从user补齐
+            similarity_top_k = int(os.getenv("TOP_K", "10"))
             similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
             
             retriever = CombinedRetriever(
                 index=self.rag_engine.index,
                 total_k=similarity_top_k,
-                doc_max=int(os.getenv("DOC_MAX", "7")),
+                doc_max=int(os.getenv("DOC_MAX", "9")),
                 bbs_key=os.getenv("BBS_KEY", "id"),
                 bbs_value=os.getenv("BBS_VALUE", "bbs-faq"),
                 similarity_cutoff=similarity_cutoff
