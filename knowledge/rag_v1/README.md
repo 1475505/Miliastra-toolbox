@@ -81,6 +81,18 @@ python3 test_rag.py query "你的问题"
 
 本系统支持新嵌入单个文档进行增量更新，无需重建整个知识库。
 
+
+### 输入markdown文档路径
+
+以下路径自动增量嵌入：
+- **综合指南**: `knowledge/guide/`
+- **教程**: `knowledge/tutorial/`
+- **官方常见问题**: `knowledge/official_faq/`
+
+以下路径需要手动嵌入：
+- **用户（非官方）总结**：`knowledge/user/` 
+
+
 #### 文档格式规范
 
 文档必须是 Markdown 格式，且**必须**包含 YAML Frontmatter（头部元数据区），用于定义 ID 和更新策略。
@@ -144,13 +156,6 @@ YAML frontmatter.id → Document.doc_id → Node.ref_doc_id → ChromaDB metadat
    - 基于不同检索器的评分进行标准化和融合
    - 将不同检索器的评分映射到相同范围
    - 适合需要精确评分控制的场景
-
-### 输入markdown文档路径
-
-- **综合指南**: `knowledge/guide/`
-- **教程**: `knowledge/tutorial/`
-- **官方常见问题**: `knowledge/official_faq/`
-- **用户（非官方）总结**：`knowledge/user/` 
 
 ### 分块策略说明
 

@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mh2teu0bmfbc
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:32:48.041Z
+crawledAt: 2026-02-25T05:20:55.857Z
 ---
 
 卡牌选择器提供编辑简单的决策交互界面功能
@@ -135,7 +135,7 @@ crawledAt: 2025-10-30T19:32:48.041Z
 | _卡牌标题_ | 文本配置 |
 | _卡牌描述_ | 文本配置 |
 | _标签颜色_ | 文本颜色 |
-| _标签描述_ | 仅创作者(奇匠)自己可见的记录性质文本 |
+| _标签描述_ | 文本配置 |
 
 # **三、通过节点图管理卡牌选择器**
 

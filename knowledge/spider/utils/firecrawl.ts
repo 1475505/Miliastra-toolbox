@@ -150,6 +150,7 @@ export class FirecrawlClient {
         onlyMainContent: true, // 只提取主要内容
         waitFor: 2000, // 等待动态内容加载完成
         timeout: 180000, // 3分钟超时
+        maxAge: 4 * 60 * 60 * 1000, // 4小时内的缓存结果
       });
       
       // 新版本直接返回数据，没有success属性

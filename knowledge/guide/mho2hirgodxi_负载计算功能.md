@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mho2hirgodxi
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:45:24.795Z
+crawledAt: 2026-02-25T05:27:27.588Z
 ---
 
 # 一、负载计算功能是什么

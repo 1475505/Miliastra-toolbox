@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhf45sisuup8
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:41:51.443Z
+crawledAt: 2026-02-26T16:00:58.654Z
 ---
 
 # 一、竞技段位的功能

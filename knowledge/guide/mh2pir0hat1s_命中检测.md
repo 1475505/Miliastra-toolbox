@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mh2pir0hat1s
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:33:35.165Z
+crawledAt: 2026-02-25T05:21:29.038Z
 ---
 
 # 一、命中检测组件的功能

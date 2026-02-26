@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhyg4i0inazs
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-12-03T15:08:02.057Z
+crawledAt: 2026-02-25T05:28:28.382Z
 ---
 
 |     |     |     |     |

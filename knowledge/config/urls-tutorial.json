@@ -86,7 +86,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhz6s29zzonm",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhz6s29zzonm",
       "scope": "tutorial",
-      "updated_at": "2026-01-08 16:27:22"
+      "updated_at": "2026-01-23 13:59:17"
     },
     {
       "id": "mhumsn9uap96",
@@ -238,7 +238,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh6riq9wvxqq",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh6riq9wvxqq",
       "scope": "tutorial",
-      "updated_at": "2026-01-14 08:12:35"
+      "updated_at": "2026-01-23 13:59:13"
     },
     {
       "id": "mhflri07dzd4",
@@ -377,6 +377,22 @@
       "updated_at": "2025-10-22 09:14:05"
     },
     {
+      "id": "mhu04t9rm1xm",
+      "title": "千星奇域 开发组分享（一）|  玩法设计交流",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhu04t9rm1xm",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhu04t9rm1xm",
+      "scope": "tutorial",
+      "updated_at": "2026-02-24 14:53:12"
+    },
+    {
+      "id": "mhyrrdiy2zis",
+      "title": "千星奇域创作分享",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhyrrdiy2zis",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhyrrdiy2zis",
+      "scope": "tutorial",
+      "updated_at": "2026-02-04 21:04:26"
+    },
+    {
       "id": "mhjdic0zyw8o",
       "title": "基础功能逻辑&玩法流程",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhjdic0zyw8o",
@@ -391,6 +407,14 @@
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhn7jl05i6o0",
       "scope": "tutorial",
       "updated_at": "2025-10-21 16:10:54"
+    },
+    {
+      "id": "mhv9m60wv7ew",
+      "title": "如何打造吸引玩家的宣传素材",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhv9m60wv7ew",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhv9m60wv7ew",
+      "scope": "tutorial",
+      "updated_at": "2026-02-12 14:23:53"
     },
     {
       "id": "mhhw2l08o6qo",
@@ -547,10 +571,10 @@
   ],
   "metadata": {
     "source": "tutorial",
-    "extractedAt": "2026-01-16T03:15:10.163Z",
-    "totalCount": 68,
+    "extractedAt": "2026-02-25T05:20:10.331Z",
+    "totalCount": 71,
     "scopes": {
-      "tutorial": 68
+      "tutorial": 71
     }
   }
 }

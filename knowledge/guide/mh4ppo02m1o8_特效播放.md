@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mh4ppo02m1o8
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:39:58.859Z
+crawledAt: 2026-02-25T05:24:54.711Z
 ---
 
 # 一、特效播放组件的功能

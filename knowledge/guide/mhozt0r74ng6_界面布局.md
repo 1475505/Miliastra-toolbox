@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhozt0r74ng6
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-12-03T15:07:41.839Z
+crawledAt: 2026-02-25T05:25:10.918Z
 ---
 
 # 一、界面布局的定义

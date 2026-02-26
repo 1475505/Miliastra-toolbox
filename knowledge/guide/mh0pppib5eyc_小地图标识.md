@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mh0pppib5eyc
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:35:59.818Z
+crawledAt: 2026-02-25T05:22:56.659Z
 ---
 
 # 一、小地图标识组件的功能

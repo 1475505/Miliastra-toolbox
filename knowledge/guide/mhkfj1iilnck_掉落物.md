@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhkfj1iilnck
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:38:11.536Z
+crawledAt: 2026-02-25T05:24:39.073Z
 ---
 
 # 一、掉落物的定义
@@ -67,11 +67,11 @@ _拾取范围_：定义玩家可拾取掉落物的范围，使用通用的形状
 
 
 
-修改掉落物组件道具数量
+增加掉落物组件道具数量
 
 
 
-修改掉落物组件货币数量
+增加掉落物组件货币数量
 
 ## 2.掉落物组件相关查询节点
 

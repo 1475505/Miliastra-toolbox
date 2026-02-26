@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhkl2yin0cxo
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:44:43.810Z
+crawledAt: 2026-02-25T05:26:58.212Z
 ---
 
 # 一、装备的定义
@@ -85,7 +85,7 @@ _引用列表_：可以在此查看使用该词条的所有装备模板
 
 **词条属性**
 
-_生效实机_：该词条对应的加成会在什么时点生效
+_生效时机_：该词条对应的加成会在什么时点生效
 
 _获取时生效_：装备进入背包时，就对背包持有者生效
 

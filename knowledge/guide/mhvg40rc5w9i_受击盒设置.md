@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mhvg40rc5w9i
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:33:13.669Z
+crawledAt: 2026-02-25T05:21:09.826Z
 ---
 
 # 一、受击盒是什么

@@ -6,7 +6,7 @@ sourceURL: https://act.mihoyo.com/ys/ugc/tutorial/detail/mh3rgo0c16c8
 description: undefined
 language: zh
 scope: guide
-crawledAt: 2025-10-30T19:36:08.943Z
+crawledAt: 2026-02-25T05:23:10.041Z
 ---
 
 # 一、常规设置的定义

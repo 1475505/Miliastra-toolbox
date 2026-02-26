@@ -117,7 +117,7 @@ npm run scrape -- --output=./custom-data
 npm run scrape -- --since=2025.11.01
 ```
 
-> 上次更新时间: 2026-01-15
+> 上次更新时间: 2026-02-25
 
 **参数说明**：
 - `--test`: 测试模式，限制处理文档数量
@@ -128,7 +128,7 @@ npm run scrape -- --since=2025.11.01
 - `--output=path`: 自定义输出目录
 - `--since=DATE`: 筛选更新时间晚于该日期的文档（格式：YYYY.MM.DD 或 YYYY-MM-DD，默认 2025.10.25）
 
-### 3. 构建向量知识库
+### 3. 构建向量知识库(部署前后端可跳过此步骤)
 ```bash
 # 使用 RAG 模块构建向量库
 npm run rag:build
