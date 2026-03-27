@@ -85,12 +85,12 @@ python3 test_rag.py query "你的问题"
 ### 输入markdown文档路径
 
 以下路径自动增量嵌入：
-- **综合指南**: `knowledge/guide/`
-- **教程**: `knowledge/tutorial/`
+- **综合指南**: `knowledge/Miliastra-knowledge/official/guide/`
+- **教程**: `knowledge/Miliastra-knowledge/official/tutorial/`
 - **官方常见问题**: `knowledge/Miliastra-knowledge/official/faq/`
 
 以下路径需要手动嵌入：
-- **用户（非官方）总结**：`knowledge/user/` 
+- **用户（非官方）总结**：`knowledge/Miliastra-knowledge/user/` 
 
 
 #### 文档格式规范

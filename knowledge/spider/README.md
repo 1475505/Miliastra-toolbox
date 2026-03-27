@@ -156,21 +156,19 @@ crawledAt: 2025-10-28T...
 # 文档内容...
 ```
 
+`knowledge/config/urls-*.json` 中的每个条目也会包含 `localPath` 字段，用于指向 `knowledge/` 目录下对应的本地 Markdown 相对路径。当前文档资产存放在 `Miliastra-knowledge` 子模块中，例如 `Miliastra-knowledge/official/guide/mh29wpicgvh0_读前须知.md`。
+
 ## 🗂️ 输出结构
 
 爬取完成后，会在上级目录生成以下结构：
 
 ```
 knowledge/
-├── 📄 guide/               # 综合指南文档
-│   ├── doc_001_标题1.md
-│   └── doc_002_标题2.md
-├── 📄 tutorial/            # 教程文档
-│   ├── doc_001_教程1.md
-│   └── doc_002_教程2.md
-├── 📄 official_faq/        # 官方常见问题文档
-│   ├── doc_001_问题1.md
-│   └── doc_002_问题2.md
+├── 📚 Miliastra-knowledge/ # 文档资产子模块
+│   └── official/
+│       ├── guide/          # 综合指南文档
+│       ├── tutorial/       # 教程文档
+│       └── faq/            # 官方常见问题文档
 ├── ⚙️ config/              # URL配置文件
 │   ├── urls-guide.json
 │   ├── urls-tutorial.json

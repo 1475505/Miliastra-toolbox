@@ -11,6 +11,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import dotenv from 'dotenv';
+import { buildRelativeMarkdownPath } from './utils/documentPath.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -207,21 +208,26 @@ class URLGenerator {
     // 按title排序
     entries.sort((a, b) => a.title.localeCompare(b.title));
 
+    const entriesWithLocalPath: URLEntry[] = entries.map((entry) => ({
+      ...entry,
+      localPath: buildRelativeMarkdownPath(entry),
+    }));
+
     const config: URLConfig = {
-      entries,
+      entries: entriesWithLocalPath,
       metadata: {
         source: scope,
         extractedAt: new Date().toISOString(),
-        totalCount: entries.length,
+        totalCount: entriesWithLocalPath.length,
         scopes: {
-          [scope]: entries.length
+          [scope]: entriesWithLocalPath.length
         },
       },
     };
 
     const outputPath = path.join(configDir, `urls-${scope}.json`);
     await fs.writeFile(outputPath, JSON.stringify(config, null, 2), 'utf-8');
-    console.log(`   ✓ 写入json - ${scope}: ${outputPath} (${entries.length} 个条目)`);
+    console.log(`   ✓ 写入json - ${scope}: ${outputPath} (${entriesWithLocalPath.length} 个条目)`);
   }
 }
 

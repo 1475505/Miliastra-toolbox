@@ -15,6 +15,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { buildAbsoluteMarkdownPath } from './documentPath.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -226,7 +227,7 @@ export class FirecrawlClient {
   }
 
   /**
-   * 保存 markdown 文件到 knowledge/{scope} 目录，使用 {id}_{title} 命名格式
+   * 保存 markdown 文件到 Miliastra-knowledge 子模块目录，使用 {id}_{title} 命名格式
    */
   private async saveMarkdownFile(
     markdown: string,
@@ -245,8 +246,12 @@ export class FirecrawlClient {
   ): Promise<boolean> {
     // 确保 knowledge 目录根路径存在
     const knowledgeDir = path.join(__dirname, '..', '..'); // knowledge/ 目录
-    const scopeDir = path.join(knowledgeDir, scope);
-    await fs.mkdir(scopeDir, { recursive: true });
+    const filePath = buildAbsoluteMarkdownPath(knowledgeDir, {
+      id: documentId,
+      title,
+      scope,
+    });
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
 
     // 生成前置元数据
     const frontmatter = {
@@ -266,16 +271,6 @@ export class FirecrawlClient {
         .map(([key, value]) => `${key}: ${value}`)
         .join('\n')
     }\n---\n\n${markdown}`;
-
-    // 生成安全的文件名：{id}_{title}.md
-    const safeTitle = title
-      .replace(/[<>:"/\\|?*]/g, '_') // 替换非法字符
-      .replace(/\s+/g, '_') // 替换空格为下划线
-      .replace(/_+/g, '_') // 多个下划线合并为一个
-      .replace(/^_|_$/g, ''); // 移除开头和结尾的下划线
-
-    const fileName = `${documentId}_${safeTitle}.md`;
-    const filePath = path.join(scopeDir, fileName);
 
     // 检查内容是否变化
     if (checkChanges) {

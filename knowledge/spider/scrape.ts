@@ -11,6 +11,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import dotenv from 'dotenv';
+import { buildRelativeMarkdownPath } from './utils/documentPath.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -51,14 +52,8 @@ class Crawler {
 
     // 检查是否已有对应的 markdown 文件
     const knowledgeDir = path.join(__dirname, '..');
-    const scopeDir = path.join(knowledgeDir, scope);
-    const safeTitle = title
-      .replace(/[<>:"/\\|?*]/g, '_')
-      .replace(/\s+/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_|_$/g, '');
-    const fileName = `${id}_${safeTitle}.md`;
-    const filePath = path.join(scopeDir, fileName);
+    const localPath = entry.localPath || buildRelativeMarkdownPath(entry);
+    const filePath = path.join(knowledgeDir, localPath);
 
     try {
       await fs.access(filePath);
