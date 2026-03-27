@@ -68,6 +68,3 @@ docker-compose restart
 
 ---
 
-## 方式二：Railway 一键部署
-
-TODO

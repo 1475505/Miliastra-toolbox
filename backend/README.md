@@ -1,216 +1,52 @@
-# Backend - RAG Chat API
+# Backend - FastAPI RAG Chat
 
-基于 FastAPI 和 LlamaIndex 的知识库问答后端服务。
+基于 FastAPI 和 LlamaIndex 的知识库问答后端服务，包含完整的聊天及管理接口。
 
-提供免费模型服务。
-
-> 待开发功能：笔记 嵌入到知识库里
+提供多种API访问方式，详见详细文档 [API 接口文档](./api.md)。
 
 ## 功能特性
 
-- ✅ 支持用户自定义 LLM 配置（API Key、Base URL、Model）
-- ✅ 支持配置默认api key
-- ✅ 多轮对话，自动管理对话上下文
-- ✅ 知识库检索，返回引用来源
-- ✅ Token 消耗统计
-- ✅ **流式响应**：实时逐字返回，提升用户体验
-- ✅ **Web 前端**：开箱即用的问答界面
+- 支持自定义大语言模型配置（API Key / Base URL / Model）（客户端BYOK机制）。
+- 结合系统预设的多轮问答及 Token 消耗统计。
+- 通过 LlamaIndex 实现 RAG，并返回引用来源。
+- 支持流式响应 (SSE) 以及一键式整合 Web 前端 (自动托管 `static/` 目录)。
 
 ## 快速开始
 
-### 1. 配置环境变量
+### 1. 配置与安装
 
 ```bash
 cd backend
 cp .env.example .env
-# 编辑 .env 文件，填入真实的 API Key
-```
-
-### 2. 安装依赖
-
-```bash
+# 编辑 .env 文件填入环境变量配置
 pip install -r requirements.txt
 ```
 
-### 3. 启动服务
-
-你可以通过运行 `python3 main.py` 启动服务，脚本现在支持 `--port`、`--host` 和 `--reload` 参数；同时支持通过环境变量 `PORT`、`HOST`、`LOG_LEVEL` 设置。
+### 2. 启动服务
 
 ```bash
-# 默认端口 8000
 python3 main.py
 
-# 指定端口
-python3 main.py --port 8081
-
-# 指定 host，端口和启用热重载（开发调试）
-python3 main.py --host 127.0.0.1 --port 8001 --reload
-
-# 使用环境变量设置端口
-export PORT=8082 && python3 main.py
-
-# 或者你仍然可以直接用 uvicorn
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# 指定端口 / host / 热重载 (开发调试)
+python3 main.py --host 127.0.0.1 --port 8000 --reload
+# 或通过环境变量 export PORT=8000 && python3 main.py
 ```
 
-服务将在 `http://localhost:8000` 启动。
-
-注意：命令行选项（如 `--port` / `--host`）会优先于环境变量（`PORT` / `HOST`）。
-
+服务默认包含静态页面，可以通过浏览器直接访问界面和文档：
 - **Web 界面**: `http://localhost:8000`
-- **API 文档**: `http://localhost:8000/docs`
+- **Swagger API 文档**: `http://localhost:8000/docs`
 
-### 4. 测试 API
+### 3. 测试与示例
 
-**使用 curl 测试**：
+通过 `tests/` 下的脚本可快速进行单元 / 集成测试：
 ```bash
-# 启动服务后，在另一个终端执行
+# 启动服务后执行完整系统测试
 export DEEPSEEK_API_KEY=your_key
-
-# 默认：使用 localhost:8000
 ./tests/test_api.sh
 
-# 指定端口（通过环境变量）
-export PORT=8081 && ./tests/test_api.sh
-
-# 或同时指定 HOST
-export HOST=127.0.0.1 PORT=8082 && ./tests/test_api.sh
-
-# 指定仅运行测试 1（单轮）或 2（多轮）或 3（流式）或 1,2,3（逗号分隔）
-export PORT=8000 && ./tests/test_api.sh 1
-export PORT=8000 && ./tests/test_api.sh 2
-export PORT=8000 && ./tests/test_api.sh 3
-export PORT=8000 && ./tests/test_api.sh 1,2,3
-```
-
-**使用 pytest 测试**：
-```bash
-# 单元测试（无需 API Key）
-pytest tests/test_chat.py -v
-
-# 集成测试（需要配置 .env 中的 DEEPSEEK_API_KEY）
-pytest tests/test_integration.py -v -s
-
-# 所有测试
+# Pytest 独立运行全量用例
 pytest tests/ -v
 ```
 
-## 项目结构
+更多关于路由（/chat, /notes, /upload 等）以及输入输出结构的样例，请参考 [api.md](./api.md)。
 
-```
-backend/
-├── main.py              # FastAPI 启动入口
-├── requirements.txt     # 项目依赖
-├── .env.example         # 环境变量模板
-├── .env                 # 环境变量配置（不提交到 git）
-├── api.md              # API 接口文档
-├── README.md           # 项目说明
-├── static/             # 前端静态文件
-│   └── index.html      # Web 问答界面
-├── rag/                # 核心模块
-│   ├── chatEngine.py   # ChatEngine 实现（支持流式/非流式）
-│   └── chat.py         # FastAPI 路由
-└── tests/              # 测试目录
-    ├── test_chat.py    # 单元测试
-    ├── test_integration.py  # 集成测试
-    └── test_api.sh     # API curl 测试脚本
-```
-
-## API 使用示例
-
-### 方式 1：Web 界面（推荐）
-
-访问 `http://localhost:8000`，在浏览器中直接使用：
-- ✅ 流式对话，实时显示
-- ✅ 引用来源展示
-- ✅ 配置管理（localStorage）
-
-### 方式 2：非流式 API
-
-**单轮对话**：
-
-```bash
-curl -X POST http://localhost:8000/api/v1/rag/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "什么是节点图？",
-    "conversation": [],
-    "config": {
-      "api_key": "sk-xxx",
-      "api_base_url": "https://api.deepseek.com/v1",
-      "model": "deepseek-chat"
-    }
-  }'
-```
-
-**多轮对话**：
-
-```bash
-curl -X POST http://localhost:8000/api/v1/rag/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "它有什么用？",
-    "conversation": [
-      {"role": "user", "content": "什么是节点图？"},
-      {"role": "assistant", "content": "节点图是..."}
-    ],
-    "config": {
-      "api_key": "sk-xxx",
-      "api_base_url": "https://api.deepseek.com/v1",
-      "model": "deepseek-chat"
-    }
-  }'
-```
-
-### 方式 3：流式 API
-
-```bash
-curl -X POST http://localhost:8000/api/v1/rag/chat/stream \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "什么是节点图？",
-    "conversation": [],
-    "config": {
-      "api_key": "sk-xxx",
-      "api_base_url": "https://api.deepseek.com/v1",
-      "model": "deepseek-chat"
-    }
-  }'
-```
-
-**响应格式（SSE）**：
-```
-data: {"type": "sources", "data": [...]}
-data: {"type": "token", "data": "文本"}
-data: {"type": "done", "data": {"tokens": 123}}
-```
-
-详见 [api.md](./api.md)
-
-## 技术栈
-
-- **FastAPI**: Web 框架
-- **LlamaIndex**: RAG 框架
-- **ChromaDB**: 向量数据库
-- **Pytest**: 测试框架
-
-## 开发指南
-
-采用测试驱动开发（TDD），保持代码简洁，避免过度设计。
-
-### 运行测试
-
-```bash
-# 单元测试（无需 API Key）
-pytest tests/test_chat.py -v
-
-# 集成测试（需要配置 .env）
-pytest tests/test_integration.py -v -s
-
-# 所有测试
-pytest tests/ -v
-
-# curl 测试（需要先启动服务）
-export DEEPSEEK_API_KEY=your_key
-./tests/test_api.sh
-```
