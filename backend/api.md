@@ -143,14 +143,14 @@
         "doc_id": "guide_map_001",
         "similarity": 0.89,
         "text_snippet": "小地图是游戏中的重要功能，位于屏幕左下角...",
-        "url": "/knowledge/guide/map.md"
+        "url": "/knowledge/Miliastra-knowledge/official/guide/map.md"
       },
       {
         "title": "教程-小地图功能",
         "doc_id": "tutorial_map_002",
         "similarity": 0.76,
         "text_snippet": "要使用小地图，需要先在设置中开启...",
-        "url": "/knowledge/tutorial/map.md"
+        "url": "/knowledge/Miliastra-knowledge/official/tutorial/map.md"
       }
     ],
     "stats": {

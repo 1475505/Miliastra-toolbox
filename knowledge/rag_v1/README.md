@@ -87,7 +87,7 @@ python3 test_rag.py query "你的问题"
 以下路径自动增量嵌入：
 - **综合指南**: `knowledge/guide/`
 - **教程**: `knowledge/tutorial/`
-- **官方常见问题**: `knowledge/official_faq/`
+- **官方常见问题**: `knowledge/Miliastra-knowledge/official/faq/`
 
 以下路径需要手动嵌入：
 - **用户（非官方）总结**：`knowledge/user/` 

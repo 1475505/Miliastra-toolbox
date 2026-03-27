@@ -54,7 +54,7 @@ class CombinedRetriever:
     - 再从user来源召回,补足到 total_k
     """
 
-    def __init__(self, index, total_k: int = 5, doc_max: int = 4, bbs_key: str = "source_dir", bbs_value: str = "user", similarity_cutoff: float = None):
+    def __init__(self, index, total_k: int = 5, doc_max: int = 4, bbs_key: str = "source_dir", bbs_value: str = "bbs", similarity_cutoff: float = None):
         self.index = index
         self.total_k = int(total_k)
         self.doc_max = int(doc_max)
@@ -413,7 +413,7 @@ class ChatEngine:
                 total_k=similarity_top_k,
                 doc_max=int(os.getenv("DOC_MAX", "9")),
                 bbs_key=os.getenv("BBS_KEY", "source_dir"),
-                bbs_value=os.getenv("BBS_VALUE", "user"),
+                bbs_value=os.getenv("BBS_VALUE", "bbs"),
                 similarity_cutoff=similarity_cutoff
             )
             nodes = retriever.retrieve(retrieval_query)

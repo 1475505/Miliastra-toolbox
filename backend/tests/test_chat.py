@@ -70,7 +70,7 @@ class TestChatAPI:
                         doc_id="doc_001",
                         similarity=0.89,
                         text_snippet="小地图是游戏中的重要功能...",
-                        url="/knowledge/guide/map.md"
+                        url="/knowledge/Miliastra-knowledge/official/guide/map.md"
                     )
                 ],
                 stats={"tokens": 150}
