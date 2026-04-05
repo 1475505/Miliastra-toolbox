@@ -32,6 +32,7 @@
 .
 ├── backend/       # FastAPI 后端服务（处理对话、RAG 检索）
 ├── frontend/      # React 前端交互界面
+├── mcp/           # MCP Server（知识库工具对外服务）
 ├── knowledge/     # 知识库管理
 │   ├── spider/        # 官方文档爬虫
 │   ├── bbs_spider/    # 论坛问答爬虫
