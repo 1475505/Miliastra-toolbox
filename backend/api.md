@@ -6,6 +6,11 @@
   - [1. 非流式接口](#1-非流式接口)
   - [2. 流式接口](#2-流式接口)
 
+- [Agent API](#agent-api)
+  - [1. 非流式接口](#1-agent-非流式接口)
+  - [2. 流式接口](#2-agent-流式接口)
+  - [3. 能力发现](#3-能力发现接口)
+
 - [笔记 API](#笔记api)
   - [1. 创建笔记](#1-创建笔记)
   - [2. 修改笔记](#2-修改笔记)
@@ -338,6 +343,132 @@ for line in response.iter_lines():
             elif data['type'] == 'done':
                 print(f"\n\n消耗 tokens: {data['data']['tokens']}")
 ```
+---
+
+# Agent API
+
+## 概述
+
+基于 LlamaIndex FunctionAgent 的 Agent 模式对话接口，与现有 RAG 接口并存。Agent 模式通过 tool-calling 机制，优先使用结构化知识查询（节点信息、文档内容），并可兖底使用 RAG 语义检索。
+
+详细规范请参考 [Agent API Spec](./specs/agent-api.md) 和 [Agent Tools Spec](./specs/agent-tools.md)。
+
+### 可用工具
+
+| 工具名 | 职责 |
+|--------|------|
+| `get_node_info` | 输入节点名称列表，返回节点说明、参数、所在文档 |
+| `list_documents` | 列出文档标题和路径，可选关键词模糊过滤 |
+| `get_document` | 输入文档标题，返回文档全文，并附带相关节点匹配 |
+| `search_knowledge` | 向量检索知识库，语义搜索 |
+
+---
+
+## 1. Agent 非流式接口
+
+### 接口地址
+**POST** `/api/v1/agent/chat`
+
+### 请求参数
+
+与 RAG 接口共用请求模型：
+
+```json
+{
+  "id": "string（可选）",
+  "message": "string（必填，max=2000）",
+  "conversation": [{"role": "user|assistant", "content": "string"}],
+  "config": {
+    "api_key": "string",
+    "api_base_url": "string",
+    "model": "string",
+    "use_default_model": 0,
+    "context_length": 3
+  }
+}
+```
+
+### 响应示例
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "agent-abc123",
+    "question": "碰撞触发器怎么用？",
+    "answer": "碰撞触发器是事件节点...",
+    "sources": [
+      {"title": "碰撞触发器", "doc_id": "事件节点", "similarity": 1.0, "text_snippet": "...", "url": ""}
+    ],
+    "stats": {"tokens": 0, "tool_calls": 1, "retrieval_calls": 0},
+    "mode": "agent",
+    "tool_trace": [
+      {"tool": "get_node_info", "args": {"names": ["碰撞触发器"]}, "status": "success", "summary": "..."}
+    ]
+  },
+  "error": null
+}
+```
+
+---
+
+## 2. Agent 流式接口
+
+### 接口地址
+**POST** `/api/v1/agent/chat/stream`
+
+### 请求参数
+与非流式接口相同。
+
+### SSE 事件类型
+
+| 事件类型 | 说明 |
+|----------|------|
+| `tool_call` | 即将调用工具 |
+| `tool_result` | 工具调用结果摘要 |
+| `token` | 流式文本片段 |
+| `sources` | 最终来源列表 |
+| `done` | 本轮完成，含统计信息 |
+| `error` | 错误 |
+
+### SSE 数据格式
+
+```text
+data: {"type": "tool_call", "data": {"tool": "get_node_info", "args": {"names": ["碰撞触发器"]}}}
+data: {"type": "tool_result", "data": {"tool": "get_node_info", "status": "success", "summary": "找到1个匹配节点"}}
+data: {"type": "token", "data": "碰撞触发器是事件节点，"}
+data: {"type": "sources", "data": [...]}
+data: {"type": "done", "data": {"stats": {"tokens": 0, "tool_calls": 1, "retrieval_calls": 0}}}
+```
+
+---
+
+## 3. 能力发现接口
+
+### 接口地址
+**GET** `/api/v1/agent/capabilities`
+
+### 响应示例
+
+```json
+{
+  "success": true,
+  "data": {
+    "mode": "agent",
+    "streaming": true,
+    "image_input": false,
+    "tools": ["get_node_info", "list_documents", "get_document", "search_knowledge"]
+  }
+}
+```
+
+### 安全限制
+
+| 参数 | 默认值 | 环境变量 | 说明 |
+|------|--------|----------|------|
+| 最大工具调用轮次 | 6 | `AGENT_MAX_TOOL_ROUNDS` | 超出后截断事件流 |
+| 超时时间 | 300s | `AGENT_TIMEOUT` | 超时后 Agent 强制终止 |
+
 ---
 
 # 笔记API

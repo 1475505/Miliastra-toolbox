@@ -13,6 +13,7 @@
 - 检索配额由 `knowledge/rag_v1/.env` 的 `TOP_K` / `DOC_MAX` 控制（当前建议 `12/8`），修改后需重启服务。
 - 服务日志会打印召回 node id（`[ChatEngine] 召回 ... ids=[...]`），用于快速回溯具体 chunk。
 - 支持流式响应 (SSE) 以及一键式整合 Web 前端 (自动托管 `static/` 目录)。
+- **Agent 模式**：基于 LlamaIndex FunctionAgent，提供 tool-calling 的问答模式，支持结构化知识查询（节点信息、文档内容）与 RAG 语义检索。支持最大工具调用轮次和超时保护（环境变量 `AGENT_MAX_TOOL_ROUNDS` / `AGENT_TIMEOUT`）。
 
 ## 快速开始
 
