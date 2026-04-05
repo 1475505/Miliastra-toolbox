@@ -8,13 +8,11 @@
 """
 from typing import List, Dict, Any, Tuple
 from pathlib import Path
-import hashlib
 import re
 import yaml
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.readers import SimpleDirectoryReader
-from llama_index.core.ingestion import IngestionPipeline
-from llama_index.core.schema import Document, BaseNode, TextNode
+from llama_index.core.schema import Document, BaseNode, TextNode, NodeRelationship, RelatedNodeInfo
 
 def extract_yaml_frontmatter(text: str) -> Tuple[Dict[str, Any], str]:
     """
@@ -113,21 +111,6 @@ class DocumentParser:
             secondary_chunking_regex="[^,.;。；！？]+[,.;。；！？]?"
         )
     
-    def _remove_frontmatter(self, text: str) -> str:
-        """
-        移除 YAML frontmatter（如果存在）。
-        
-        Args:
-            text: Markdown 文本
-            
-        Returns:
-            移除 frontmatter 后的文本
-        """
-        # YAML frontmatter 格式：以 --- 开始和结束
-        frontmatter_pattern = r'^---\s*\n.*?\n---\s*\n'
-        cleaned_text = re.sub(frontmatter_pattern, '', text, flags=re.DOTALL)
-        return cleaned_text.strip()
-    
     def _split_by_h1(self, text: str) -> List[str]:
         """
         按一级标题分割文本。
@@ -193,14 +176,30 @@ class DocumentParser:
             # 如果chunk太大，使用 SentenceSplitter 进行二次分割
             if len(chunk) > self.chunk_size:
                 # 创建临时文档用于分割
-                temp_doc = Document(text=chunk, metadata=chunk_metadata)
+                temp_doc = Document(text=chunk, metadata=chunk_metadata, doc_id=doc.doc_id)
                 sub_nodes = self.sentence_splitter.get_nodes_from_documents([temp_doc])
+                subchunk_count = len(sub_nodes)
+
+                for subchunk_index, sub_node in enumerate(sub_nodes):
+                    sub_node.metadata.update({
+                        "h1_title": h1_title,
+                        "chunk_index": i,
+                        "subchunk_index": subchunk_index,
+                        "subchunk_count": subchunk_count,
+                    })
                 nodes.extend(sub_nodes)
             else:
                 # 直接创建节点
                 node = TextNode(
                     text=chunk,
-                    metadata=chunk_metadata
+                    metadata={
+                        **chunk_metadata,
+                        "subchunk_index": 0,
+                        "subchunk_count": 1,
+                    },
+                    relationships={
+                        NodeRelationship.SOURCE: RelatedNodeInfo(node_id=doc.doc_id)
+                    }
                 )
                 nodes.append(node)
         

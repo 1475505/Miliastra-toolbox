@@ -10,6 +10,7 @@ from typing import List, Dict, Any, Optional
 from .rag_engine import create_rag_engine
 from .db import get_collection_stats
 from .config import config
+from llama_index.core.vector_stores.types import MetadataFilters
 
 class RAGAPI:
     """RAG原子能力API"""
@@ -47,60 +48,42 @@ class RAGAPI:
 
     def retrieve(
         self,
-        question: str
+        question: str,
+        filters: Optional[MetadataFilters] = None,
     ) -> Dict[str, Any]:
         """
         检索相关文档（不生成答案）。
+
+        Args:
+            question: 查询问题
+            filters: 可选的元数据过滤条件（LlamaIndex MetadataFilters）
         """
         try:
-            result = self.rag_engine.retrieve(question)
+            result = self.rag_engine.retrieve(question, filters=filters)
             return {"success": True, "data": result}
         except Exception as e:
             self.logger.error(f"检索失败: {e}", exc_info=True)
             return {"success": False, "message": str(e)}
 
-    def query_llm(
-        self,
-        question: str,
-        context_nodes: List
-    ) -> Dict[str, Any]:
-        """
-        使用 LLM 生成答案。
-        """
-        try:
-            answer = self.rag_engine.query_llm(question, context_nodes)
-            return {"success": True, "data": {"question": question, "answer": answer}}
-        except Exception as e:
-            self.logger.error(f"LLM 生成答案失败: {e}", exc_info=True)
-            return {"success": False, "message": str(e)}
-
     def query(
         self,
-        question: str
+        question: str,
+        include_answer: bool = True,
+        filters: Optional[MetadataFilters] = None,
     ) -> Dict[str, Any]:
         """
         执行查询（检索+LLM生成答案）。
+
+        Args:
+            question: 查询问题
+            include_answer: 是否生成答案
+            filters: 可选的元数据过滤条件（LlamaIndex MetadataFilters）
         """
         try:
-            result = self.rag_engine.query(question)
+            result = self.rag_engine.query(question, include_answer=include_answer, filters=filters)
             return {"success": True, "data": result}
         except Exception as e:
             self.logger.error(f"查询失败: {e}", exc_info=True)
-            return {"success": False, "message": str(e)}
-
-    def batch_query(
-        self,
-        questions: List[str],
-        include_answer: bool = True
-    ) -> Dict[str, Any]:
-        """
-        批量查询。
-        """
-        try:
-            results = [self.rag_engine.query(q, include_answer) for q in questions]
-            return {"success": True, "data": {"results": results, "total": len(results)}}
-        except Exception as e:
-            self.logger.error(f"批量查询失败: {e}", exc_info=True)
             return {"success": False, "message": str(e)}
 
     def get_knowledge_base_status(self) -> Dict[str, Any]:

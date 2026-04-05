@@ -49,37 +49,30 @@ from common.pg_client import model_usage_manager
 
 
 class CombinedRetriever:
-    """组合检索器：
-    - 先从非user来源召回 N 条（doc_max 的部分）
-    - 再从user来源召回,补足到 total_k
+    """基于名额分配的优先级检索器，通过 rag_engine.retrieve_nodes() 执行两阶段召回：
+
+    Phase 1 (preferred): 召回 official 目录下的官方文档，最多 doc_max 条
+    Phase 2 (non_preferred): 召回 bbs/user 目录下的用户内容，补齐至 total_k 条
+
+    合并顺序: 先放 non_preferred，再放 preferred，按 node_id 去重。
+    效果: 官方文档占主要名额(doc_max)，用户内容补齐剩余。
+
+    数据库 source_dir 与 Miliastra-knowledge 目录对应关系:
+        official/guide/    → source_dir="guide"
+        official/tutorial/ → source_dir="tutorial"
+        official/faq/      → source_dir="faq" 或 "official_faq"
+        bbs/               → source_dir="bbs"
+        user/              → source_dir="user"
     """
 
-    def __init__(self, index, total_k: int = 5, doc_max: int = 4, bbs_key: str = "source_dir", bbs_value: str = "bbs", similarity_cutoff: float = None):
-        self.index = index
+    # 官方文档的 source_dir 白名单（对应 Miliastra-knowledge/official/ 下的子目录）
+    OFFICIAL_SOURCE_DIRS = ["guide", "tutorial", "faq", "official_faq"]
+
+    def __init__(self, rag_engine, total_k: int = 5, doc_max: int = 4, similarity_cutoff: float = None):
+        self.rag_engine = rag_engine
         self.total_k = int(total_k)
         self.doc_max = int(doc_max)
-        self.bbs_key = bbs_key
-        self.bbs_value = bbs_value
         self.similarity_cutoff = similarity_cutoff
-
-    def _call_retrieve(self, retriever, query: str, filters=None):
-        """Call the underlying retriever with the query.
-
-        This implementation no longer attempts to pass `filters` to the
-        underlying retriever. Some deployed llama-index/chroma versions do
-        not support a `filters` kwarg; we ignore `filters` here and always
-        call the basic `retrieve(query)` / `get_relevant_documents(query)`
-        method. Callers may still pass a `filters` argument but it will be
-        ignored.
-
-        metadata:{'file_name': 'bbs-faq.md', 'file_path': '/home/ubuntu/js/Miliastra-toolbox/knowledge/rag_v1/../user/bbs-faq.md', 'source_dir': 'user', 'id': 'bbs-faq-20251201', 'title': '米游社【问答集中楼】开发问题互助专区', 'force': True, 'url': 'https://www.miyoushe.com/ys/article/69834163', 'h1_title': 'Q. A.', 'chunk_index': 173}
-        """
-        # Support different retriever method names but always call with query only
-        if hasattr(retriever, "retrieve"):
-            return retriever.retrieve(query)
-        if hasattr(retriever, "get_relevant_documents"):
-            return retriever.get_relevant_documents(query)
-        raise RuntimeError("base retriever 不支持 retrieve 或 get_relevant_documents 方法")
 
     def retrieve(self, query: str):
         total_k = max(self.total_k, 0)
@@ -88,30 +81,32 @@ class CombinedRetriever:
         preferred_nodes = []
         non_preferred_nodes = []
 
+        # Phase 1: 官方文档 (source_dir IN official 白名单)
         try:
             preferred_filters = MetadataFilters(
-                filters=[MetadataFilter(key=self.bbs_key, value=self.bbs_value, operator=FilterOperator.NE)]
+                filters=[MetadataFilter(key="source_dir", value=self.OFFICIAL_SOURCE_DIRS, operator=FilterOperator.IN)]
             )
-            preferred_retriever = self.index.as_retriever(
-                similarity_top_k=max(preferred_k, 4) if preferred_k > 0 else 4,
+            preferred_nodes = list(self.rag_engine.retrieve_nodes(
+                query,
+                filters=preferred_filters,
+                top_k=max(preferred_k, 4) if preferred_k > 0 else 4,
                 similarity_cutoff=self.similarity_cutoff,
-                filters=preferred_filters
-            )
-            preferred_nodes = list(self._call_retrieve(preferred_retriever, query))
+            ))
         except Exception:
             preferred_nodes = []
 
+        # Phase 2: 用户内容 (source_dir NOT IN official 白名单，即 bbs/user 等)
         non_preferred_k = total_k - len(preferred_nodes)
         try:
             non_preferred_filters = MetadataFilters(
-                filters=[MetadataFilter(key=self.bbs_key, value=self.bbs_value, operator=FilterOperator.EQ)]
+                filters=[MetadataFilter(key="source_dir", value=self.OFFICIAL_SOURCE_DIRS, operator=FilterOperator.NIN)]
             )
-            non_preferred_retriever = self.index.as_retriever(
-                similarity_top_k=max(non_preferred_k, 1),
+            non_preferred_nodes = list(self.rag_engine.retrieve_nodes(
+                query,
+                filters=non_preferred_filters,
+                top_k=max(non_preferred_k, 1),
                 similarity_cutoff=self.similarity_cutoff,
-                filters=non_preferred_filters
-            )
-            non_preferred_nodes = list(self._call_retrieve(non_preferred_retriever, query))
+            ))
         except Exception:
             non_preferred_nodes = []
 
@@ -137,18 +132,9 @@ class CombinedRetriever:
 
         return combined[:total_k]
 
-    # 适配其他调用方可能使用的方法名
-    def get_relevant_documents(self, query: str):
-        return self.retrieve(query)
-
-    # 异步适配：某些 llama_index 组件会调用 aretrieve / aget_relevant_documents
+    # 异步适配
     async def aretrieve(self, query: str):
-        """异步包装同步 retrieve，使用线程池执行以兼容同步实现。"""
-        # 延迟导入 asyncio.to_thread 在 Python 3.9+ 可用
         return await asyncio.to_thread(self.retrieve, query)
-
-    async def aget_relevant_documents(self, query: str):
-        return await self.aretrieve(query)
 
 
 class ChatEngine:
@@ -409,11 +395,9 @@ class ChatEngine:
             similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
             
             retriever = CombinedRetriever(
-                index=self.rag_engine.index,
+                rag_engine=self.rag_engine,
                 total_k=similarity_top_k,
                 doc_max=int(os.getenv("DOC_MAX", "9")),
-                bbs_key=os.getenv("BBS_KEY", "source_dir"),
-                bbs_value=os.getenv("BBS_VALUE", "bbs"),
                 similarity_cutoff=similarity_cutoff
             )
             nodes = retriever.retrieve(retrieval_query)
@@ -511,11 +495,9 @@ class ChatEngine:
             similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
             
             retriever = CombinedRetriever(
-                index=self.rag_engine.index,
+                rag_engine=self.rag_engine,
                 total_k=similarity_top_k,
                 doc_max=int(os.getenv("DOC_MAX", "9")),
-                bbs_key=os.getenv("BBS_KEY", "id"),
-                bbs_value=os.getenv("BBS_VALUE", "bbs-faq"),
                 similarity_cutoff=similarity_cutoff
             )
             

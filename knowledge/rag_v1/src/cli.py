@@ -5,18 +5,52 @@ import click
 import sys
 from .api import get_rag_api
 
+
+def _print_source(source, index):
+    """打印检索来源。"""
+    click.echo(f"{index}. {source.get('title', 'N/A')}")
+
+    h1_title = source.get('h1_title')
+    if h1_title:
+        click.echo(f"   章节: {h1_title}")
+
+    doc_id = source.get('doc_id')
+    if doc_id:
+        click.echo(f"   文档ID: {doc_id}")
+
+    url = source.get('url')
+    if url:
+        click.echo(f"   URL: {url}")
+
+    crawled_at = source.get('crawledAt')
+    if crawled_at:
+        click.echo(f"   CrawledAt: {crawled_at}")
+
+    chunk_index = source.get('chunk_index')
+    if chunk_index is not None:
+        subchunk_index = source.get('subchunk_index')
+        subchunk_count = source.get('subchunk_count')
+        if subchunk_index is not None and subchunk_count not in (None, 1):
+            click.echo(f"   Chunk: {chunk_index}.{subchunk_index}/{subchunk_count}")
+        else:
+            click.echo(f"   Chunk: {chunk_index}")
+
+    click.echo(f"   相似度: {source.get('similarity', 0.0):.3f}")
+    click.echo(f"   片段: {source.get('text_snippet', 'N/A')}")
+    click.echo("-" * 20)
+
 @click.group()
 def cli():
     """RAG原子能力应用命令行工具"""
     pass
 
 @cli.command()
-@click.option('--force', '-f', is_flag=True, help='强制重新嵌入所有文档（忽略文档 frontmatter 的 force 标签）')
+@click.option('--force', '-f', is_flag=True, help='清空集合并重新嵌入所有文档')
 @click.option('--source-dirs', '-d', multiple=True, help='指定要处理的源目录，可多次使用')
 def init(force, source_dirs):
     """初始化或更新知识库（支持增量更新）"""
     if force:
-        click.echo("🚀 强制模式：将重新嵌入所有文档...")
+        click.echo("🚀 强制模式：将清空集合并重新嵌入所有文档...")
     else:
         click.echo("🚀 开始处理知识库（增量模式）...")
     
@@ -66,10 +100,7 @@ def retrieve(question):
     click.echo("\n📖 相关来源:")
     if data.get("sources"):
         for i, source in enumerate(data["sources"], 1):
-            click.echo(f"{i}. {source.get('title', 'N/A')}")
-            click.echo(f"   相似度: {source.get('similarity', 0.0):.3f}")
-            click.echo(f"   片段: {source.get('text_snippet', 'N/A')}")
-            click.echo("-" * 20)
+            _print_source(source, i)
     else:
         click.echo("未找到相关来源。")
 
@@ -95,10 +126,7 @@ def query(question):
     click.echo("\n📖 相关来源:")
     if data.get("sources"):
         for i, source in enumerate(data["sources"], 1):
-            click.echo(f"{i}. {source.get('title', 'N/A')}")
-            click.echo(f"   相似度: {source.get('similarity', 0.0):.3f}")
-            click.echo(f"   片段: {source.get('text_snippet', 'N/A')}")
-            click.echo("-" * 20)
+            _print_source(source, i)
     else:
         click.echo("未找到相关来源。")
 

@@ -29,27 +29,32 @@ class Config:
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "200"))  # 增加重叠以保持上下文连贯性
     USE_H1_ONLY: bool = os.getenv("USE_H1_ONLY", "True").lower() == "true"  # 只按一级标题分块
 
-    # 混合检索配置
-    RAG_STRATEGY: str = os.getenv("RAG_STRATEGY", "vector")  # 检索策略: "vector" 或 "hybrid"
-    FUSION_MODE: str = os.getenv("FUSION_MODE", "reciprocal_rank")  # 融合模式: "reciprocal_rank" 或 "relative_score"
-    VECTOR_TOP_K: int = int(os.getenv("VECTOR_TOP_K", "5"))  # 向量检索的top_k
-    BM25_TOP_K: int = int(os.getenv("BM25_TOP_K", "5"))  # BM25检索的top_k
-    
     # 模型配置
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")  # 嵌入模型，默认BAAI/bge-m3
     CHAT_MODEL: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo")  # 对话模型，默认gpt-3.5-turbo
     
-    # 文档路径配置 - 指向knowledge/下的多个目录
+    # 文档路径配置 - 指向 Miliastra-knowledge 子目录
     KNOWLEDGE_ROOT_PATH: str = os.path.join(os.path.dirname(__file__), "..", "..", "..", "knowledge")
-    GUIDE_DOCS_PATH: str = os.path.join(KNOWLEDGE_ROOT_PATH, "Miliastra-knowledge", "official", "guide")
-    TUTORIAL_DOCS_PATH: str = os.path.join(KNOWLEDGE_ROOT_PATH, "Miliastra-knowledge", "official", "tutorial")
-    OFFICIAL_FAQ_DOCS_PATH: str = os.path.join(KNOWLEDGE_ROOT_PATH, "Miliastra-knowledge", "official", "faq")
-    
-    # 支持的所有知识源目录列表
-    KNOWLEDGE_SOURCE_DIRS: List[str] = [
-        GUIDE_DOCS_PATH,
-        TUTORIAL_DOCS_PATH,
-        OFFICIAL_FAQ_DOCS_PATH
+    _MK_ROOT: str = os.path.join(KNOWLEDGE_ROOT_PATH, "Miliastra-knowledge")
+
+    # 官方文档目录（official/ 下所有子目录，CombinedRetriever 优先召回）
+    GUIDE_DOCS_PATH: str = os.path.join(_MK_ROOT, "official", "guide")
+    TUTORIAL_DOCS_PATH: str = os.path.join(_MK_ROOT, "official", "tutorial")
+    OFFICIAL_FAQ_DOCS_PATH: str = os.path.join(_MK_ROOT, "official", "faq")
+
+    # 用户内容目录（CombinedRetriever 补足召回）
+    BBS_DOCS_PATH: str = os.path.join(_MK_ROOT, "bbs")
+    USER_DOCS_PATH: str = os.path.join(_MK_ROOT, "user")
+
+    # init 时嵌入的知识源列表
+    # 每项为 (目录路径, 可选的文件名前缀过滤)
+    # 前缀过滤为 None 时加载目录下所有 .md 文件
+    KNOWLEDGE_SOURCE_DIRS: list = [
+        (GUIDE_DOCS_PATH, None),
+        (TUTORIAL_DOCS_PATH, None),
+        (OFFICIAL_FAQ_DOCS_PATH, None),
+        (BBS_DOCS_PATH, "bbs-faq"),  # 只嵌入 bbs-faq 开头的文件
+        (USER_DOCS_PATH, None),
     ]
     
     KNOWLEDGE_BASE_PATH: str = os.path.join(os.path.dirname(__file__), "..", "db")

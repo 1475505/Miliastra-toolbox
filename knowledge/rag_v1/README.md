@@ -1,6 +1,6 @@
 # RAG 知识库系统
 
-基于 LlamaIndex 和 ChromaDB 的向量知识库构建和检索系统，专为中文技术文档优化，支持混合召回（向量+BM25）。
+基于 LlamaIndex 和 ChromaDB 的向量知识库构建和检索系统，专为中文技术文档优化，支持元数据过滤检索。
 
 ## 🚀 快速开始
 
@@ -34,9 +34,9 @@ python3 rag_cli.py init
 
 ```bash
 # 召回测试
-python3 rag_cli.py retrieve "如何开始使用这个系统？" --no-answer
+python3 rag_cli.py retrieve "如何开始使用这个系统？"
 
-# LLM问答（需要配置CHAT_KEY）
+# LLM问答
 python3 rag_cli.py query "什么是节点图？"
 ```
 
@@ -44,19 +44,16 @@ python3 rag_cli.py query "什么是节点图？"
 
 ```bash
 # 初始化知识库
-python3 rag_cli.py init [--force]
+python3 rag_cli.py init [--force] [--source-dirs DIR]
 
 # 召回文档
-python3 rag_cli.py retrieve "查询内容" [--max-results N] [--threshold T]
+python3 rag_cli.py retrieve "查询内容"
 
 # 召回 + LLM生成
-python3 rag_cli.py query "问题内容" [--max-results N] [--threshold T]
+python3 rag_cli.py query "问题内容"
 
 # 查看状态
 python3 rag_cli.py status
-
-# 健康检查
-python3 rag_cli.py health
 
 # 单文档嵌入
 python3 rag_cli.py embed --doc path/to/your/document.md [--force]
@@ -88,9 +85,8 @@ python3 test_rag.py query "你的问题"
 - **综合指南**: `knowledge/Miliastra-knowledge/official/guide/`
 - **教程**: `knowledge/Miliastra-knowledge/official/tutorial/`
 - **官方常见问题**: `knowledge/Miliastra-knowledge/official/faq/`
-
-以下路径需要手动嵌入：
-- **用户（非官方）总结**：`knowledge/Miliastra-knowledge/user/` 
+- **论坛问答**: `knowledge/Miliastra-knowledge/bbs/`（仅 `bbs-faq*` 前缀文件）
+- **用户总结**: `knowledge/Miliastra-knowledge/user/`
 
 
 #### 文档格式规范
@@ -101,9 +97,10 @@ python3 test_rag.py query "你的问题"
 ---
 id: mh0pppib5eyc           # [必填] 唯一文档ID。如果未填写，系统将使用文件绝对路径作为ID。
 title: 常见问题的列表        # [选填] 标题
-force: false               # [选填] 更新策略。
+force: false               # [选填] 增量更新策略。
                            # false (默认): 如果库中已有此ID，跳过不处理。
                            # true: 即使库中已有此ID，删除旧数据并重新嵌入。
+                           # 注意: `init --force` 会清空整个集合后全量重建，此字段仅影响增量模式。
 ---
 
 # 问题1
@@ -112,6 +109,82 @@ force: false               # [选填] 更新策略。
 ```
 
 YAML frontmatter.id → Document.doc_id → Node.ref_doc_id → ChromaDB metadata.ref_doc_id
+
+### 当前实际分块与元数据行为
+
+当前 `rag_cli.py init` 的实际行为以代码为准，不再由 `CHUNKING_STRATEGY=structure|paragraph` 这类配置驱动；真正生效的是 `.env` 里的 `USE_H1_ONLY`、`MAX_CHUNK_SIZE` 和 `CHUNK_OVERLAP`。
+
+当前默认实现如下：
+
+1. 文档加载阶段会递归读取 Markdown 文件，提取基础文件元数据，并把 YAML frontmatter 的所有字段合并进文档元数据。
+2. 正文中的 YAML frontmatter 会在分块前移除，不参与 embedding。
+3. 当 `USE_H1_ONLY=True` 时，正文先按 Markdown 一级标题（`# `）切块；每个一级标题下的二级、三级标题、表格、代码块会保留在同一个 chunk 中。
+4. 只有当某个一级标题块长度超过 `MAX_CHUNK_SIZE` 时，才会使用 `SentenceSplitter` 做二次切分；此时 `CHUNK_OVERLAP` 才会生效。
+5. 如果一级标题前还有导语或前言文本，这一段也会被视为一个 chunk；因为没有标题，对应的 `h1_title` 会退化成 `Section N`。
+
+当前项目里的 `.env` 示例值是：
+
+```env
+MAX_CHUNK_SIZE=4096
+CHUNK_OVERLAP=200
+USE_H1_ONLY=True
+```
+
+这意味着当前知识库初始化采用的是“一级标题优先、超大标题块再二次切分”的策略，而不是 README 旧版描述里的“structure/paragraph 二选一”运行时开关。
+
+### 当前可获取的 chunk 元数据
+
+每个 chunk 在落库前会继承完整的文档级 metadata，然后追加少量 chunk 级字段。当前可以稳定获取的元数据包括：
+
+| 字段 | 来源 | 说明 |
+|--------|------|--------|
+| `file_name` | 文件系统 | 文件名 |
+| `file_path` | 文件系统 | 文件绝对路径 |
+| `source_dir` | 文件系统 | 文件所在目录名 |
+| `id` | YAML frontmatter | 文档唯一 ID；若存在，会被用作 `Document.doc_id` |
+| `title` | YAML frontmatter | 文档标题 |
+| `force` | YAML frontmatter | 增量更新时是否强制重建 |
+| `crawledAt` | YAML frontmatter | 爬取时间；当前数据库查询逻辑会直接读取该字段 |
+| `url` | YAML frontmatter | 来源链接 |
+| 其他任意 YAML 字段 | YAML frontmatter | 会原样合并进 metadata |
+| `h1_title` | 分块阶段 | 当前 chunk 对应的一级标题 |
+| `chunk_index` | 分块阶段 | 一级分块序号，从 0 开始 |
+| `subchunk_index` | 二次切分阶段 | 超大一级标题块被再次切分后的子块序号，从 0 开始 |
+| `subchunk_count` | 二次切分阶段 | 当前一级标题块最终被拆成的子块总数 |
+| `ref_doc_id` | LlamaIndex | 由 `Document.doc_id` 传播到 Node/Chroma，用于判重、删除和增量更新 |
+
+需要注意的现状：
+
+1. 如果一个一级标题块过大并被二次切分，拆出来的多个子块会共享同一个 `chunk_index` 和 `h1_title`，但现在会额外带上 `subchunk_index` 和 `subchunk_count`。
+2. `retrieve/query` 现在会返回 `doc_id`、`h1_title`、`url`、`crawledAt`、`chunk_index` 等关键字段；CLI 也会打印这些信息。
+3. 当前增量更新、文档存在性检查和按文档删除，仍然是通过 `ref_doc_id` 而不是 `doc_id` metadata 字段完成的。
+
+### 检索 API 能力
+
+`RAGAPI`（`src/api.py`）和 `RAGEngine`（`src/rag_engine.py`）提供以下检索接口，均支持可选的 `MetadataFilters` 元数据过滤：
+
+| 方法 | 返回值 | 用途 |
+|------|--------|------|
+| `RAGAPI.retrieve(question, filters)` | `Dict`（格式化的来源列表） | CLI / 外部调用，返回标准化来源信息 |
+| `RAGAPI.query(question, include_answer, filters)` | `Dict`（来源 + 可选 LLM 回答） | CLI / 外部调用，retrieve + 可选答案合成 |
+| `RAGEngine.retrieve_nodes(question, filters, top_k, similarity_cutoff)` | `List[NodeWithScore]` | 需要原始节点的调用方（如 backend `CombinedRetriever`） |
+
+`MetadataFilters` 示例：
+
+```python
+from llama_index.core.vector_stores.types import MetadataFilters, MetadataFilter, FilterOperator
+
+# 按 source_dir 过滤
+filters = MetadataFilters(
+    filters=[MetadataFilter(key="source_dir", value="guide", operator=FilterOperator.EQ)]
+)
+result = api.retrieve("如何使用节点图？", filters=filters)
+
+# backend 的 CombinedRetriever 通过 retrieve_nodes 获取原始节点
+nodes = engine.retrieve_nodes("查询内容", filters=filters, top_k=10, similarity_cutoff=0.3)
+```
+
+backend 的 `CombinedRetriever`（`backend/rag/chatEngine.py`）通过 `RAGEngine.retrieve_nodes()` 执行基于名额分配的优先级检索，不再直接访问 `rag_engine.index`。
 
 ## ⚙️ 配置说明
 
@@ -125,54 +198,26 @@ YAML frontmatter.id → Document.doc_id → Node.ref_doc_id → ChromaDB metadat
 | **RAG配置** |  |  |
 | `TOP_K` | 检索结果数量 | 5 |
 | `SIMILARITY_THRESHOLD` | 相似度阈值 | 0.3 |
-| `MAX_CHUNK_SIZE` | 文本块大小 | 512 |
-| `CHUNK_OVERLAP` | 块重叠大小 | 100 |
-| `CHUNKING_STRATEGY` | 分块策略 | structure |
-| **混合检索配置** |  |  |
-| `RAG_STRATEGY` | 检索策略：vector/hybrid | vector |
-| `FUSION_MODE` | 融合模式：reciprocal_rank/relative_score | reciprocal_rank |
-| `VECTOR_TOP_K` | 向量检索的top_k数量 | 5 |
-| `BM25_TOP_K` | BM25检索的top_k数量 | 5 |
-
-### 检索策略说明
-
-1. **vector（纯向量检索）**: 基于语义相似度，适合概念性问题
-   - 使用向量化技术进行语义检索
-   - 适合理解概念关系和上下文相似性
-
-2. **hybrid（混合检索）**: 向量检索 + BM25检索，兼顾语义理解和精确匹配
-   - 结合向量检索的语义理解能力和BM25的精确匹配能力
-   - 适合技术文档的专业术语检索
-   - 推荐在大多数场景下使用，提供更全面和准确的检索结果
-
-### 融合模式说明
-
-1. **reciprocal_rank（互序排名融合）**:
-   - 基于文档在不同检索器中的排名进行融合
-   - 计算公式: `1 / (k + rank)`，其中k通常为60
-   - 适合大多数检索场景，默认推荐
-
-2. **relative_score（相对评分融合）**:
-   - 基于不同检索器的评分进行标准化和融合
-   - 将不同检索器的评分映射到相同范围
-   - 适合需要精确评分控制的场景
+| `MAX_CHUNK_SIZE` | 一级标题块的最大长度；超出后才进行二次切分 | 2048 |
+| `CHUNK_OVERLAP` | 二次切分时的块重叠大小 | 200 |
+| `USE_H1_ONLY` | 是否按 Markdown 一级标题优先分块 | True |
 
 ### 分块策略说明
 
-系统支持两种分块策略：
+当前代码中的分块策略分为两种运行模式：
 
-1. **structure（结构化分块）**：基于Markdown一级标题（`#`）进行智能分块
-   - 只按大标题分割，保持完整的章节内容
-   - 每个分块包含完整的主题和所有子章节
-   - 自动合并过短的分块，避免碎片化
-   - 适合技术文档和教程类内容，提供更丰富的上下文信息
+1. **`USE_H1_ONLY=True`（当前默认）**
+    - 先按 Markdown 一级标题（`# `）切分。
+    - 一个一级标题下的所有子内容尽量保持在同一个 chunk 中。
+    - 只有当该 chunk 超过 `MAX_CHUNK_SIZE` 时，才会触发基于句子/段落的二次切分。
+    - `CHUNK_OVERLAP` 只在这一步生效。
 
-2. **paragraph（段落分块）**：基于段落和句子进行传统分块
-   - 按固定字符长度分割
-   - 保持段落完整性
-   - 适合通用文档处理
+2. **`USE_H1_ONLY=False`**
+    - 不再先按一级标题切块。
+    - 直接使用 `SentenceSplitter` 按长度和句子边界进行通用切分。
+    - 此模式更接近传统固定长度 chunking。
 
-推荐使用 `structure` 策略处理中文技术文档。
+对于当前仓库里的中文技术文档，默认推荐保留 `USE_H1_ONLY=True`。
 
 ## 📊 项目结构
 
@@ -196,7 +241,7 @@ knowledge/rag_v1/
 
 - **RAG框架**: LlamaIndex
 - **向量数据库**: ChromaDB (嵌入式模式)
-- **召回策略**: 向量召回 + BM25召回
+- **召回策略**: 向量召回 (语义相似度)
 - **嵌入模型**: BAAI/bge-m3 (中文优化)
 - **文档处理**: Markdown + YAML frontmatter
 

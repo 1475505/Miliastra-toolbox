@@ -82,7 +82,10 @@ def run_retrieve_test(keyword: str):
         for i, node in enumerate(nodes, 1):
             print(f"\n--- Source {i} (Similarity: {node.score:.3f}) ---")
             print(f"Title: {node.metadata.get('title', node.metadata.get('file_name', '未知'))}")
+            print(f"Doc ID: {node.ref_doc_id or 'N/A'}")
             print(f"H1 Title: {node.metadata.get('h1_title', 'N/A')}")
+            print(f"Chunk: {node.metadata.get('chunk_index', 'N/A')}")
+            print(f"Subchunk: {node.metadata.get('subchunk_index', 'N/A')}/{node.metadata.get('subchunk_count', 'N/A')}")
             text = node.get_text()
             print(f"Snippet: {text[:200]}...")
     except Exception as e:
@@ -264,6 +267,8 @@ def run_embed_test(doc_path: str):
                     ("YAML 'url' field", 'url' in metadata),
                     ("One-level heading 'h1_title'", 'h1_title' in metadata),
                     ("Chunk index", 'chunk_index' in metadata),
+                    ("Subchunk index", 'subchunk_index' in metadata),
+                    ("Subchunk count", 'subchunk_count' in metadata),
                     ("File name", 'file_name' in metadata),
                 ]
                 

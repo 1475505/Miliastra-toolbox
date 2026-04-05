@@ -194,6 +194,9 @@ class URLGenerator {
     console.log(`   tutorial: ${scopeStats.tutorial} 个`);
     console.log(`   official_faq: ${scopeStats.official_faq} 个`);
 
+    // 生成 title.json
+    await this.generateTitleJson(allEntries);
+
     console.log(`\n✅ JSON配置文件生成完成`);
     console.log(`   共 ${allEntries.length} 个条目\n`);
   }
@@ -228,6 +231,33 @@ class URLGenerator {
     const outputPath = path.join(configDir, `urls-${scope}.json`);
     await fs.writeFile(outputPath, JSON.stringify(config, null, 2), 'utf-8');
     console.log(`   ✓ 写入json - ${scope}: ${outputPath} (${entriesWithLocalPath.length} 个条目)`);
+  }
+
+  /**
+   * 生成 title.json（所有文档标题和本地路径映射）
+   */
+  private async generateTitleJson(allEntries: URLEntry[]) {
+    const configDir = path.join(__dirname, '..', 'config');
+    
+    // 提取 title 和 localPath，按 title 排序
+    const titles = allEntries
+      .map(entry => ({
+        title: entry.title,
+        localPath: entry.localPath || buildRelativeMarkdownPath(entry),
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+
+    const titleConfig = {
+      titles,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        totalCount: titles.length,
+      },
+    };
+
+    const outputPath = path.join(configDir, 'title.json');
+    await fs.writeFile(outputPath, JSON.stringify(titleConfig, null, 2), 'utf-8');
+    console.log(`   ✓ 写入 title.json: ${outputPath} (${titles.length} 个条目)`);
   }
 }
 

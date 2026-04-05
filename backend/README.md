@@ -8,7 +8,8 @@
 
 - 支持自定义大语言模型配置（API Key / Base URL / Model）（客户端BYOK机制）。
 - 结合系统预设的多轮问答及 Token 消耗统计。
-- 通过 LlamaIndex 实现 RAG，并返回引用来源。
+- 通过 LlamaIndex 实现 RAG，支持元数据过滤检索，并返回引用来源。
+- 基于名额分配的优先级检索策略（`CombinedRetriever`），优先召回官方文档，bbs 帖子补齐。
 - 支持流式响应 (SSE) 以及一键式整合 Web 前端 (自动托管 `static/` 目录)。
 
 ## 快速开始

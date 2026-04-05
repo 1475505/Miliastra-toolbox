@@ -2,31 +2,22 @@
 RAG引擎核心模块
 """
 import logging
+import os
 from typing import List, Dict, Any, Optional
 import tiktoken
 
 from .config import config
 from .parser import DocumentParser
-from .db import get_storage_context, get_vector_store_index, clear_collection, get_collection_stats
+from .db import get_storage_context, get_vector_store_index, get_collection_stats, clear_collection
 
 from llama_index.core import Settings as LlamaSettings
 from llama_index.core.schema import Document
-from llama_index.core.query_engine import BaseQueryEngine
-from llama_index.core.retrievers import BaseRetriever
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.base.embeddings.base import BaseEmbedding
-from llama_index.retrievers.bm25 import BM25Retriever
-from llama_index.core.retrievers import QueryFusionRetriever
+from llama_index.core.vector_stores.types import MetadataFilters, MetadataFilter, FilterOperator
 from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
 
-class RAGStrategy:
-    VECTOR = "vector"
-    HYBRID = "hybrid"
-
-class FusionMode:
-    RECIPROCAL_RANK = "reciprocal_rerank"
-    RELATIVE_SCORE = "relative_score"
 
 class RAGEngine:
     """RAG搜索引擎"""
@@ -52,8 +43,6 @@ class RAGEngine:
             collection_name=config.CHROMA_COLLECTION_NAME
         )
         self.index = self._load_index()
-        self.documents = []  # 保存文档节点，用于BM25检索
-        self.query_engine = self._create_query_engine()
         
         # 初始化 token 计数器
         # 使用通用的 cl100k_base encoding，适用于所有模型
@@ -95,21 +84,47 @@ class RAGEngine:
         构建知识库，支持增量更新。
         
         Args:
-            force_rebuild: 如果为 True，强制重新嵌入所有文档（忽略文档 frontmatter 的 force 标签）
-            source_directories: 要处理的源目录列表
+            force_rebuild: 如果为 True，清空集合并重新嵌入所有文档
+            source_directories: 要处理的源目录列表（纯路径字符串），覆盖 config 中的默认配置
             
         Returns:
             包含处理结果的字典
         """
-        from .db import check_document_exists, delete_document_by_id
+        # 解析知识源配置：支持 (dir, prefix_filter) 元组和纯字符串两种格式
+        if source_directories:
+            source_entries = [(d, None) for d in source_directories]
+        else:
+            source_entries = [
+                (entry if isinstance(entry, tuple) else (entry, None))
+                for entry in config.KNOWLEDGE_SOURCE_DIRS
+            ]
         
-        source_dirs = source_directories or config.KNOWLEDGE_SOURCE_DIRS
+        # force_rebuild 模式：先清空整个集合，确保无残留数据
+        if force_rebuild:
+            logging.info("强制重建模式：清空现有集合...")
+            try:
+                clear_collection(config.KNOWLEDGE_BASE_PATH, config.CHROMA_COLLECTION_NAME)
+                logging.info("集合已清空")
+            except Exception:
+                logging.info("集合不存在，跳过清空步骤")
+            # 重新创建 storage_context 和 index（旧引用已失效）
+            self.storage_context = get_storage_context(
+                config.KNOWLEDGE_BASE_PATH, config.CHROMA_COLLECTION_NAME
+            )
+            self.index = None
         
         # 加载所有文档
         all_documents = []
-        for directory in source_dirs:
-            logging.info(f"加载目录: {directory}")
+        for directory, filename_prefix in source_entries:
+            if not os.path.isdir(directory):
+                logging.warning(f"目录不存在，跳过: {directory}")
+                continue
+            logging.info(f"加载目录: {directory}" + (f" (前缀过滤: {filename_prefix}*)" if filename_prefix else ""))
             docs = self.parser.load_documents(directory)
+            if filename_prefix:
+                before = len(docs)
+                docs = [d for d in docs if os.path.basename(d.metadata.get('file_name', '')).startswith(filename_prefix)]
+                logging.info(f"  前缀过滤: {before} → {len(docs)} 个文档")
             all_documents.extend(docs)
         
         if not all_documents:
@@ -145,9 +160,6 @@ class RAGEngine:
                 logging.error(f"❌ 处理文档失败: {e}", exc_info=True)
                 error_count += 1
                 continue
-        
-        # 更新查询引擎
-        self.query_engine = self._create_query_engine()
         
         # 返回统计信息
         stats = get_collection_stats(config.KNOWLEDGE_BASE_PATH, config.CHROMA_COLLECTION_NAME)
@@ -185,11 +197,9 @@ class RAGEngine:
             )
     
     def _insert_nodes(self, nodes: List):
-        """插入节点到索引并更新查询引擎"""
+        """插入节点到索引"""
         self._ensure_index_initialized()
         self.index.insert_nodes(nodes)
-        self.documents.extend(nodes)
-        self.query_engine = self._create_query_engine()
     
     def _process_document_embedding(self, document: Document, force: bool = False) -> Dict[str, Any]:
         """
@@ -295,8 +305,6 @@ class RAGEngine:
         Returns:
             包含操作结果的字典
         """
-        import os
-        
         try:
             # 验证文件路径
             if not os.path.exists(file_path):
@@ -323,73 +331,57 @@ class RAGEngine:
                 "message": str(e)
             }
 
-    def _create_query_engine(self) -> Optional[BaseQueryEngine]:
-        """根据配置创建查询引擎"""
+    def _create_retriever(
+        self,
+        embed_model: Optional[BaseEmbedding] = None,
+        filters: Optional[MetadataFilters] = None,
+        top_k: Optional[int] = None,
+        similarity_cutoff: Optional[float] = None,
+    ):
+        """创建向量检索器
+
+        Args:
+            embed_model: 可选的嵌入模型
+            filters: 可选的元数据过滤条件（LlamaIndex MetadataFilters）
+            top_k: 可选的返回结果数，默认使用 config.TOP_K
+            similarity_cutoff: 可选的相似度阈值，默认使用 config.SIMILARITY_THRESHOLD
+        """
+        kwargs: Dict[str, Any] = {
+            "similarity_top_k": top_k if top_k is not None else config.TOP_K,
+            "similarity_cutoff": similarity_cutoff if similarity_cutoff is not None else config.SIMILARITY_THRESHOLD,
+            "embed_model": embed_model or LlamaSettings.embed_model,
+        }
+        if filters is not None:
+            kwargs["filters"] = filters
+        return self.index.as_retriever(**kwargs)
+
+    def retrieve_nodes(
+        self,
+        question: str,
+        filters: Optional[MetadataFilters] = None,
+        top_k: Optional[int] = None,
+        similarity_cutoff: Optional[float] = None,
+    ) -> List:
+        """
+        检索并返回原始 NodeWithScore 列表。
+
+        供需要直接操作节点的调用方使用（如构建 LLM prompt）。
+
+        Args:
+            question: 查询问题
+            filters: 可选的元数据过滤条件
+            top_k: 可选的返回结果数
+            similarity_cutoff: 可选的相似度阈值
+        """
         if not self.index:
-            logging.warning("索引未加载，无法创建查询引擎。")
-            return None
+            return []
+        return self._create_retriever(filters=filters, top_k=top_k, similarity_cutoff=similarity_cutoff).retrieve(question)
 
-        # 根据配置选择检索策略
-        if config.RAG_STRATEGY == RAGStrategy.HYBRID:
-            return self._create_hybrid_query_engine()
-        else:
-            # 默认使用向量检索，添加相似度阈值过滤
-            return self.index.as_query_engine(
-                similarity_top_k=config.TOP_K,
-                similarity_cutoff=config.SIMILARITY_THRESHOLD
-            )
-
-    def _create_hybrid_query_engine(self) -> Optional[BaseQueryEngine]:
-        """创建混合检索查询引擎"""
-        if not self.index:
-            logging.warning("索引未加载，无法创建混合查询引擎。")
-            return None
-
-        if not self.documents:
-            logging.warning("文档节点未加载，无法创建混合查询引擎。")
-            return None
-
-        try:
-            # 创建向量检索器
-            vector_retriever = self.index.as_retriever(
-                similarity_top_k=config.VECTOR_TOP_K,
-                similarity_cutoff=config.SIMILARITY_THRESHOLD
-            )
-
-            # 创建BM25检索器
-            bm25_retriever = BM25Retriever.from_defaults(
-                documents=self.documents,
-                similarity_top_k=config.BM25_TOP_K
-            )
-
-            # 创建混合检索器
-            hybrid_retriever = QueryFusionRetriever(
-                retrievers=[vector_retriever, bm25_retriever],
-                similarity_top_k=config.TOP_K,
-                mode=config.FUSION_MODE,
-                num_queries=1  # 不进行查询扩展，只使用原始查询
-            )
-
-            # 基于混合检索器创建查询引擎
-            from llama_index.core.query_engine import RetrieverQueryEngine
-            query_engine = RetrieverQueryEngine.from_args(
-                retriever=hybrid_retriever
-            )
-
-            logging.info(f"混合检索查询引擎创建成功，融合模式: {config.FUSION_MODE}")
-            return query_engine
-
-        except Exception as e:
-            logging.error(f"创建混合检索查询引擎失败: {e}")
-            logging.info("回退到向量检索模式")
-            return self.index.as_query_engine(
-                similarity_top_k=config.TOP_K,
-                similarity_cutoff=config.SIMILARITY_THRESHOLD
-            )
     def retrieve(
         self,
         question: str,
-        embed_model: Optional[BaseEmbedding] = None
+        embed_model: Optional[BaseEmbedding] = None,
+        filters: Optional[MetadataFilters] = None,
     ) -> Dict[str, Any]:
         """
         检索相关文档（不生成答案）
@@ -397,6 +389,7 @@ class RAGEngine:
         Args:
             question: 查询问题
             embed_model: 可选的嵌入模型，如果不提供则使用默认配置
+            filters: 可选的元数据过滤条件
 
         Returns:
             包含检索结果的字典
@@ -404,20 +397,8 @@ class RAGEngine:
         if not self.index:
             return self._format_error_response(question, "索引未初始化。请先构建知识库。")
 
-        # 使用提供的嵌入模型或默认配置
-        retriever_embed_model = embed_model if embed_model is not None else LlamaSettings.embed_model
-
         logging.info(f"开始检索: {question}")
-
-        # 创建向量检索器
-        retriever = self.index.as_retriever(
-            similarity_top_k=config.TOP_K,
-            similarity_cutoff=config.SIMILARITY_THRESHOLD,
-            embed_model=retriever_embed_model
-        )
-
-        nodes = retriever.retrieve(question)
-        
+        nodes = self._create_retriever(embed_model, filters).retrieve(question)
         logging.info(f"检索完成，找到 {len(nodes)} 个相关文档")
 
         return self._format_response(question, "仅检索", nodes)
@@ -486,7 +467,8 @@ class RAGEngine:
         question: str,
         include_answer: bool = True,
         embed_model: Optional[BaseEmbedding] = None,
-        llm: Optional[OpenAILike] = None
+        llm: Optional[OpenAILike] = None,
+        filters: Optional[MetadataFilters] = None,
     ) -> Dict[str, Any]:
         """
         执行查询（检索+可选的 LLM 生成答案）
@@ -496,6 +478,7 @@ class RAGEngine:
             include_answer: 是否生成答案
             embed_model: 可选的嵌入模型
             llm: 可选的 LLM 模型
+            filters: 可选的元数据过滤条件
 
         Returns:
             包含答案和来源的字典
@@ -503,21 +486,8 @@ class RAGEngine:
         if not self.index:
             return self._format_error_response(question, "索引未初始化。请先构建知识库。")
 
-        # 使用提供的嵌入模型或默认配置
-        retriever_embed_model = embed_model if embed_model is not None else LlamaSettings.embed_model
-
         logging.info(f"开始查询: {question}")
-
-        # 创建检索器
-        retriever = self.index.as_retriever(
-            similarity_top_k=config.TOP_K,
-            similarity_cutoff=config.SIMILARITY_THRESHOLD,
-            embed_model=retriever_embed_model
-        )
-
-        # 检索相关文档
-        nodes = retriever.retrieve(question)
-        
+        nodes = self._create_retriever(embed_model, filters).retrieve(question)
         logging.info(f"检索完成，找到 {len(nodes)} 个相关文档")
 
         # 如果不需要答案，只返回检索结果
@@ -542,33 +512,46 @@ class RAGEngine:
             completion_tokens=completion_tokens
         )
 
+    @staticmethod
+    def _node_to_source(node) -> Dict[str, Any]:
+        """将检索到的节点（NodeWithScore 或 TextNode）转换为标准化的来源信息"""
+        # NodeWithScore 包装了底层 TextNode，ref_doc_id 在底层节点上
+        inner = node.node if hasattr(node, 'node') else node
+        text = node.get_text()
+        metadata = node.metadata
+        return {
+            "title": metadata.get("title", metadata.get("file_name", "未知文档")),
+            "h1_title": metadata.get("h1_title", ""),
+            "doc_id": getattr(inner, 'ref_doc_id', "") or "",
+            "file_name": metadata.get("file_name", ""),
+            "file_path": metadata.get("file_path", ""),
+            "source_dir": metadata.get("source_dir", ""),
+            "url": metadata.get("url", ""),
+            "crawledAt": metadata.get("crawledAt", ""),
+            "chunk_index": metadata.get("chunk_index"),
+            "subchunk_index": metadata.get("subchunk_index"),
+            "subchunk_count": metadata.get("subchunk_count"),
+            "similarity": getattr(node, 'score', None) or 0.0,
+            "text_snippet": text[:200] + ("..." if len(text) > 200 else "")
+        }
+
     def _format_response(
         self,
         question: str,
         answer: str,
         source_nodes,
         completion_tokens: int = 0,
-        response=None
     ) -> Dict[str, Any]:
         """格式化最终的响应"""
-        sources = []
-        if source_nodes:
-            for node in source_nodes:
-                sources.append({
-                    "title": node.metadata.get("file_name", "未知文档"),
-                    "doc_id": node.metadata.get("doc_id", ""),
-                    "similarity": node.score or 0.0,
-                    "text_snippet": node.get_text()[:200] + "..."
-                })
-
+        sources = [self._node_to_source(node) for node in source_nodes] if source_nodes else []
         return {
             "question": question,
             "answer": answer,
             "sources": sources,
             "stats": {
                 "search_results": len(sources),
-                "answer_generated": bool(answer != "仅检索"),
-                "completion_tokens": completion_tokens,  # LLM 输出的 token 数量
+                "answer_generated": answer != "仅检索",
+                "completion_tokens": completion_tokens,
             }
         }
 
