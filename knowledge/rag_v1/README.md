@@ -74,6 +74,8 @@ python3 test_rag.py retrieve "关键词"
 python3 test_rag.py query "你的问题"
 ```
 
+说明：`init --force` 会先清空集合再全量重建；当目录结构、`doc_id` 规则或分块策略变化时，建议使用该模式。
+
 ### 🧩 新增文档嵌入指南
 
 本系统支持新嵌入单个文档进行增量更新，无需重建整个知识库。
@@ -197,10 +199,13 @@ backend 的 `CombinedRetriever`（`backend/rag/chatEngine.py`）通过 `RAGEngin
 | `OPENAI_BASE_URL` | OpenAI API基础URL | https://api.openai.com/v1 |
 | **RAG配置** |  |  |
 | `TOP_K` | 检索结果数量 | 5 |
+| `DOC_MAX` | official 文档最大召回数（其余名额给 bbs/user） | 8 |
 | `SIMILARITY_THRESHOLD` | 相似度阈值 | 0.3 |
 | `MAX_CHUNK_SIZE` | 一级标题块的最大长度；超出后才进行二次切分 | 2048 |
 | `CHUNK_OVERLAP` | 二次切分时的块重叠大小 | 200 |
 | `USE_H1_ONLY` | 是否按 Markdown 一级标题优先分块 | True |
+
+说明：运行时优先读取 `.env`，会覆盖代码默认值。修改召回配额时请同时更新 `TOP_K` / `DOC_MAX` 并重启服务。
 
 ### 分块策略说明
 

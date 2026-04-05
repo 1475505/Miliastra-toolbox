@@ -10,6 +10,8 @@
 - 结合系统预设的多轮问答及 Token 消耗统计。
 - 通过 LlamaIndex 实现 RAG，支持元数据过滤检索，并返回引用来源。
 - 基于名额分配的优先级检索策略（`CombinedRetriever`），优先召回官方文档，bbs 帖子补齐。
+- 检索配额由 `knowledge/rag_v1/.env` 的 `TOP_K` / `DOC_MAX` 控制（当前建议 `12/8`），修改后需重启服务。
+- 服务日志会打印召回 node id（`[ChatEngine] 召回 ... ids=[...]`），用于快速回溯具体 chunk。
 - 支持流式响应 (SSE) 以及一键式整合 Web 前端 (自动托管 `static/` 目录)。
 
 ## 快速开始

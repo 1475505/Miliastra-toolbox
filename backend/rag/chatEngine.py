@@ -56,6 +56,7 @@ class CombinedRetriever:
 
     合并顺序: 先放 non_preferred，再放 preferred，按 node_id 去重。
     效果: 官方文档占主要名额(doc_max)，用户内容补齐剩余。
+    注意: 若 doc_max 接近 total_k，bbs/user 名额会减少；运行时以环境变量 TOP_K/DOC_MAX 为准。
 
     数据库 source_dir 与 Miliastra-knowledge 目录对应关系:
         official/guide/    → source_dir="guide"
@@ -390,17 +391,19 @@ class ChatEngine:
             # 7. 阶段1：让 LLM 生成检索查询
             retrieval_query = self._generate_retrieval_query(llm, message, image_base64)
             
-            # 8. 阶段2：执行检索 - 总共10条，优先9条官方文档，再从user补齐
-            similarity_top_k = int(os.getenv("TOP_K", "10"))
+            # 8. 阶段2：执行检索（TOP_K/DOC_MAX 由环境变量覆盖默认值）
+            similarity_top_k = int(os.getenv("TOP_K", "12"))
             similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
             
             retriever = CombinedRetriever(
                 rag_engine=self.rag_engine,
                 total_k=similarity_top_k,
-                doc_max=int(os.getenv("DOC_MAX", "9")),
+                doc_max=int(os.getenv("DOC_MAX", "8")),
                 similarity_cutoff=similarity_cutoff
             )
             nodes = retriever.retrieve(retrieval_query)
+            node_ids = [nd.node_id[:12] for nd in nodes]
+            print(f"[ChatEngine] 召回 {len(nodes)} 条, ids={node_ids}")
             
             # 9. 阶段3：构建 prompt 和消息，让 LLM 根据检索结果回答
             context_str = "\n\n".join([n.get_content() for n in nodes])
@@ -490,19 +493,21 @@ class ChatEngine:
             retrieval_query = await self._generate_retrieval_query_async(llm, message, image_base64)
             yield ": query_generated\n\n"
             
-            # 步骤3：阶段2 - 执行检索 - 总共10条，优先9条官方文档，再从user补齐
-            similarity_top_k = int(os.getenv("TOP_K", "10"))
+            # 步骤3：阶段2 - 执行检索（TOP_K/DOC_MAX 由环境变量覆盖默认值）
+            similarity_top_k = int(os.getenv("TOP_K", "12"))
             similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
             
             retriever = CombinedRetriever(
                 rag_engine=self.rag_engine,
                 total_k=similarity_top_k,
-                doc_max=int(os.getenv("DOC_MAX", "9")),
+                doc_max=int(os.getenv("DOC_MAX", "8")),
                 similarity_cutoff=similarity_cutoff
             )
             
             # 使用 LLM 生成的查询进行检索
             nodes = await asyncio.to_thread(retriever.retrieve, retrieval_query)
+            node_ids = [nd.node_id[:12] for nd in nodes]
+            print(f"[ChatEngine Stream] 召回 {len(nodes)} 条, ids={node_ids}")
             
             # 完成后立即发送心跳
             yield ": retrieval_done\n\n"
