@@ -44,6 +44,45 @@ _mcp_get_document = _mcp.get_document
 _mcp_rag_search = _mcp.rag_search
 
 
+# ── 官方文档 URL 映射（local_path → url）────────────────────
+@lru_cache(maxsize=1)
+def _build_url_map() -> tuple[dict[str, str], dict[str, str]]:
+    """从 knowledge/config/urls-*.json 构建 URL 映射。
+    返回 (local_path → url, filename → url) 两个映射。
+    """
+    config_dir = TOOLBOX_DIR / "knowledge" / "config"
+    path_map: dict[str, str] = {}
+    name_map: dict[str, str] = {}
+    for json_file in config_dir.glob("urls-*.json"):
+        try:
+            data = json.loads(json_file.read_text(encoding="utf-8"))
+            for entry in data.get("entries", []):
+                local_path = entry.get("localPath", "")
+                url = entry.get("url", "")
+                if local_path and url:
+                    # localPath 格式: Miliastra-knowledge/official/guide/xxx.md
+                    # index local_path 格式: official/guide/xxx.md
+                    normalized = local_path.removeprefix("Miliastra-knowledge/")
+                    path_map[normalized] = url
+                    # filename 格式: mh277t9fl4tm_执行节点.md (用于 search_knowledge 结果)
+                    name_map[Path(local_path).name] = url
+        except (json.JSONDecodeError, OSError):
+            continue
+    return path_map, name_map
+
+
+def _resolve_url(local_path: str) -> str:
+    """根据 local_path 或 filename 查找官方文档 URL"""
+    path_map, name_map = _build_url_map()
+    # 先尝试完整路径匹配
+    url = path_map.get(local_path, "")
+    if not url:
+        # 再尝试纯文件名匹配
+        filename = Path(local_path).name
+        url = name_map.get(filename, "")
+    return url
+
+
 # ── 构建节点列表与文档列表（用于 System Prompt）───────────────
 @lru_cache(maxsize=1)
 def _build_node_list_text() -> str:
@@ -125,7 +164,7 @@ def resolve_llm_config(config: Dict[str, Any]) -> Dict[str, str | int]:
 
 
 # ── AgentEngine ─────────────────────────────────────────────
-MAX_TOOL_ROUNDS = int(os.getenv("AGENT_MAX_TOOL_ROUNDS", "6"))
+AGENT_MAX_ITERATIONS = int(os.getenv("AGENT_MAX_ITERATIONS", "5"))
 AGENT_TIMEOUT = float(os.getenv("AGENT_TIMEOUT", "300"))
 
 
@@ -149,11 +188,92 @@ class AgentEngine:
         return agent, chat_history
 
     @staticmethod
-    def _extract_trace(ev: ToolCallResult) -> dict[str, str | dict[str, str]]:
+    def _extract_trace(ev: ToolCallResult) -> dict[str, str | dict[str, str] | list[dict[str, str]]]:
+        """提取工具调用跟踪信息，返回用户友好的摘要和来源链接"""
         raw = ev.tool_output.raw_output
-        summary = (raw[:200] + "...") if isinstance(raw, str) and len(raw) > 200 else str(raw)[:200]
-        return {"tool": ev.tool_name, "args": ev.tool_kwargs,
-                "status": "error" if ev.tool_output.is_error else "success", "summary": summary}
+        status = "error" if ev.tool_output.is_error else "success"
+
+        # 为每种工具生成用户可读的摘要
+        summary = ""
+        sources: list[dict[str, str]] = []  # [{title, url}]
+        try:
+            data = json.loads(raw) if isinstance(raw, str) else raw
+
+            if ev.tool_name == "get_node_info":
+                if isinstance(data, list):
+                    parts: list[str] = []
+                    for item in data:
+                        matches = item.get("matches", [])
+                        query = item.get("query", "")
+                        if matches:
+                            titles = [m.get("title", "") for m in matches]
+                            parts.append(f"「{query}」→ {', '.join(titles)}")
+                            for m in matches:
+                                url = _resolve_url(m.get("local_path", ""))
+                                doc_title = m.get("source_doc_title", m.get("title", ""))
+                                if url and not any(s["url"] == url for s in sources):
+                                    sources.append({"title": doc_title, "url": url})
+                        else:
+                            parts.append(f"「{query}」未找到")
+                    summary = "; ".join(parts)
+
+            elif ev.tool_name == "list_documents":
+                if isinstance(data, dict):
+                    total = data.get("total", 0)
+                    docs = data.get("documents", [])
+                    titles = [d.get("title", "") for d in docs[:5]]
+                    summary = f"共 {total} 篇文档"
+                    if titles:
+                        summary += f": {', '.join(titles)}"
+                        if total > 5:
+                            summary += " 等"
+
+            elif ev.tool_name == "get_document":
+                if isinstance(data, list):
+                    doc_titles: list[str] = []
+                    for d in data:
+                        t = d.get("title", "")
+                        doc_titles.append(t)
+                        file_path = d.get("file", "")
+                        url = _resolve_url(file_path)
+                        if url:
+                            sources.append({"title": t, "url": url})
+                    summary = f"获取到: {', '.join(doc_titles)}"
+                elif isinstance(data, dict):
+                    summary = data.get("message", "")
+
+            elif ev.tool_name == "search_knowledge":
+                if isinstance(data, dict):
+                    results = data.get("results", [])
+                    if results:
+                        items = [f"「{r.get('title', '')}」({round(r.get('similarity', 0) * 100)}%)" for r in results[:5]]
+                        summary = f"检索到 {len(results)} 条: " + ", ".join(items)
+                        # 映射 file_name 到 URL
+                        seen_urls: set[str] = set()
+                        for r in results:
+                            fn = r.get("file_name", "")
+                            if fn:
+                                url = _resolve_url(fn)
+                                title = r.get("title", fn)
+                                if url and url not in seen_urls:
+                                    seen_urls.add(url)
+                                    sources.append({"title": title, "url": url})
+                    else:
+                        summary = "未检索到相关内容"
+
+        except (json.JSONDecodeError, TypeError, AttributeError):
+            pass
+
+        if not summary:
+            summary = (str(raw)[:200] + "...") if isinstance(raw, str) and len(raw) > 200 else str(raw)[:200]
+
+        result: dict[str, str | dict[str, str] | list[dict[str, str]]] = {
+            "tool": ev.tool_name, "args": ev.tool_kwargs,
+            "status": status, "summary": summary,
+        }
+        if sources:
+            result["sources"] = sources
+        return result
 
     @staticmethod
     def _extract_sources(ev: ToolCallResult) -> list[dict[str, str | float]]:
@@ -173,7 +293,8 @@ class AgentEngine:
         tool_trace, sources = [], []
         tool_calls_count = retrieval_calls_count = 0
 
-        handler = agent.run(user_msg=message, chat_history=chat_history)
+        handler = agent.run(user_msg=message, chat_history=chat_history,
+                            max_iterations=AGENT_MAX_ITERATIONS)
         async for ev in handler.stream_events():
             if isinstance(ev, ToolCallResult):
                 tool_calls_count += 1
@@ -181,8 +302,6 @@ class AgentEngine:
                     retrieval_calls_count += 1
                 tool_trace.append(self._extract_trace(ev))
                 sources.extend(self._extract_sources(ev))
-                if tool_calls_count >= MAX_TOOL_ROUNDS:
-                    break
 
         result = await handler
         return {"answer": result.response.content or "", "sources": sources,
@@ -197,7 +316,8 @@ class AgentEngine:
         tool_calls_count = retrieval_calls_count = 0
         sources: list[dict[str, str | float]] = []
         try:
-            handler = agent.run(user_msg=message, chat_history=chat_history)
+            handler = agent.run(user_msg=message, chat_history=chat_history,
+                                max_iterations=AGENT_MAX_ITERATIONS)
             async for ev in handler.stream_events():
                 if isinstance(ev, ToolCall):
                     yield f"data: {json.dumps({'type': 'tool_call', 'data': {'tool': ev.tool_name, 'args': ev.tool_kwargs}}, ensure_ascii=False)}\n\n"
@@ -208,8 +328,6 @@ class AgentEngine:
                     trace = self._extract_trace(ev)
                     yield f"data: {json.dumps({'type': 'tool_result', 'data': trace}, ensure_ascii=False)}\n\n"
                     sources.extend(self._extract_sources(ev))
-                    if tool_calls_count >= MAX_TOOL_ROUNDS:
-                        break
                 elif isinstance(ev, AgentStream) and ev.delta:
                     yield f"data: {json.dumps({'type': 'token', 'data': ev.delta}, ensure_ascii=False)}\n\n"
 

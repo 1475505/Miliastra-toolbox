@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Message, Source } from '../types'
+import { Message, Source, ToolTrace } from '../types'
 import { getConfig } from '../utils/config'
 import { 
   createNewConversation, 
@@ -17,12 +17,18 @@ interface SourceMessage {
   tokens?: number
 }
 
+interface ToolCallMessage {
+  type: 'tool_trace'
+  traces: ToolTrace[]
+  stats?: { tokens: number; tool_calls: number; retrieval_calls: number }
+}
+
 interface ExtendedMessage extends Message {
   reasoning?: string
   isReasoning?: boolean
 }
 
-type ChatMessage = ExtendedMessage | SourceMessage
+type ChatMessage = ExtendedMessage | SourceMessage | ToolCallMessage
 
 interface ChatProps {
   configVersion: number
@@ -45,6 +51,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [imageInfo, setImageInfo] = useState<string>('')
+  const [agentMode, setAgentMode] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
 
@@ -74,12 +81,12 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   useEffect(() => {
     if (conversationId && messages.length > 0) {
       const title = generateConversationTitle(messages)
-      // 重新排序：将 Sources 移到对应的 A 后面
-      const reorderedMessages: any[] = []
-      let pendingSources: any[] = []
+      // 重新排序：将 Sources/ToolTrace 移到对应的 A 后面
+      const reorderedMessages: ChatMessage[] = []
+      let pendingSources: ChatMessage[] = []
       
       displayMessages.forEach((msg) => {
-        if ('type' in msg && msg.type === 'sources') {
+        if ('type' in msg && (msg.type === 'sources' || msg.type === 'tool_trace')) {
           pendingSources.push(msg)
         } else if ('role' in msg) {
           // 如果是用户消息，先把之前的 sources 放进去（处理已保存过的对话中 sources 在 assistant 后的情况）
@@ -218,12 +225,12 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   const handleDownload = () => {
     if (conversationId && messages.length > 0) {
       const title = generateConversationTitle(messages)
-      // 重新排序：将 Sources 移到对应的 A 后面
-      const reorderedMessages: any[] = []
-      let pendingSources: any[] = []
+      // 重新排序：将 Sources/ToolTrace 移到对应的 A 后面
+      const reorderedMessages: ChatMessage[] = []
+      let pendingSources: ChatMessage[] = []
       
       displayMessages.forEach((msg) => {
-        if ('type' in msg && msg.type === 'sources') {
+        if ('type' in msg && (msg.type === 'sources' || msg.type === 'tool_trace')) {
           pendingSources.push(msg)
         } else if ('role' in msg) {
           // 如果是用户消息，先把之前的 sources 放进去
@@ -313,15 +320,15 @@ export default function Chat({ configVersion, currentConversationId, onConversat
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 20 * 60 * 1000) // 20分钟超时
       
-      const response = await fetch('/api/v1/rag/chat/stream', {
+      const apiUrl = agentMode ? '/api/v1/agent/chat/stream' : '/api/v1/rag/chat/stream'
+      const requestBody = agentMode
+        ? { message: input, conversation: contextMessages, config }
+        : { message: input, conversation: contextMessages, config, image_base64: imageBase64 }
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: input,
-          conversation: contextMessages,
-          config,
-          image_base64: imageBase64,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       })
       
@@ -401,8 +408,48 @@ export default function Chat({ configVersion, currentConversationId, onConversat
               const data = JSON.parse(line.slice(6))
 
               if (data.type === 'sources') {
-                // 先显示来源
-                setDisplayMessages((prev) => [...prev, { type: 'sources', sources: data.data }])
+                if (agentMode) {
+                  // Agent 模式下忽略 sources 事件（信息已在 tool_trace 中）
+                } else {
+                  setDisplayMessages((prev) => [...prev, { type: 'sources', sources: data.data }])
+                }
+              } else if (data.type === 'tool_call') {
+                // Agent: 工具调用开始
+                const trace: ToolTrace = { tool: data.data.tool, args: data.data.args, status: 'success', summary: '调用中...' }
+                setDisplayMessages((prev) => {
+                  // 找到最后一个 tool_trace 消息并追加，否则新建
+                  for (let i = prev.length - 1; i >= 0; i--) {
+                    const m = prev[i]
+                    if ('type' in m && m.type === 'tool_trace') {
+                      return [...prev.slice(0, i), { ...m, traces: [...m.traces, trace] }, ...prev.slice(i + 1)]
+                    }
+                    if ('role' in m && m.role === 'user') break
+                  }
+                  return [...prev, { type: 'tool_trace', traces: [trace] }]
+                })
+                setStatusMessage(`正在调用工具: ${data.data.tool}...`)
+              } else if (data.type === 'tool_result') {
+                // Agent: 工具调用结果
+                setDisplayMessages((prev) => {
+                  for (let i = prev.length - 1; i >= 0; i--) {
+                    const m = prev[i]
+                    if ('type' in m && m.type === 'tool_trace') {
+                      const traces = [...m.traces]
+                      for (let j = traces.length - 1; j >= 0; j--) {
+                        if (traces[j].tool === data.data.tool) {
+                          traces[j] = { ...traces[j], status: data.data.status, summary: data.data.summary, sources: data.data.sources }
+                          break
+                        }
+                      }
+                      return [...prev.slice(0, i), { ...m, traces }, ...prev.slice(i + 1)]
+                    }
+                  }
+                  return prev
+                })
+                setStatusMessage('')
+              } else if (data.type === 'status') {
+                // Agent: 状态更新
+                setStatusMessage(data.data.message || data.data)
               } else if (data.type === 'reasoning') {
                 // 处理推理内容
                 if (!hasCreatedAssistantMessage) {
@@ -488,13 +535,18 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                   })
                 }
               } else if (data.type === 'done') {
-                // 添加 tokens 到最后一个 sources 消息
+                setStatusMessage('')
+                // 添加统计信息到最后一个 sources 或 tool_trace 消息
                 setDisplayMessages((prev) => {
                   const newMessages = [...prev]
                   for (let i = newMessages.length - 1; i >= 0; i--) {
                     const msg = newMessages[i]
+                    if ('type' in msg && msg.type === 'tool_trace') {
+                      (msg as ToolCallMessage).stats = data.data.stats || data.data
+                      break
+                    }
                     if ('type' in msg && msg.type === 'sources') {
-                      msg.tokens = data.data.tokens
+                      (msg as SourceMessage).tokens = data.data.tokens
                       break
                     }
                   }
@@ -600,6 +652,57 @@ export default function Chat({ configVersion, currentConversationId, onConversat
               </div>
             )
           }
+
+          if ('type' in msg && msg.type === 'tool_trace') {
+            return (
+              <div key={idx} className="flex justify-start">
+                <div className="max-w-2xl px-4 py-3 rounded-2xl bg-violet-50 text-gray-900">
+                  <div className="font-semibold mb-2 text-sm">🔧 工具调用</div>
+                  {msg.traces.map((trace, i) => (
+                    <div key={i} className="mb-2 pb-2 border-b border-violet-100 last:border-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full ${
+                          trace.status === 'success' ? 'bg-green-500' : trace.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
+                        }`} />
+                        <span className="font-medium text-sm text-violet-800">{trace.tool}</span>
+                        <span className={`text-xs ${trace.status === 'success' ? 'text-green-600' : trace.status === 'error' ? 'text-red-600' : 'text-yellow-600'}`}>
+                          {trace.status === 'success' ? '✓' : trace.status === 'error' ? '✗' : '⏳'}
+                        </span>
+                      </div>
+                      {trace.args && Object.keys(trace.args).length > 0 && (
+                        <div className="text-gray-500 text-xs mt-1 font-mono bg-violet-100/50 rounded px-2 py-1">
+                          {Object.entries(trace.args).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                        </div>
+                      )}
+                      <div className="text-gray-600 text-xs mt-1">{trace.summary}</div>
+                      {trace.sources && trace.sources.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {trace.sources.map((src, si) => (
+                            <a
+                              key={si}
+                              href={src.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 hover:underline bg-violet-100/60 rounded px-1.5 py-0.5"
+                            >
+                              📄 {src.title}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {msg.stats && (
+                    <div className="text-gray-500 text-xs mt-2 flex gap-3">
+                      <span>💬 tokens: {msg.stats.tokens}</span>
+                      <span>🔧 工具调用: {msg.stats.tool_calls}次</span>
+                      <span>🔍 检索: {msg.stats.retrieval_calls}次</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          }
           
           return (
             <div
@@ -678,7 +781,30 @@ export default function Chat({ configVersion, currentConversationId, onConversat
 
       <div className="border-t border-gray-200 p-6">
         <div className="flex flex-col gap-3">
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            <label
+              className={`flex items-center gap-1.5 px-3 py-3 text-sm cursor-pointer select-none rounded-xl border transition-colors ${
+                agentMode
+                  ? 'border-violet-300 bg-violet-50 text-violet-700'
+                  : 'border-gray-300 bg-white/60 text-gray-500 hover:border-violet-300'
+              }`}
+              title="启用高智商模式，使用工具调用进行深度问答"
+            >
+              <span className={agentMode ? 'font-medium' : ''}>🧠 高智商</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={agentMode}
+                onClick={() => setAgentMode(!agentMode)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  agentMode ? 'bg-violet-500' : 'bg-gray-300'
+                }`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                  agentMode ? 'translate-x-[1.125rem]' : 'translate-x-0.5'
+                }`} />
+              </button>
+            </label>
             <label className="px-3 py-3 border border-dashed border-gray-300 rounded-xl bg-white/60 text-sm text-gray-600 cursor-pointer hover:border-yellow-400 hover:bg-white">
               <span>📷 图片</span>
               <input
@@ -695,7 +821,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
               onPaste={handlePaste}
-              placeholder="输入问题或粘贴图片；AI回答仅供参考，请保持质疑，优先查看来源中的官方文档"
+              placeholder="输入问题/粘贴图片；AI回答可能有误，仅供参考，以提供的官方文档为准"
               disabled={loading}
               className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300"
             />
@@ -732,7 +858,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
           )}
         </div>
         <div className="text-center text-xs text-gray-500 mt-3">
-          《原神》千星奇域相关文档版权归米哈游所有，本网站为个人兴趣，与米哈游无关
+          千星奇域官方文档和相关信息版权归米哈游所有，本网站为个人兴趣，与米哈游无关
         </div>
       </div>
     </div>

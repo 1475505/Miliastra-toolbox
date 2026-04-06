@@ -20,6 +20,14 @@ export interface Source {
   url: string
 }
 
+export interface ToolTrace {
+  tool: string
+  args: Record<string, string | number | boolean>
+  status: 'success' | 'error'
+  summary: string
+  sources?: { title: string; url: string }[]
+}
+
 export interface Note {
   id: number
   created_at: string

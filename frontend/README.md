@@ -20,11 +20,11 @@ npm run dev
 ### 3. 构建部署
 
 ```bash
-# 构建产物将输出到 backend/static/ 目录
+# 构建产物将输出到 backend/static/ 目录，否则不生效
 npm run build
 ```
 
-启动后端（将自动托管该前端）：
+启动后端（将自动托管该前端，可以通过pm2托管，使用pm2 restart qx-be重新部署）：
 ```bash
 cd ../backend
 python3 main.py
