@@ -28,6 +28,15 @@ pip install -r requirements.txt
 
 ### 2. 启动服务
 
+启动后端前，请先构建前端静态资源：
+
+```bash
+cd ../frontend
+npm install
+npm run build
+cd ../backend
+```
+
 ```bash
 python3 main.py
 
@@ -39,6 +48,11 @@ python3 main.py --host 127.0.0.1 --port 8000 --reload
 服务默认包含静态页面，可以通过浏览器直接访问界面和文档：
 - **Web 界面**: `http://localhost:8000`
 - **Swagger API 文档**: `http://localhost:8000/docs`
+
+### 静态资源策略
+
+- `backend/static/` 中的前端构建产物不提交到仓库。
+- 发布流程中需执行前端构建，再启动或重启后端服务。
 
 ### 3. 测试与示例
 

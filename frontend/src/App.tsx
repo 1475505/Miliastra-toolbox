@@ -4,7 +4,7 @@ import { Tab } from './types'
 
 const Chat = lazy(() => import('./components/Chat'))
 const Notes = lazy(() => import('./components/Notes'))
-const ImageUploader = lazy(() => import('./components/ImageUploader'))
+const DataQuery = lazy(() => import('./components/DataQuery'))
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('chat')
@@ -78,10 +78,10 @@ export default function App() {
             </Suspense>
           </div>
         )}
-        {visitedTabs.has('upload') && (
-          <div className={`h-full ${activeTab === 'upload' ? '' : 'hidden'}`}>
+        {visitedTabs.has('data') && (
+          <div className={`h-full ${activeTab === 'data' ? '' : 'hidden'}`}>
             <Suspense fallback={<div className="flex h-full items-center justify-center text-slate-500">加载中...</div>}>
-              <ImageUploader />
+              <DataQuery />
             </Suspense>
           </div>
         )}

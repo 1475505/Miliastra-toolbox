@@ -76,3 +76,7 @@ dist/
 
 # dotenv files (local secrets)
 .env
+
+# Frontend build artifacts served by backend (do not commit generated files)
+backend/static/*
+!backend/static/.gitkeep

@@ -20,7 +20,7 @@ npm run dev
 ### 3. 构建部署
 
 ```bash
-# 构建产物将输出到 backend/static/ 目录，否则不生效
+# 构建产物输出到 backend/static/ 目录（构建产物不入库）
 npm run build
 ```
 
@@ -30,6 +30,12 @@ cd ../backend
 python3 main.py
 ```
 访问 http://localhost:8000
+
+## 仓库策略说明
+
+- `backend/static/` 下的构建产物（`index.html`、`assets/*`）不提交到 Git。
+- 每次部署都需要先执行 `npm run build`，再重启后端进程（如 `pm2 restart qx-be`）。
+- 这样可以减少 PR 中因 hash 文件名变化导致的大量 delete/add 噪音。
 
 ## 📁 主要目录结构
 

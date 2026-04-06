@@ -14,8 +14,14 @@
 1. **[Docker 一键部署](./docker/README.md)**（推荐）
 2. **源码本地启动流程**:
    - [知识库构建](./knowledge/rag_v1/README.md)
-   - [前端构建](./frontend/README.md)（可选，代码库已包含构建产物）
+   - [前端构建](./frontend/README.md)（必需，前端构建产物不再提交到仓库）
    - [后端启动](./backend/README.md)
+
+## 仓库策略
+
+- 前端构建产物（`backend/static/` 下的 `index.html`、`assets/*`）不再入库。
+- 部署时必须执行前端构建（`cd frontend && npm run build`），再重启后端服务。
+- 仓库仅保存源码与配置，避免每次发布产生大量 hash 文件差异（delete/add）。
 
 ## 开发计划
 
