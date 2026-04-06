@@ -130,7 +130,7 @@ AGENT_TOOLS = [
 ]
 
 # ── AgentEngine ─────────────────────────────────────────────
-AGENT_MAX_ITERATIONS = int(os.getenv("AGENT_MAX_ITERATIONS", "5"))
+AGENT_MAX_ITERATIONS = int(os.getenv("AGENT_MAX_ITERATIONS", "10"))
 AGENT_TIMEOUT = float(os.getenv("AGENT_TIMEOUT", "300"))
 
 
@@ -260,21 +260,36 @@ class AgentEngine:
         agent, chat_history = self._run_agent(config, conversation, plain_text_output=True)
         tool_trace, sources = [], []
         tool_calls_count = retrieval_calls_count = 0
+        last_response = ""
 
-        handler = agent.run(user_msg=message, chat_history=chat_history,
-                            max_iterations=AGENT_MAX_ITERATIONS)
-        async for ev in handler.stream_events():
-            if isinstance(ev, ToolCallResult):
-                tool_calls_count += 1
-                if ev.tool_name == "search_knowledge":
-                    retrieval_calls_count += 1
-                tool_trace.append(self._extract_trace(ev))
-                sources.extend(self._extract_sources(ev))
+        try:
+            handler = agent.run(user_msg=message, chat_history=chat_history,
+                                max_iterations=AGENT_MAX_ITERATIONS)
+            async for ev in handler.stream_events():
+                if isinstance(ev, ToolCallResult):
+                    tool_calls_count += 1
+                    if ev.tool_name == "search_knowledge":
+                        retrieval_calls_count += 1
+                    tool_trace.append(self._extract_trace(ev))
+                    sources.extend(self._extract_sources(ev))
+                elif isinstance(ev, AgentStream) and ev.delta:
+                    last_response += ev.delta
 
-        result = await handler
-        return {"answer": result.response.content or "", "sources": sources,
-                "stats": {"tokens": 0, "tool_calls": tool_calls_count, "retrieval_calls": retrieval_calls_count},
-                "tool_trace": tool_trace}
+            result = await handler
+            return {"answer": result.response.content or "", "sources": sources,
+                    "stats": {"tokens": 0, "tool_calls": tool_calls_count, "retrieval_calls": retrieval_calls_count},
+                    "tool_trace": tool_trace}
+        except Exception as e:
+            error_msg = str(e)
+            # 如果是 max_iterations 错误，返回已有结果而不是报错
+            if "max_iterations" in error_msg.lower() or "Max iterations" in error_msg:
+                print(f"[AgentEngine] 达到最大迭代次数，返回目前结果: {last_response[:100]}...")
+                return {"answer": last_response or "已达到最大迭代次数。" + ("基于已有的搜索结果为您总结如下：" if sources else ""),
+                        "sources": sources,
+                        "stats": {"tokens": 0, "tool_calls": tool_calls_count, "retrieval_calls": retrieval_calls_count},
+                        "tool_trace": tool_trace}
+            # 其他错误照常抛出
+            raise
 
     async def chat_stream(self, message: str, conversation: List[Dict[str, str]],
                           config: Dict[str, Any]):
@@ -303,4 +318,12 @@ class AgentEngine:
                 yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
             yield f"data: {json.dumps({'type': 'done', 'data': {'stats': {'tokens': 0, 'tool_calls': tool_calls_count, 'retrieval_calls': retrieval_calls_count}}}, ensure_ascii=False)}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'data': str(e)}, ensure_ascii=False)}\n\n"
+            error_msg = str(e)
+            # 如果是 max_iterations 错误，返回已有结果而不是报错
+            if "max_iterations" in error_msg.lower() or "Max iterations" in error_msg:
+                print(f"[AgentEngine] 流式调用达到最大迭代次数，返回已有源数据")
+                if sources:
+                    yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
+                yield f"data: {json.dumps({'type': 'done', 'data': {'stats': {'tokens': 0, 'tool_calls': tool_calls_count, 'retrieval_calls': retrieval_calls_count}}}, ensure_ascii=False)}\n\n"
+            else:
+                yield f"data: {json.dumps({'type': 'error', 'data': str(e)}, ensure_ascii=False)}\n\n"
