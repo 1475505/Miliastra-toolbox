@@ -385,7 +385,8 @@ class AgentEngine:
                 answer = await self._fallback_answer(
                     config, message, conversation, tool_trace, partial_answer)
                 if answer:
-                    yield f"data: {json.dumps({'type': 'token', 'data': '\n\n' + answer}, ensure_ascii=False)}\n\n"
+                    payload = json.dumps({'type': 'token', 'data': '\n\n' + answer}, ensure_ascii=False)
+                    yield f"data: {payload}\n\n"
                 if sources:
                     yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
                 yield f"data: {json.dumps({'type': 'done', 'data': {'stats': {'tokens': 0, 'tool_calls': tool_calls_count, 'retrieval_calls': retrieval_calls_count}}}, ensure_ascii=False)}\n\n"
