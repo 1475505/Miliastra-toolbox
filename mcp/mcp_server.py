@@ -175,14 +175,15 @@ def get_node_info(names: list[str]) -> str:
 @mcp.tool(
     name="list_documents",
     description=(
-        "列出知识库中的文档标题和路径。可选传入关键词进行模糊过滤。"
-        "不传关键词时返回全部文档列表。用于浏览可用文档或确认文档名称。"
+        "列出知识库中的文档标题和路径。支持批量关键词过滤。"
+        "传入一个或多个关键词时，逐个返回各关键词的匹配结果；"
+        "不传关键词（空列表）时返回全部文档列表。用于浏览可用文档或确认文档名称。"
     ),
 )
-def list_documents(keyword: str = "") -> str:
+def list_documents(keywords: list[str] = []) -> str:
     """
     Args:
-        keyword: 可选的过滤关键词，支持模糊匹配。为空时返回全部文档。
+        keywords: 可选的过滤关键词列表，支持模糊匹配。为空时返回全部文档。
     """
     candidates: list[dict[str, str]] = []
     for md_file in sorted(OFFICIAL_DIR.rglob("*.md")):
@@ -192,121 +193,139 @@ def list_documents(keyword: str = "") -> str:
         rel_path = md_file.relative_to(KNOWLEDGE_DIR).as_posix()
         candidates.append({"title": doc_title, "file": rel_path})
 
-    if keyword:
-        filtered = [c for c in candidates
-                     if _fuzzy_match(keyword, c["title"]) or _fuzzy_match(keyword, Path(c["file"]).stem)]
+    if not keywords:
         return json.dumps({
+            "total": len(candidates),
+            "documents": candidates,
+        }, ensure_ascii=False, indent=2)
+
+    results: list[dict[str, str | int | list[dict[str, str]]]] = []
+    for keyword in keywords:
+        filtered = [c for c in candidates
+                    if _fuzzy_match(keyword, c["title"]) or _fuzzy_match(keyword, Path(c["file"]).stem)]
+        results.append({
             "keyword": keyword,
             "total": len(filtered),
             "documents": filtered,
-        }, ensure_ascii=False, indent=2)
-
-    return json.dumps({
-        "total": len(candidates),
-        "documents": candidates,
-    }, ensure_ascii=False, indent=2)
+        })
+    return json.dumps(results, ensure_ascii=False, indent=2)
 
 
 @mcp.tool(
     name="get_document",
     description=(
-        "根据文档标题获取完整的文档内容（official/ 目录）。支持模糊匹配。"
+        "根据文档标题获取完整的文档内容（official/ 目录）。支持模糊匹配、批量查询。"
         "同时按同关键词查找节点信息，若命中则一并返回 related_nodes。"
     ),
 )
-def get_document(title: str) -> str:
+def get_document(titles: list[str]) -> str:
     """
     Args:
-        title: 文档标题或文件名关键词，支持模糊匹配。
+        titles: 文档标题或文件名关键词列表，支持模糊匹配，可批量传入。
     """
-    related_nodes = _lookup_node_matches(title)
-
     candidates: list[tuple[str, Path]] = []
     for md_file in sorted(OFFICIAL_DIR.rglob("*.md")):
         if md_file.name.lower() in ("readme.md", "category.md"):
             continue
         candidates.append((_extract_title(md_file), md_file))
 
-    matched: list[dict[str, str | list[dict[str, str]]]] = []
-    for doc_title, md_file in candidates:
-        if _fuzzy_match(title, doc_title) or _fuzzy_match(title, md_file.stem):
-            matched.append({
-                "title": doc_title,
-                "file": md_file.relative_to(KNOWLEDGE_DIR).as_posix(),
-                "content": md_file.read_text(encoding="utf-8"),
+    results: list[dict[str, str | list[dict[str, str | list[dict[str, str]]]]]] = []
+    for title in titles:
+        related_nodes = _lookup_node_matches(title)
+
+        matched: list[dict[str, str | list[dict[str, str]]]] = []
+        for doc_title, md_file in candidates:
+            if _fuzzy_match(title, doc_title) or _fuzzy_match(title, md_file.stem):
+                matched.append({
+                    "title": doc_title,
+                    "file": md_file.relative_to(KNOWLEDGE_DIR).as_posix(),
+                    "content": md_file.read_text(encoding="utf-8"),
+                    "related_nodes": related_nodes,
+                })
+
+        if not matched:
+            results.append({
+                "query": title,
+                "status": "not_found",
+                "message": f"未找到匹配「{title}」的文档",
+                "available_titles_sample": [t for t, _ in candidates][:30],
                 "related_nodes": related_nodes,
             })
+        elif len(matched) > 5:
+            results.append({
+                "query": title,
+                "status": "too_many",
+                "message": f"匹配到 {len(matched)} 篇文档，请用更精确的关键词。",
+                "matches": [{"title": m["title"], "file": m["file"]} for m in matched],
+                "related_nodes": related_nodes,
+            })
+        else:
+            results.append({
+                "query": title,
+                "status": "ok",
+                "documents": matched,
+            })
 
-    if not matched:
-        return json.dumps({
-            "message": f"未找到匹配「{title}」的文档",
-            "available_titles_sample": [t for t, _ in candidates][:30],
-            "related_nodes": related_nodes,
-        }, ensure_ascii=False, indent=2)
-
-    if len(matched) > 5:
-        return json.dumps({
-            "message": f"匹配到 {len(matched)} 篇文档，请用更精确的关键词。",
-            "matches": [{"title": m["title"], "file": m["file"]} for m in matched],
-            "related_nodes": related_nodes,
-        }, ensure_ascii=False, indent=2)
-
-    return json.dumps(matched, ensure_ascii=False, indent=2)
+    return json.dumps(results, ensure_ascii=False, indent=2)
 
 
 @mcp.tool(
     name="rag_search",
     description=(
-        "使用向量检索在知识库中搜索相关内容。"
+        "使用向量检索在知识库中搜索相关内容。支持批量查询。"
         "适用于不确定具体节点或文档名称时的语义搜索。"
         "返回相关文档片段和相似度分数。"
     ),
 )
-def rag_search(query: str, top_k: int = 5) -> str:
+def rag_search(queries: list[str], top_k: int = 5) -> str:
     """
     Args:
-        query: 自然语言查询问题。
-        top_k: 返回的最大结果数量，默认 5。
+        queries: 自然语言查询问题列表，支持批量传入。
+        top_k: 每个查询返回的最大结果数量，默认 5。
     """
     try:
         env = dict(_load_rag_env())
         collection_name = env.get("CHROMA_COLLECTION_NAME", "docs")
         threshold = float(env.get("SIMILARITY_THRESHOLD", "0.3"))
 
-        embedding = _get_query_embedding(query, env)
-
         db = chromadb.PersistentClient(path=str(RAG_DB_DIR))
         collection = db.get_collection(collection_name)
-        results = collection.query(
-            query_embeddings=[embedding],
-            n_results=top_k,
-            include=["documents", "metadatas", "distances"],
-        )
 
-        docs = results["documents"][0]
-        metas = results["metadatas"][0]
-        dists = results["distances"][0]
+        all_results: list[dict[str, str | int | list[dict[str, str | float]]]] = []
+        for query in queries:
+            embedding = _get_query_embedding(query, env)
+            results = collection.query(
+                query_embeddings=[embedding],
+                n_results=top_k,
+                include=["documents", "metadatas", "distances"],
+            )
 
-        sources: list[dict[str, str | float]] = []
-        for i in range(len(docs)):
-            sim = max(0.0, 1.0 - dists[i] / 2.0)
-            if sim < threshold:
-                continue
-            meta = metas[i]
-            text = docs[i] or ""
-            sources.append({
-                "title": meta.get("title", meta.get("file_name", "未知文档")),
-                "h1_title": meta.get("h1_title", ""),
-                "file_name": meta.get("file_name", ""),
-                "similarity": round(sim, 4),
-                "text_snippet": text[:200] + ("..." if len(text) > 200 else ""),
+            docs = results["documents"][0]
+            metas = results["metadatas"][0]
+            dists = results["distances"][0]
+
+            sources: list[dict[str, str | float]] = []
+            for i in range(len(docs)):
+                sim = max(0.0, 1.0 - dists[i] / 2.0)
+                if sim < threshold:
+                    continue
+                meta = metas[i]
+                text = docs[i] or ""
+                sources.append({
+                    "title": meta.get("title", meta.get("file_name", "未知文档")),
+                    "h1_title": meta.get("h1_title", ""),
+                    "file_name": meta.get("file_name", ""),
+                    "similarity": round(sim, 4),
+                    "text_snippet": text[:200] + ("..." if len(text) > 200 else ""),
+                })
+
+            all_results.append({
+                "query": query,
+                "total_results": len(sources),
+                "results": sources,
             })
 
-        return json.dumps({
-            "query": query,
-            "total_results": len(sources),
-            "results": sources,
-        }, ensure_ascii=False, indent=2)
+        return json.dumps(all_results, ensure_ascii=False, indent=2)
 
     except Exception as e:
         return json.dumps({"error": f"RAG 检索异常: {e}"}, ensure_ascii=False)
