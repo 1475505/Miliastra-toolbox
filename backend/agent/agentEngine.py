@@ -3,7 +3,6 @@ import sys
 import os
 import asyncio
 import json
-import importlib.util
 from pathlib import Path
 from functools import lru_cache
 from typing import List, Dict, Any
@@ -29,19 +28,9 @@ from llama_index.core.agent.workflow.workflow_events import AgentStream, ToolCal
 
 from common.llm_config import resolve_llm_config, openrouter_availability_loop
 from agent.prompt import DEFAULT_SYSTEM_PROMPT, NON_STREAM_OUTPUT_INSTRUCTION
+from skill.service import get_document_json, get_node_info_json, list_documents_json, rag_search_json
 
-# ── 从 MCP Server 导入工具函数 ──────────────────────────────
 TOOLBOX_DIR = Path(__file__).resolve().parent.parent.parent
-_mcp_path = str(TOOLBOX_DIR / "mcp" / "mcp_server.py")
-_spec = importlib.util.spec_from_file_location("_mcp_srv", _mcp_path, submodule_search_locations=[])
-_mcp = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_mcp)
-
-# 直接复用 MCP 的 4 个工具函数（均返回 JSON 字符串）
-_mcp_get_node_info = _mcp.get_node_info
-_mcp_list_documents = _mcp.list_documents
-_mcp_get_document = _mcp.get_document
-_mcp_rag_search = _mcp.rag_search
 
 
 # ── 官方文档 URL 映射（local_path → url）────────────────────
@@ -86,7 +75,7 @@ def _resolve_url(local_path: str) -> str:
 # ── 构建文档列表（用于 System Prompt）───────────────
 @lru_cache(maxsize=1)
 def _build_doc_list_text() -> str:
-    result = json.loads(_mcp_list_documents())
+    result = json.loads(list_documents_json())
     return ", ".join(d["title"] for d in result.get("documents", []))
 
 
@@ -103,14 +92,14 @@ def _build_default_system_prompt(plain_text_output: bool = False) -> str:
 
 # ── 工具注册 ────────────────────────────────────────────────
 AGENT_TOOLS = [
-    FunctionTool.from_defaults(fn=_mcp_get_node_info, name="get_node_info",
+    FunctionTool.from_defaults(fn=get_node_info_json, name="get_node_info",
         description="根据节点名称查询节点说明。支持模糊匹配、批量查询。输入 names: list[str]。"),
-    FunctionTool.from_defaults(fn=_mcp_list_documents, name="list_documents",
-        description="列出知识库文档标题和路径。可选 keyword 过滤。"),
-    FunctionTool.from_defaults(fn=_mcp_get_document, name="get_document",
-        description="根据文档标题获取完整内容。支持模糊匹配。输入 title: str。"),
-    FunctionTool.from_defaults(fn=_mcp_rag_search, name="search_knowledge",
-        description="向量检索知识库。输入 query: str, top_k: int=5。"),
+    FunctionTool.from_defaults(fn=list_documents_json, name="list_documents",
+        description="列出知识库文档标题和路径。输入 keywords: list[str]，为空时返回全部文档。"),
+    FunctionTool.from_defaults(fn=get_document_json, name="get_document",
+        description="根据文档标题获取完整内容。支持模糊匹配。输入 titles: list[str]。"),
+    FunctionTool.from_defaults(fn=rag_search_json, name="search_knowledge",
+        description="向量检索知识库。输入 queries: list[str], top_k: int=5。"),
 ]
 
 # ── AgentEngine ─────────────────────────────────────────────

@@ -12,6 +12,7 @@ from notes.router import router as notes_router
 from upload.router import router as upload_router
 from agent.router import router as agent_router
 from data.router import router as data_router
+from skill.router import router as skill_router
 from common.llm_config import openrouter_availability_loop
 
 
@@ -50,6 +51,7 @@ app.include_router(notes_router, prefix="/api/v1")
 app.include_router(upload_router, prefix="/api/v1")
 app.include_router(agent_router, prefix="/api/v1")
 app.include_router(data_router, prefix="/api/v1")
+app.include_router(skill_router, prefix="/api/v1")
 
 @app.get("/health")
 async def health():

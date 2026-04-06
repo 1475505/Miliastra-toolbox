@@ -14,6 +14,7 @@
 - 服务日志会打印召回 node id（`[ChatEngine] 召回 ... ids=[...]`），用于快速回溯具体 chunk。
 - 支持流式响应 (SSE) 以及一键式整合 Web 前端 (自动托管 `static/` 目录)。
 - **Agent 模式**：基于 LlamaIndex FunctionAgent，提供 tool-calling 的问答模式，支持结构化知识查询（节点信息、文档内容）与 RAG 语义检索。支持最大工具调用轮次和超时保护（环境变量 `AGENT_MAX_TOOL_ROUNDS` / `AGENT_TIMEOUT`）。
+- **Skill API**：同一套知识查询能力同时以 MCP 和 HTTP API 暴露，支持 skill 发现、skill 详情查询和 4 个知识工具的直接调用。
 
 ## 快速开始
 
@@ -67,4 +68,13 @@ pytest tests/ -v
 ```
 
 更多关于路由（/chat, /notes, /upload 等）以及输入输出结构的样例，请参考 [api.md](./api.md)。
+
+其中新增的 Skill API 入口如下：
+
+- `GET /api/v1/skills`：列出当前可用 skill
+- `GET /api/v1/skills/miliastra-knowledge`：查看 skill 元信息和说明文档
+- `POST /api/v1/skills/miliastra-knowledge/tools/get_node_info`
+- `POST /api/v1/skills/miliastra-knowledge/tools/list_documents`
+- `POST /api/v1/skills/miliastra-knowledge/tools/get_document`
+- `POST /api/v1/skills/miliastra-knowledge/tools/rag_search`
 

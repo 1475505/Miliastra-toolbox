@@ -11,6 +11,11 @@
   - [2. 流式接口](#2-agent-流式接口)
   - [3. 能力发现](#3-能力发现接口)
 
+- [Skill API](#skill-api)
+  - [1. Skill 列表](#1-skill-列表)
+  - [2. Skill 详情](#2-skill-详情)
+  - [3. Tool 执行](#3-tool-执行)
+
 - [笔记 API](#笔记api)
   - [1. 创建笔记](#1-创建笔记)
   - [2. 修改笔记](#2-修改笔记)
@@ -474,6 +479,129 @@ data: {"type": "done", "data": {"stats": {"tokens": 0, "tool_calls": 1, "retriev
 | 最大工具调用轮次 | 6 | `AGENT_MAX_TOOL_ROUNDS` | 超出后截断事件流 |
 | 最大思考迭代数 | 10 | `AGENT_MAX_ITERATIONS` | 超出后禁用工具，将已有工具结果摘要交给模型生成最终回答 |
 | 超时时间 | 300s | `AGENT_TIMEOUT` | 超时后 Agent 强制终止 |
+
+---
+
+# Skill API
+
+## 概述
+
+Skill API 将千星沙箱知识库能力以 HTTP 形式暴露，和 MCP Server 共享同一套底层实现。适合以下场景：
+
+- 前端做 skill 列表或技能中心
+- 第三方服务通过 HTTP 直接调用知识工具
+- 后续扩展 skill marketplace 或开放平台
+
+当前提供 1 个 skill：`miliastra-knowledge`
+
+## 1. Skill 列表
+
+### 接口地址
+**GET** `/api/v1/skills`
+
+### 响应示例
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "miliastra-knowledge",
+      "version": "1.0.0",
+      "title": "Miliastra Knowledge",
+      "description": "以 skill + HTTP API 形式暴露千星沙箱知识库查询能力。",
+      "transports": ["mcp", "http"],
+      "tools": [
+        {
+          "name": "get_node_info",
+          "description": "根据节点名称查询节点说明、参数表、所属文档。",
+          "http_path": "/api/v1/skills/miliastra-knowledge/tools/get_node_info",
+          "parameters": [
+            {"name": "names", "type": "string[]", "required": true, "description": "节点名称列表", "default_value": null}
+          ]
+        }
+      ]
+    }
+  ],
+  "error": null
+}
+```
+
+## 2. Skill 详情
+
+### 接口地址
+**GET** `/api/v1/skills/miliastra-knowledge`
+
+### 说明
+
+- 返回 skill 元信息
+- 返回 4 个工具的 HTTP 调用路径
+- 返回 `mcp/SKILL.md` 原始 markdown 内容，方便前端直接展示说明
+
+## 3. Tool 执行
+
+### 3.1 get_node_info
+
+**POST** `/api/v1/skills/miliastra-knowledge/tools/get_node_info`
+
+请求体：
+
+```json
+{
+  "names": ["碰撞触发器", "死亡触发器"]
+}
+```
+
+### 3.2 list_documents
+
+**POST** `/api/v1/skills/miliastra-knowledge/tools/list_documents`
+
+请求体：
+
+```json
+{
+  "keywords": ["仇恨", "背包"]
+}
+```
+
+### 3.3 get_document
+
+**POST** `/api/v1/skills/miliastra-knowledge/tools/get_document`
+
+请求体：
+
+```json
+{
+  "titles": ["事件节点"]
+}
+```
+
+### 3.4 rag_search
+
+**POST** `/api/v1/skills/miliastra-knowledge/tools/rag_search`
+
+请求体：
+
+```json
+{
+  "queries": ["碰撞事件怎么触发"],
+  "top_k": 5
+}
+```
+
+### 通用响应格式
+
+```json
+{
+  "success": true,
+  "data": {
+    "skill": "miliastra-knowledge",
+    "tool": "get_node_info",
+    "result": []
+  },
+  "error": null
+}
+```
 
 ---
 

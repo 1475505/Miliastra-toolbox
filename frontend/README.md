@@ -1,6 +1,6 @@
 # Frontend 模块
 
-前端采用 React + TailwindCSS 开发。使用localStorage存储openai配置
+前端采用 React + TailwindCSS 开发。使用 localStorage 存储 OpenAI 配置，并提供知识问答、工具调用、笔记、数据查询四个主要页签。
 
 ## 快速开始
 
@@ -43,6 +43,7 @@ python3 main.py
 frontend/
 ├── src/
 │   ├── components/      # UI 组件 (主要含 Chat 聊天、Notes 笔记等及左侧菜单)
+│   │   └── ToolCall.tsx # Skill API 的前端工具调用面板
 │   ├── utils/           # 各类工具函数（API调用、配置读写等）
 │   ├── App.tsx          # 页面主体布局与路由切换
 │   └── main.tsx         # React 挂载点

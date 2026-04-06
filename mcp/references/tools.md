@@ -2,20 +2,44 @@
 
 ## 服务连接
 
-- 服务地址：`http://qx-mcp.070077.xyz`
-- 传输协议：Streaming HTTP（`streamable-http`），MCP 2025-03-26 规范
-- 默认端口：8818
+- API Base URL：`/api/v1/skills/miliastra-knowledge/tools`
+- 例子：`http://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools`
+- 调用方式：HTTP `POST` + JSON 请求体
 
-**客户端配置**：
+**调用示例**：
+
+```bash
+curl -X POST http://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/get_node_info \
+  -H "Content-Type: application/json" \
+  -d '{
+    "names": ["碰撞触发器", "嘲讽目标"]
+  }'
+```
+
+```javascript
+const response = await fetch('/api/v1/skills/miliastra-knowledge/tools/get_node_info', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    names: ['碰撞触发器', '嘲讽目标']
+  })
+})
+
+const payload = await response.json()
+const result = payload.data.result
+```
+
+**通用响应包裹结构**：
 
 ```json
 {
-  "mcpServers": {
-    "miliastra-knowledge": {
-      "url": "http://qx-mcp.070077.xyz",
-      "type": "streamable-http"
-    }
-  }
+  "success": true,
+  "data": {
+    "skill": "miliastra-knowledge",
+    "tool": "get_node_info",
+    "result": []
+  },
+  "error": null
 }
 ```
 ---

@@ -88,6 +88,7 @@ export default function Sidebar({
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'chat', label: '知识库问答' },
+    { id: 'tools', label: '工具调用' },
     { id: 'notes', label: '笔记' },
     { id: 'data', label: '数据查询' },
   ]

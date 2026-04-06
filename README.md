@@ -29,6 +29,7 @@
 - [x] **前后端搭建**：FastAPI后端（提供免费模型）与 React前端。
 - [ ] **数据问答系统**：集合并统计参数数据，与AI对话设计。
 - [ ] **素材寻找系统**：通过多模态RAG快速寻找符合描述的素材。
+- [x] **Skill + API 能力层**：同一套千星知识查询能力已同时暴露为 MCP Server 和 HTTP Skill API。
 
 > 本项目大部分代码由AI生成
 
@@ -36,7 +37,7 @@
 
 ```text
 .
-├── backend/       # FastAPI 后端服务（处理对话、RAG 检索）
+├── backend/       # FastAPI 后端服务（处理对话、RAG 检索、Skill API）
 ├── frontend/      # React 前端交互界面
 ├── mcp/           # MCP Server（知识库工具对外服务）
 ├── knowledge/     # 知识库管理

@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import { Tab } from './types'
 
 const Chat = lazy(() => import('./components/Chat'))
+const ToolCall = lazy(() => import('./components/ToolCall'))
 const Notes = lazy(() => import('./components/Notes'))
 const DataQuery = lazy(() => import('./components/DataQuery'))
 
@@ -71,6 +72,13 @@ export default function App() {
             />
           </Suspense>
         </div>
+        {visitedTabs.has('tools') && (
+          <div className={`h-full ${activeTab === 'tools' ? '' : 'hidden'}`}>
+            <Suspense fallback={<div className="flex h-full items-center justify-center text-slate-500">加载中...</div>}>
+              <ToolCall />
+            </Suspense>
+          </div>
+        )}
         {visitedTabs.has('notes') && (
           <div className={`h-full ${activeTab === 'notes' ? '' : 'hidden'}`}>
             <Suspense fallback={<div className="flex h-full items-center justify-center text-slate-500">加载中...</div>}>
