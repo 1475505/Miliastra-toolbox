@@ -18,6 +18,11 @@
   - [4. 查询笔记列表](#4-查询笔记列表)
   - [5. 获取单个笔记详情](#5-获取单个笔记详情)
 
+- [Data 数据查询 API](#data-数据查询-api)
+  - [1. 物件查询](#1-物件查询)
+  - [2. 特效查询](#2-特效查询)
+  - [3. 背景音乐查询](#3-背景音乐查询)
+
 ---
 
 # RAG API
@@ -898,4 +903,226 @@ def search_notes(keyword):
 | 2 | 2024-01-01 13:00:00 | 2024-01-01 13:00:00 | 李四 | 另一条笔记 | 3 |
 
 查询时只会返回 `id=1` 的第二行（最新版本）和 `id=2` 的记录。
+
+---
+
+# Data 数据查询 API
+
+## 概述
+
+提供 UGC 编辑器配置数据的查询能力，支持按 **ID 精确查找** 或 **中文名模糊查找**，涵盖物件、特效、背景音乐三类。
+
+数据来源：Supabase PostgreSQL，表结构见 `ugc/schema.sql`。
+
+**通用查询规则**：
+- `id` 与 `name` 至少提供一个，否则返回 400。
+- `id` 精确匹配（整数），`name` 做大小写不敏感的子串模糊匹配（`ILIKE '%name%'`）。
+- 同时提供 `id` 和 `name` 时，以 `id` 为准（忽略 `name`）。
+- 支持分页参数 `limit`（默认 20，最大 100）和 `offset`（默认 0）。
+
+---
+
+## 1. 物件查询
+
+### 接口地址
+**GET** `/api/v1/data/gadgets`
+
+### 查询参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | integer | 与 `name` 二选一 | 物件目录 ID（`ugc_gadgets.list_id`），精确匹配 |
+| `name` | string | 与 `id` 二选一 | 物件中文名，大小写不敏感子串模糊匹配 |
+| `limit` | integer | 否 | 最多返回条数，默认 20，最大 100 |
+| `offset` | integer | 否 | 偏移量，默认 0 |
+
+### 响应字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `list_id` | integer | 物件目录 ID（主键） |
+| `name` | string | 物件中文名称 |
+| `size_x` | number | 包围盒宽（X 轴，单位：游戏单位） |
+| `size_y` | number | 包围盒高（Y 轴） |
+| `size_z` | number | 包围盒深（Z 轴） |
+
+### 请求示例
+
+```bash
+# 按 ID 精确查找
+GET /api/v1/data/gadgets?id=10001
+
+# 按中文名模糊查找
+GET /api/v1/data/gadgets?name=乔木&limit=10
+
+# cURL
+curl "http://localhost:8000/api/v1/data/gadgets?name=史莱姆&limit=5"
+```
+
+### 响应示例
+
+```json
+{
+  "success": true,
+  "data": {
+    "total": 3,
+    "items": [
+      {
+        "list_id": 10001,
+        "name": "小史莱姆",
+        "size_x": 1.2,
+        "size_y": 1.0,
+        "size_z": 1.2
+      }
+    ]
+  }
+}
+```
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | `id` 与 `name` 均未提供，或 `id` 非整数，或分页参数非法 |
+| 404 | 按 ID 查找时未找到对应物件 |
+| 500 | 服务器内部错误 |
+
+---
+
+## 2. 特效查询
+
+### 接口地址
+**GET** `/api/v1/data/effects`
+
+### 查询参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | integer | 与 `name` 二选一 | 特效配置 ID（`ugc_effects.id`），精确匹配 |
+| `name` | string | 与 `id` 二选一 | 特效中文名，大小写不敏感子串模糊匹配 |
+| `limit` | integer | 否 | 最多返回条数，默认 20，最大 100 |
+| `offset` | integer | 否 | 偏移量，默认 0 |
+
+### 响应字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | integer | 特效配置 ID（主键） |
+| `name` | string | 特效中文名称 |
+| `duration` | number | 持续时长（秒），`-1` 表示循环/常驻特效 |
+| `is_loop` | boolean | 是否循环（与 `duration == -1` 严格对应） |
+| `radius` | number | 预览/影响半径 |
+
+### 请求示例
+
+```bash
+# 按 ID 精确查找
+GET /api/v1/data/effects?id=20001
+
+# 按中文名模糊查找
+GET /api/v1/data/effects?name=烟尘&limit=10
+
+# cURL
+curl "http://localhost:8000/api/v1/data/effects?name=白色烟尘"
+```
+
+### 响应示例
+
+```json
+{
+  "success": true,
+  "data": {
+    "total": 2,
+    "items": [
+      {
+        "id": 20001,
+        "name": "白色烟尘",
+        "duration": -1.0,
+        "is_loop": true,
+        "radius": 3.0
+      },
+      {
+        "id": 20002,
+        "name": "白色烟尘（单次）",
+        "duration": 2.5,
+        "is_loop": false,
+        "radius": 2.0
+      }
+    ]
+  }
+}
+```
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | `id` 与 `name` 均未提供，或 `id` 非整数，或分页参数非法 |
+| 404 | 按 ID 查找时未找到对应特效 |
+| 500 | 服务器内部错误 |
+
+---
+
+## 3. 背景音乐查询
+
+### 接口地址
+**GET** `/api/v1/data/bgm`
+
+### 查询参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | integer | 与 `name` 二选一 | 音乐 ID（`ugc_bgm.bgm_id`），精确匹配 |
+| `name` | string | 与 `id` 二选一 | 音乐中文名，大小写不敏感子串模糊匹配 |
+| `limit` | integer | 否 | 最多返回条数，默认 20，最大 100 |
+| `offset` | integer | 否 | 偏移量，默认 0 |
+
+### 响应字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `bgm_id` | integer | 音乐 ID（主键） |
+| `name` | string | 音乐中文名称 |
+| `duration_sec` | number | 时长（秒，由原始毫秒字段 `duration_ms / 1000.0` 换算） |
+| `category_name` | string | 分类名称：`101`→`探索` / `102`→`战斗` / `103`→`任务` / `104`→`其他` |
+
+### 请求示例
+
+```bash
+# 按 ID 精确查找
+GET /api/v1/data/bgm?id=10001
+
+# 按中文名模糊查找
+GET /api/v1/data/bgm?name=辉闪
+
+# cURL
+curl "http://localhost:8000/api/v1/data/bgm?name=鲜衣游侠"
+```
+
+### 响应示例
+
+```json
+{
+  "success": true,
+  "data": {
+    "total": 1,
+    "items": [
+      {
+        "bgm_id": 10001,
+        "name": "辉闪驰行",
+        "duration_sec": 71.211,
+        "category_name": "探索"
+      }
+    ]
+  }
+}
+```
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | `id` 与 `name` 均未提供，或 `id` 非整数，或分页参数非法 |
+| 404 | 按 ID 查找时未找到对应音乐 |
+| 500 | 服务器内部错误 |
 
