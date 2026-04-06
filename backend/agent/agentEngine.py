@@ -135,6 +135,65 @@ AGENT_TIMEOUT = float(os.getenv("AGENT_TIMEOUT", "300"))
 
 
 class AgentEngine:
+    """基于 LlamaIndex FunctionAgent 的对话引擎。
+
+    迭代上限兜底策略（AGENT_MAX_ITERATIONS）:
+    当工具调用轮次达到上限时，不直接报错，而是将之前所有工具调用
+    结果摘要（tool_trace）+ 已生成的部分回答一并交给同一模型，以
+    is_function_calling_model=False 禁用工具，生成最终答复。
+    """
+
+    @staticmethod
+    def _is_max_iter_error(err: Exception) -> bool:
+        return "max iterations" in str(err).lower()
+
+    async def _fallback_answer(
+        self,
+        config: Dict[str, Any],
+        message: str,
+        conversation: List[Dict[str, str]],
+        tool_trace: list[dict[str, str | dict[str, str] | list[dict[str, str]]]],
+        partial_answer: str,
+    ) -> str:
+        """迭代上限兜底：禁用工具，将已有 tool_trace 作为上下文生成最终回答。"""
+        rc = resolve_llm_config(config)
+        llm = OpenAILike(
+            api_key=str(rc["api_key"]), api_base=str(rc["api_base_url"]),
+            model=str(rc["model"]), is_chat_model=True,
+            is_function_calling_model=False,
+        )
+
+        ctx_len = int(config.get("context_length", 3))
+        limited = [] if ctx_len == 0 else conversation[-(ctx_len * 2):]
+        history = [ChatMessage(role=MessageRole(m["role"]), content=m["content"]) for m in limited]
+
+        tool_ctx = "\n".join(
+            f"{i}. {t.get('tool','')} [{t.get('status','')}]: {t.get('summary','')}"
+            for i, t in enumerate(tool_trace, 1)
+        ) or "（无）"
+
+        system = (
+            "你是千星沙箱知识助手。当前处于最终收敛阶段，禁止调用任何工具。"
+            "基于已有工具结果摘要和对话上下文直接作答。"
+            "不要输出思考过程或过程话术，直接给最终答案；信息不足时明确说明。"
+        )
+        user_msg = (
+            f"用户问题:\n{message}\n\n"
+            f"已收集的工具结果:\n{tool_ctx}\n\n"
+            f"已输出的片段:\n{partial_answer or '（无）'}\n\n"
+            "请基于以上信息直接产出最终答复。"
+        )
+
+        try:
+            resp = await llm.achat([
+                ChatMessage(role=MessageRole.SYSTEM, content=system),
+                *history,
+                ChatMessage(role=MessageRole.USER, content=user_msg),
+            ])
+            return (resp.message.content or "").strip()
+        except Exception as e:
+            print(f"[AgentEngine] 兜底回答失败: {e}")
+            return partial_answer.strip() or "已达工具调用上限，当前信息不足以给出完整结论。"
 
     def _run_agent(self, config: Dict[str, Any], conversation: List[Dict[str, str]],
                    plain_text_output: bool = False):
@@ -280,15 +339,14 @@ class AgentEngine:
                     "stats": {"tokens": 0, "tool_calls": tool_calls_count, "retrieval_calls": retrieval_calls_count},
                     "tool_trace": tool_trace}
         except Exception as e:
-            error_msg = str(e)
-            # 如果是 max_iterations 错误，返回已有结果而不是报错
-            if "max_iterations" in error_msg.lower() or "Max iterations" in error_msg:
-                print(f"[AgentEngine] 达到最大迭代次数，返回目前结果: {last_response[:100]}...")
-                return {"answer": last_response or "已达到最大迭代次数。" + ("基于已有的搜索结果为您总结如下：" if sources else ""),
-                        "sources": sources,
-                        "stats": {"tokens": 0, "tool_calls": tool_calls_count, "retrieval_calls": retrieval_calls_count},
+            if self._is_max_iter_error(e):  # 迭代上限兜底：携带 tool_trace 生成最终回答
+                print("[AgentEngine] 达到迭代上限，携带工具结果兜底作答")
+                answer = await self._fallback_answer(
+                    config, message, conversation, tool_trace, last_response)
+                return {"answer": answer, "sources": sources,
+                        "stats": {"tokens": 0, "tool_calls": tool_calls_count,
+                                   "retrieval_calls": retrieval_calls_count},
                         "tool_trace": tool_trace}
-            # 其他错误照常抛出
             raise
 
     async def chat_stream(self, message: str, conversation: List[Dict[str, str]],
@@ -297,6 +355,8 @@ class AgentEngine:
         yield ": connected\n\n"
 
         tool_calls_count = retrieval_calls_count = 0
+        tool_trace: list[dict[str, str | dict[str, str] | list[dict[str, str]]]] = []
+        partial_answer = ""
         sources: list[dict[str, str | float]] = []
         try:
             handler = agent.run(user_msg=message, chat_history=chat_history,
@@ -309,19 +369,23 @@ class AgentEngine:
                     if ev.tool_name == "search_knowledge":
                         retrieval_calls_count += 1
                     trace = self._extract_trace(ev)
+                    tool_trace.append(trace)
                     yield f"data: {json.dumps({'type': 'tool_result', 'data': trace}, ensure_ascii=False)}\n\n"
                     sources.extend(self._extract_sources(ev))
                 elif isinstance(ev, AgentStream) and ev.delta:
+                    partial_answer += ev.delta
                     yield f"data: {json.dumps({'type': 'token', 'data': ev.delta}, ensure_ascii=False)}\n\n"
 
             if sources:
                 yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
             yield f"data: {json.dumps({'type': 'done', 'data': {'stats': {'tokens': 0, 'tool_calls': tool_calls_count, 'retrieval_calls': retrieval_calls_count}}}, ensure_ascii=False)}\n\n"
         except Exception as e:
-            error_msg = str(e)
-            # 如果是 max_iterations 错误，返回已有结果而不是报错
-            if "max_iterations" in error_msg.lower() or "Max iterations" in error_msg:
-                print(f"[AgentEngine] 流式调用达到最大迭代次数，返回已有源数据")
+            if self._is_max_iter_error(e):  # 迭代上限兜底：携带 tool_trace 生成最终回答
+                print("[AgentEngine] 流式迭代上限，携带工具结果兜底作答")
+                answer = await self._fallback_answer(
+                    config, message, conversation, tool_trace, partial_answer)
+                if answer:
+                    yield f"data: {json.dumps({'type': 'token', 'data': '\n\n' + answer}, ensure_ascii=False)}\n\n"
                 if sources:
                     yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
                 yield f"data: {json.dumps({'type': 'done', 'data': {'stats': {'tokens': 0, 'tool_calls': tool_calls_count, 'retrieval_calls': retrieval_calls_count}}}, ensure_ascii=False)}\n\n"

@@ -467,7 +467,7 @@ data: {"type": "done", "data": {"stats": {"tokens": 0, "tool_calls": 1, "retriev
 | 参数 | 默认值 | 环境变量 | 说明 |
 |------|--------|----------|------|
 | 最大工具调用轮次 | 6 | `AGENT_MAX_TOOL_ROUNDS` | 超出后截断事件流 |
-| 最大思考迭代数 | 10 | `AGENT_MAX_ITERATIONS` | 超出后返回已有结果，不报错 |
+| 最大思考迭代数 | 10 | `AGENT_MAX_ITERATIONS` | 超出后禁用工具，将已有工具结果摘要交给模型生成最终回答 |
 | 超时时间 | 300s | `AGENT_TIMEOUT` | 超时后 Agent 强制终止 |
 
 ---
