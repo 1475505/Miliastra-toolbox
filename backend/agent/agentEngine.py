@@ -83,22 +83,7 @@ def _resolve_url(local_path: str) -> str:
     return url
 
 
-# ── 构建节点列表与文档列表（用于 System Prompt）───────────────
-@lru_cache(maxsize=1)
-def _build_node_list_text() -> str:
-    entries = _mcp._load_index()
-    groups: dict[str, set[str]] = defaultdict(set)
-    for e in entries:
-        if "node/" in e.get("output_file", ""):
-            groups[e["source_doc_title"]].add(e["title"])
-    lines = []
-    for name in ["事件节点", "执行节点", "查询节点", "流程控制节点", "运算节点", "其它节点"]:
-        nodes = sorted(groups.get(name, set()))
-        if nodes:
-            lines.append(f"- {name}({len(nodes)}个): {', '.join(nodes)}")
-    return "\n".join(lines)
-
-
+# ── 构建文档列表（用于 System Prompt）───────────────
 @lru_cache(maxsize=1)
 def _build_doc_list_text() -> str:
     result = json.loads(_mcp_list_documents())
@@ -107,9 +92,8 @@ def _build_doc_list_text() -> str:
 
 @lru_cache(maxsize=2)
 def _build_default_system_prompt(plain_text_output: bool = False) -> str:
-    """用默认模板 + 节点/文档列表构建 system prompt（缓存）"""
+    """用默认模板 + 文档列表构建 system prompt（缓存）"""
     prompt = DEFAULT_SYSTEM_PROMPT.format(
-        node_list=_build_node_list_text(),
         doc_list=_build_doc_list_text(),
     )
     if plain_text_output:
