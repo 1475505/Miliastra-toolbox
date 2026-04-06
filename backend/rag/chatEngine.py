@@ -140,6 +140,10 @@ class CombinedRetriever:
 
 class ChatEngine:
     """轻量级对话引擎"""
+
+    NON_STREAM_OUTPUT_INSTRUCTION = (
+        "请直接使用纯文本作答，避免使用 Markdown 标题、列表、表格、代码块或其他格式化语法。"
+    )
     
     def __init__(self):
         """初始化 RAG 索引和 token 计数器"""
@@ -154,21 +158,32 @@ class ChatEngine:
         )
 
         self.context_prompt_template = (
-            "千星沙箱是一款游戏UGC编辑器，主要通过配置实体、节点图来进行操作，实现交互和逻辑。接下来，请根据给予的文档内容回答问题。\n"
+            "你是千星沙箱知识库问答助手。千星沙箱是一款游戏 UGC 编辑器，主要通过实体、组件和节点图来实现功能与逻辑。\n"
+            "请严格根据给定的知识库片段回答用户问题，不要把未检索到的信息当成已知事实。\n"
+            "如果上下文可以直接回答，就先给出简洁结论，再补充依据、步骤、参数或注意事项。\n"
+            "如果用户问的是实现思路、排障方法或方案比较，请只总结文档中能够支撑的部分；超出文档的延伸内容必须明确标注为“推测”或“建议”。\n"
+            "如果上下文信息不足、表述冲突，或无法支持明确结论，请直接说明“知识库片段不足以确认”，并指出最相关的已知信息，不要编造节点、参数、限制或官方规则。\n"
+            "回答时尽量保留文档中的术语、节点名、组件名、参数名、报错文本和配置项原文，不要随意改写专有名词。\n"
             "相关的文档内容：\n"
-            "{context_str}\n"
-            "回答时，若需要出现文档未提及的观点，请简单标注"
+            "{context_str}"
         )
         
         # 检索查询生成 prompt
         self.query_extraction_prompt = (
-            "你是一个知识库检索助手。请分析用户的问题（可能包含图片），提取用于检索的关键词。\n"
-            "背景：千星沙箱是一款游戏UGC编辑器，知识库包含实体、节点图、组件、事件等文档。\n\n"
-            "要求：\n"
-            "1. 识别问题中的核心概念和关键词\n"
-            "2. 如果有图片，识别图片中的关键信息（如错误提示、节点名称、配置项等）\n"
-            "3. 生成 1-5 个简洁的检索关键词或短语\n"
-            "4. 只输出检索词，用空格分隔，不要其他解释\n\n"
+            "你是一个面向知识库召回的检索词生成助手。请根据用户问题（可能包含图片）生成最适合检索千星沙箱文档的关键词。\n"
+            "背景：知识库主要包含实体、组件、节点图、节点名称、参数说明、教程、FAQ、排障经验等中文文档。\n\n"
+            "生成规则：\n"
+            "1. 优先提取高价值术语：节点名、组件名、系统名、功能名、参数名、报错文本、配置项、目标效果。\n"
+            "   示例术语可参考知识库中的真实文档主题：碰撞与交互、角色设置、镜头设置、基础运动、特效、界面控件、阵营设置、技能设置、定时器、自定义变量、信号通信、投射运动器、小地图标识、命中与受击、背包、货币与商店。\n"
+            "2. 如果用户表达口语化、笼统或不知道准确名称，请改写成更像文档标题或节点术语的关键词。\n"
+            "   例如把“怎么让角色能攻击”改写为“角色 攻击”，把“怎么买卖道具”改写为“货币与商店 背包 道具”。\n"
+            "3. 如果问题是在问“怎么实现某效果”，同时提取“目标效果”和“可能相关的机制词”，例如事件、触发、检测、位移、特效、同步、变量。\n"
+            "   例如“做一个会掉奖励的怪物”可以提取为“命中与受击 掉落物 道具 背包 事件”。\n"
+            "4. 如果有图片，优先提取图片中的错误提示、节点名称、组件名称、按钮文字、配置字段、数字或英文标识。\n"
+            "5. 保留关键专有名词的原文；必要时可补充 1 个最可能的同义检索词，但不要堆砌泛词。\n"
+            "6. 避免输出“怎么”“为什么”“问题”“这个”“那个”“使用方法”这类低信息词。\n"
+            "7. 输出 2-6 个简洁关键词或短语；如果问题本身非常明确，也可以更少。\n"
+            "8. 只输出检索词，用空格分隔，不要输出句子、标点、编号或解释。\n\n"
             "用户问题：{message}"
         )
     
@@ -340,6 +355,12 @@ class ChatEngine:
             })
         
         return sources
+
+    def _build_context_prompt(self, context_str: str, plain_text_output: bool = False) -> str:
+        prompt = self.context_prompt_template.format(context_str=context_str)
+        if plain_text_output:
+            prompt = f"{prompt}\n{self.NON_STREAM_OUTPUT_INSTRUCTION}"
+        return prompt
     
     def chat(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str], image_base64: Optional[str] = None) -> Dict[str, Any]:
         """执行对话查询
@@ -407,7 +428,7 @@ class ChatEngine:
             
             # 9. 阶段3：构建 prompt 和消息，让 LLM 根据检索结果回答
             context_str = "\n\n".join([n.get_content() for n in nodes])
-            fmt_msg = self.context_prompt_template.format(context_str=context_str) + f"\n\n用户问题：{message}"
+            fmt_msg = self._build_context_prompt(context_str, plain_text_output=True) + f"\n\n用户问题：{message}"
             
             blocks = [TextBlock(text=fmt_msg)]
             if image_base64:
@@ -519,7 +540,7 @@ class ChatEngine:
             
             # 步骤5：阶段3 - 构建 prompt 和消息，让 LLM 根据检索结果回答
             context_str = "\n\n".join([n.get_content() for n in nodes])
-            fmt_msg = self.context_prompt_template.format(context_str=context_str) + f"\n\n用户问题：{message}"
+            fmt_msg = self._build_context_prompt(context_str, plain_text_output=False) + f"\n\n用户问题：{message}"
             
             blocks = [TextBlock(text=fmt_msg)]
             if image_base64:

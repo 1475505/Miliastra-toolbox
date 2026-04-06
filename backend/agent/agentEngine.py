@@ -28,7 +28,7 @@ from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.agent.workflow.workflow_events import AgentStream, ToolCall, ToolCallResult
 
 from common.pg_client import model_usage_manager
-from agent.prompt import DEFAULT_SYSTEM_PROMPT
+from agent.prompt import DEFAULT_SYSTEM_PROMPT, NON_STREAM_OUTPUT_INSTRUCTION
 
 # ── 从 MCP Server 导入工具函数 ──────────────────────────────
 TOOLBOX_DIR = Path(__file__).resolve().parent.parent.parent
@@ -105,13 +105,16 @@ def _build_doc_list_text() -> str:
     return ", ".join(d["title"] for d in result.get("documents", []))
 
 
-@lru_cache(maxsize=1)
-def _build_default_system_prompt() -> str:
+@lru_cache(maxsize=2)
+def _build_default_system_prompt(plain_text_output: bool = False) -> str:
     """用默认模板 + 节点/文档列表构建 system prompt（缓存）"""
-    return DEFAULT_SYSTEM_PROMPT.format(
+    prompt = DEFAULT_SYSTEM_PROMPT.format(
         node_list=_build_node_list_text(),
         doc_list=_build_doc_list_text(),
     )
+    if plain_text_output:
+        prompt += NON_STREAM_OUTPUT_INSTRUCTION
+    return prompt
 
 
 # ── 工具注册 ────────────────────────────────────────────────
@@ -170,7 +173,8 @@ AGENT_TIMEOUT = float(os.getenv("AGENT_TIMEOUT", "300"))
 
 class AgentEngine:
 
-    def _run_agent(self, config: Dict[str, Any], conversation: List[Dict[str, str]]):
+    def _run_agent(self, config: Dict[str, Any], conversation: List[Dict[str, str]],
+                   plain_text_output: bool = False):
         """创建 LLM + Agent + chat_history"""
         rc = resolve_llm_config(config)
         llm = OpenAILike(api_key=str(rc["api_key"]), api_base=str(rc["api_base_url"]),
@@ -182,7 +186,8 @@ class AgentEngine:
         limited = [] if ctx_len == 0 else conversation[-(ctx_len * 2):]
         chat_history = [ChatMessage(role=MessageRole(m["role"]), content=m["content"]) for m in limited]
 
-        agent = FunctionAgent(name="MiliastraAgent", system_prompt=_build_default_system_prompt(),
+        agent = FunctionAgent(name="MiliastraAgent",
+                      system_prompt=_build_default_system_prompt(plain_text_output=plain_text_output),
                               tools=AGENT_TOOLS, llm=llm, verbose=True,
                               timeout=AGENT_TIMEOUT)
         return agent, chat_history
@@ -289,7 +294,7 @@ class AgentEngine:
 
     async def chat(self, message: str, conversation: List[Dict[str, str]],
                    config: Dict[str, Any]) -> Dict[str, Any]:
-        agent, chat_history = self._run_agent(config, conversation)
+        agent, chat_history = self._run_agent(config, conversation, plain_text_output=True)
         tool_trace, sources = [], []
         tool_calls_count = retrieval_calls_count = 0
 
@@ -310,7 +315,7 @@ class AgentEngine:
 
     async def chat_stream(self, message: str, conversation: List[Dict[str, str]],
                           config: Dict[str, Any]):
-        agent, chat_history = self._run_agent(config, conversation)
+        agent, chat_history = self._run_agent(config, conversation, plain_text_output=False)
         yield ": connected\n\n"
 
         tool_calls_count = retrieval_calls_count = 0
