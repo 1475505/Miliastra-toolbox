@@ -14,8 +14,8 @@ from .pg_client import model_usage_manager
 # ── 渠道配置表 ──────────────────────────────────────────────
 _CHANNEL_ENV: dict[int, tuple[str, str, str]] = {
     2: ("DEFAULT_FREE_MODEL_KEY2", "DEFAULT_FREE_MODEL_URL2", "DEFAULT_FREE_MODEL_NAME2"),
-    3: ("DEFAULT_FREE_MODEL_KEY2", "DEFAULT_FREE_MODEL_URL2", "DEFAULT_FREE_MODEL_NAME3"),
-    4: ("DEFAULT_FREE_MODEL_KEY2", "DEFAULT_FREE_MODEL_URL2", "DEFAULT_FREE_MODEL_NAME4"),
+    3: ("DEFAULT_FREE_MODEL_KEY3", "DEFAULT_FREE_MODEL_URL3", "DEFAULT_FREE_MODEL_NAME3"),
+    4: ("DEFAULT_FREE_MODEL_KEY3", "DEFAULT_FREE_MODEL_URL3", "DEFAULT_FREE_MODEL_NAME4"),
     5: ("DEFAULT_FREE_MODEL_KEY2", "DEFAULT_FREE_MODEL_URL2", "DEFAULT_FREE_MODEL_NAME5"),
 }
 
@@ -37,7 +37,7 @@ async def _check_one_openrouter_channel(ch: int) -> bool:
     if not model_name:
         return False
     model_id = _openrouter_model_id(model_name)
-    api_key = os.getenv("DEFAULT_FREE_MODEL_KEY2", "")
+    api_key = os.getenv("DEFAULT_FREE_MODEL_KEY3", "")
     url = f"https://openrouter.ai/api/v1/models/{model_id}/endpoints"
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
