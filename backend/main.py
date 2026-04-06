@@ -2,6 +2,8 @@
 RAG Chat API 服务
 FastAPI 启动文件
 """
+import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,11 +11,27 @@ from rag.chat import router as chat_router
 from notes.router import router as notes_router
 from upload.router import router as upload_router
 from agent.router import router as agent_router
+from common.llm_config import openrouter_availability_loop
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(openrouter_availability_loop())
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
 
 app = FastAPI(
     title="千星沙箱 RAG Chat API",
     description="基于 LlamaIndex 的知识库问答系统",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 # CORS 配置

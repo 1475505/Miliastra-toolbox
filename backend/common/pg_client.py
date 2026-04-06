@@ -120,6 +120,8 @@ class ModelUsageManager:
     
     # 需要限额的渠道（每日250次）
     RATE_LIMITED_CHANNELS = {1, 2, 5}
+    # 仅追踪用量、不限额的渠道（OpenRouter 免费渠道）
+    TRACKED_CHANNELS = {3, 4}
     DAILY_LIMIT = 250
     
     def __init__(self, pg_client: PGClient):
@@ -154,8 +156,8 @@ class ModelUsageManager:
                 "remaining": int  # 剩余次数（无限额时为-1）
             }
         """
-        # 不在限额渠道内，直接允许
-        if channel_id not in self.RATE_LIMITED_CHANNELS:
+        # 不需要追踪的渠道（用户自定义等），直接允许
+        if channel_id not in self.RATE_LIMITED_CHANNELS and channel_id not in self.TRACKED_CHANNELS:
             return {
                 "allowed": True,
                 "usage": 0,
@@ -163,14 +165,16 @@ class ModelUsageManager:
                 "remaining": -1
             }
         
+        is_limited = channel_id in self.RATE_LIMITED_CHANNELS
+        
         # 数据库不可用，认为未限额
         if not self.pg_client.is_db_available():
             print("pg not available")
             return {
                 "allowed": True,
                 "usage": 0,
-                "limit": self.DAILY_LIMIT,
-                "remaining": self.DAILY_LIMIT
+                "limit": self.DAILY_LIMIT if is_limited else -1,
+                "remaining": self.DAILY_LIMIT if is_limited else -1
             }
         
         today = date.today()
@@ -193,8 +197,8 @@ class ModelUsageManager:
                 current_usage = 0
                 record_id = None
             
-            # 检查是否超限
-            if current_usage >= self.DAILY_LIMIT:
+            # 检查是否超限（仅限额渠道）
+            if is_limited and current_usage >= self.DAILY_LIMIT:
                 return {
                     "allowed": False,
                     "usage": current_usage,
@@ -231,8 +235,8 @@ class ModelUsageManager:
             return {
                 "allowed": True,
                 "usage": new_usage,
-                "limit": self.DAILY_LIMIT,
-                "remaining": self.DAILY_LIMIT - new_usage
+                "limit": self.DAILY_LIMIT if is_limited else -1,
+                "remaining": (self.DAILY_LIMIT - new_usage) if is_limited else -1
             }
             
         except Exception as e:
@@ -241,8 +245,8 @@ class ModelUsageManager:
             return {
                 "allowed": True,
                 "usage": 0,
-                "limit": self.DAILY_LIMIT,
-                "remaining": self.DAILY_LIMIT
+                "limit": self.DAILY_LIMIT if is_limited else -1,
+                "remaining": self.DAILY_LIMIT if is_limited else -1
             }
     
     def get_usage(self, channel_id: int) -> Dict[str, Any]:

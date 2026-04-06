@@ -1,11 +1,11 @@
 """AgentEngine - 基于 LlamaIndex FunctionAgent，复用 MCP 工具函数"""
 import sys
 import os
+import asyncio
 import json
 import importlib.util
 from pathlib import Path
 from functools import lru_cache
-from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any
 from collections import defaultdict
 
@@ -27,7 +27,7 @@ from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.agent.workflow.workflow_events import AgentStream, ToolCall, ToolCallResult
 
-from common.pg_client import model_usage_manager
+from common.llm_config import resolve_llm_config, openrouter_availability_loop
 from agent.prompt import DEFAULT_SYSTEM_PROMPT, NON_STREAM_OUTPUT_INSTRUCTION
 
 # ── 从 MCP Server 导入工具函数 ──────────────────────────────
@@ -128,43 +128,6 @@ AGENT_TOOLS = [
     FunctionTool.from_defaults(fn=_mcp_rag_search, name="search_knowledge",
         description="向量检索知识库。输入 query: str, top_k: int=5。"),
 ]
-
-# ── 渠道配置表 ──────────────────────────────────────────────
-_CHANNEL_ENV = {
-    2: ("DEFAULT_FREE_MODEL_KEY2", "DEFAULT_FREE_MODEL_URL2", "DEFAULT_FREE_MODEL_NAME2"),
-    3: ("DEFAULT_FREE_MODEL_KEY2", "DEFAULT_FREE_MODEL_URL2", "DEFAULT_FREE_MODEL_NAME3"),
-    4: ("DEFAULT_FREE_MODEL_KEY2", "DEFAULT_FREE_MODEL_URL2", "DEFAULT_FREE_MODEL_NAME4"),
-    5: ("DEFAULT_FREE_MODEL_KEY2", "DEFAULT_FREE_MODEL_URL2", "DEFAULT_FREE_MODEL_NAME5"),
-}
-
-
-def resolve_llm_config(config: Dict[str, Any]) -> Dict[str, str | int]:
-    """解析 LLM 配置，返回 {api_key, api_base_url, model, channel_id}"""
-    ch = config.get("use_default_model", 0)
-
-    if ch in (1, 2, 3, 4, 5):
-        if ch in (1, 2, 5):
-            quota = model_usage_manager.check_and_increment(ch)
-            if not quota["allowed"]:
-                raise ValueError(f"渠道 {ch} 已达每日限额 {quota['limit']} 次")
-
-        if ch == 1:
-            hour = datetime.now(timezone(timedelta(hours=8))).hour
-            model_env = "DEFAULT_FREE_MODEL_NAME_PEAK" if 16 <= hour < 24 else "DEFAULT_FREE_MODEL_NAME"
-            return {"api_key": os.getenv("DEFAULT_FREE_MODEL_KEY", ""),
-                    "api_base_url": os.getenv("DEFAULT_FREE_MODEL_URL", ""),
-                    "model": os.getenv(model_env, ""), "channel_id": ch}
-
-        key_env, url_env, model_env = _CHANNEL_ENV[ch]
-        return {"api_key": os.getenv(key_env, ""), "api_base_url": os.getenv(url_env, ""),
-                "model": os.getenv(model_env, ""), "channel_id": ch}
-
-    if all(config.get(k, "").strip() for k in ("api_key", "api_base_url", "model")):
-        return {"api_key": config["api_key"], "api_base_url": config["api_base_url"],
-                "model": config["model"], "channel_id": 0}
-
-    raise ValueError("未提供有效的 API 配置")
-
 
 # ── AgentEngine ─────────────────────────────────────────────
 AGENT_MAX_ITERATIONS = int(os.getenv("AGENT_MAX_ITERATIONS", "5"))

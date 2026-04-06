@@ -13,3 +13,4 @@ python-dotenv
 psycopg2-binary
 cos-python-sdk-v5
 python-multipart
+httpx
