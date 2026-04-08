@@ -117,7 +117,7 @@ npm run scrape -- --output=./custom-data
 npm run scrape -- --since=2025.11.01
 ```
 
-> 上次更新时间: 2026-02-25
+> 上次更新时间: 2026-04-08
 
 **参数说明**：
 - `--test`: 测试模式，限制处理文档数量

@@ -10,6 +10,15 @@
       "localPath": "Miliastra-knowledge/official/tutorial/mhg94h90x3oq_关卡导出.md"
     },
     {
+      "id": "mh76jr0msx4g",
+      "title": "【奇匠小贴士】灵感激励计划一页流",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh76jr0msx4g",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh76jr0msx4g",
+      "scope": "tutorial",
+      "updated_at": "2026-03-30 15:52:39",
+      "localPath": "Miliastra-knowledge/official/tutorial/mh76jr0msx4g_【奇匠小贴士】灵感激励计划一页流.md"
+    },
+    {
       "id": "mhlcjxr9duvy",
       "title": "1.1编辑器界面基础认识",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhlcjxr9duvy",
@@ -105,7 +114,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhumsn9uap96",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhumsn9uap96",
       "scope": "tutorial",
-      "updated_at": "2025-11-25 16:43:48",
+      "updated_at": "2026-03-30 16:28:03",
       "localPath": "Miliastra-knowledge/official/tutorial/mhumsn9uap96_2.1碰撞与交互——触发一个事件.md"
     },
     {
@@ -678,10 +687,10 @@
   ],
   "metadata": {
     "source": "tutorial",
-    "extractedAt": "2026-03-27T20:09:08.976Z",
-    "totalCount": 75,
+    "extractedAt": "2026-04-08T02:15:12.504Z",
+    "totalCount": 76,
     "scopes": {
-      "tutorial": 75
+      "tutorial": 76
     }
   }
 }

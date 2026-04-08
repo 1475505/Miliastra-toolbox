@@ -5,6 +5,10 @@
       "localPath": "Miliastra-knowledge/official/tutorial/mhg94h90x3oq_关卡导出.md"
     },
     {
+      "title": "【奇匠小贴士】灵感激励计划一页流",
+      "localPath": "Miliastra-knowledge/official/tutorial/mh76jr0msx4g_【奇匠小贴士】灵感激励计划一页流.md"
+    },
+    {
       "title": "1.1编辑器界面基础认识",
       "localPath": "Miliastra-knowledge/official/tutorial/mhlcjxr9duvy_1.1编辑器界面基础认识.md"
     },
@@ -325,6 +329,10 @@
       "localPath": "Miliastra-knowledge/official/guide/mhkirfrna1fy_泛型引脚.md"
     },
     {
+      "title": "风险检查功能",
+      "localPath": "Miliastra-knowledge/official/guide/mh0xm3ryh9hq_风险检查功能.md"
+    },
+    {
       "title": "服务器节点",
       "localPath": "Miliastra-knowledge/official/guide/mhuto3r800b2_服务器节点.md"
     },
@@ -387,6 +395,10 @@
     {
       "title": "功能",
       "localPath": "Miliastra-knowledge/official/guide/mhjx2miruaos_功能.md"
+    },
+    {
+      "title": "关键行为",
+      "localPath": "Miliastra-knowledge/official/guide/mhapp3r8gkdq_关键行为.md"
     },
     {
       "title": "关卡",
@@ -457,8 +469,16 @@
       "localPath": "Miliastra-knowledge/official/guide/mho81frl33im_技能.md"
     },
     {
+      "title": "技能变量",
+      "localPath": "Miliastra-knowledge/official/guide/mhhzqw98264i_技能变量.md"
+    },
+    {
       "title": "技能动画",
       "localPath": "Miliastra-knowledge/official/guide/mh57xz9afh7e_技能动画.md"
+    },
+    {
+      "title": "技能属性组",
+      "localPath": "Miliastra-knowledge/official/guide/mh0inr0jak34_技能属性组.md"
     },
     {
       "title": "技能资源",
@@ -523,6 +543,10 @@
     {
       "title": "界面布局",
       "localPath": "Miliastra-knowledge/official/guide/mhozt0r74ng6_界面布局.md"
+    },
+    {
+      "title": "界面动效控件",
+      "localPath": "Miliastra-knowledge/official/guide/mh2iyk9fa4gy_界面动效控件.md"
     },
     {
       "title": "界面介绍",
@@ -697,6 +721,10 @@
       "localPath": "Miliastra-knowledge/official/tutorial/mhujr59z1756_全局计时器.md"
     },
     {
+      "title": "全屏界面动效控件",
+      "localPath": "Miliastra-knowledge/official/guide/mhbn4i09l5ns_全屏界面动效控件.md"
+    },
+    {
       "title": "如何打造吸引玩家的宣传素材",
       "localPath": "Miliastra-knowledge/official/tutorial/mhv9m60wv7ew_如何打造吸引玩家的宣传素材.md"
     },
@@ -753,6 +781,10 @@
       "localPath": "Miliastra-knowledge/official/guide/mhtwkur42see_特化配置.md"
     },
     {
+      "title": "特殊数字控件",
+      "localPath": "Miliastra-knowledge/official/guide/mhkwucr8awfq_特殊数字控件.md"
+    },
+    {
       "title": "特效",
       "localPath": "Miliastra-knowledge/official/guide/mhe1030vx380_特效.md"
     },
@@ -761,12 +793,20 @@
       "localPath": "Miliastra-knowledge/official/guide/mh4ppo02m1o8_特效播放.md"
     },
     {
+      "title": "特效器",
+      "localPath": "Miliastra-knowledge/official/guide/mh4ejditwixg_特效器.md"
+    },
+    {
       "title": "通用组件",
       "localPath": "Miliastra-knowledge/official/guide/mhei6orvcbkm_通用组件.md"
     },
     {
       "title": "投射运动器",
       "localPath": "Miliastra-knowledge/official/guide/mhaqt9rgqv4u_投射运动器.md"
+    },
+    {
+      "title": "图片控件",
+      "localPath": "Miliastra-knowledge/official/guide/mh2oih9jou22_图片控件.md"
     },
     {
       "title": "外围系统",
@@ -809,6 +849,10 @@
       "localPath": "Miliastra-knowledge/official/guide/mhlh4n9m4i56_物件.md"
     },
     {
+      "title": "物件镜头",
+      "localPath": "Miliastra-knowledge/official/guide/mhx9b60or59k_物件镜头.md"
+    },
+    {
       "title": "项目案例实战",
       "localPath": "Miliastra-knowledge/official/tutorial/mh281vi67sys_项目案例实战.md"
     },
@@ -827,6 +871,10 @@
     {
       "title": "信号",
       "localPath": "Miliastra-knowledge/official/tutorial/mh3id60oxiqw_信号.md"
+    },
+    {
+      "title": "悬浮交互页控件",
+      "localPath": "Miliastra-knowledge/official/guide/mh2u2e9o3jn6_悬浮交互页控件.md"
     },
     {
       "title": "选项卡",
@@ -1001,6 +1049,10 @@
       "localPath": "Miliastra-knowledge/official/guide/mhubgk9yy8gy_字典.md"
     },
     {
+      "title": "自定义按钮控件",
+      "localPath": "Miliastra-knowledge/official/guide/mhtpwgitsigc_自定义按钮控件.md"
+    },
+    {
       "title": "自定义变量",
       "localPath": "Miliastra-knowledge/official/guide/mhso1b9wjica_自定义变量.md"
     },
@@ -1011,6 +1063,10 @@
     {
       "title": "自定义挂接点",
       "localPath": "Miliastra-knowledge/official/guide/mhmshmimtegs_自定义挂接点.md"
+    },
+    {
+      "title": "自定义开关控件",
+      "localPath": "Miliastra-knowledge/official/guide/mhkrafr3w6um_自定义开关控件.md"
     },
     {
       "title": "组件",
@@ -1042,7 +1098,7 @@
     }
   ],
   "metadata": {
-    "generatedAt": "2026-03-28T18:13:23.058Z",
-    "totalCount": 260
+    "generatedAt": "2026-04-08T02:15:13.552Z",
+    "totalCount": 274
   }
 }
