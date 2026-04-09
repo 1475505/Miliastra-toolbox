@@ -6,8 +6,9 @@
 - 例子：`http://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools`
 - 调用方式：HTTP `POST` + JSON 请求体
 
-**调用示例**：
+**Linux调用示例**：
 
+Windows powershell请先对应更新成相应的语法
 ```bash
 curl -X POST http://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/get_node_info \
   -H "Content-Type: application/json" \
