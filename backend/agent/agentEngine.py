@@ -127,8 +127,8 @@ class AgentEngine:
         conversation: List[Dict[str, str]],
         tool_trace: list[dict[str, str | dict[str, str] | list[dict[str, str]]]],
         partial_answer: str,
-    ) -> str:
-        """迭代上限兜底：禁用工具，将已有 tool_trace 作为上下文生成最终回答。"""
+    ) -> dict[str, Any]:
+        """迭代上限兜底：禁用工具，将已有 tool_trace 作为上下文生成最终回答，并返回整理后的 sources。"""
         rc = resolve_llm_config(config)
         llm = OpenAILike(
             api_key=str(rc["api_key"]), api_base=str(rc["api_base_url"]),
@@ -144,6 +144,16 @@ class AgentEngine:
             f"{i}. {t.get('tool','')} [{t.get('status','')}]: {t.get('summary','')}"
             for i, t in enumerate(tool_trace, 1)
         ) or "（无）"
+
+        # 从 tool_trace 聚合 sources
+        fallback_sources: list[dict[str, str]] = []
+        seen_urls: set[str] = set()
+        for t in tool_trace:
+            for s in t.get("sources", []):
+                url = s.get("url", "")
+                if url and url not in seen_urls:
+                    seen_urls.add(url)
+                    fallback_sources.append({"title": s.get("title", ""), "url": url})
 
         system = (
             "你是千星沙箱知识助手。当前处于最终收敛阶段，禁止调用任何工具。"
@@ -163,10 +173,16 @@ class AgentEngine:
                 *history,
                 ChatMessage(role=MessageRole.USER, content=user_msg),
             ])
-            return (resp.message.content or "").strip()
+            return {
+                "answer": (resp.message.content or "").strip(),
+                "sources": fallback_sources,
+            }
         except Exception as e:
             print(f"[AgentEngine] 兜底回答失败: {e}")
-            return partial_answer.strip() or "已达工具调用上限，当前信息不足以给出完整结论。"
+            return {
+                "answer": partial_answer.strip() or "已达工具调用上限，当前信息不足以给出完整结论。",
+                "sources": fallback_sources,
+            }
 
     def _run_agent(self, config: Dict[str, Any], conversation: List[Dict[str, str]],
                    plain_text_output: bool = False):
@@ -314,9 +330,9 @@ class AgentEngine:
         except Exception as e:
             if self._is_max_iter_error(e):  # 迭代上限兜底：携带 tool_trace 生成最终回答
                 print("[AgentEngine] 达到迭代上限，携带工具结果兜底作答")
-                answer = await self._fallback_answer(
+                fallback = await self._fallback_answer(
                     config, message, conversation, tool_trace, last_response)
-                return {"answer": answer, "sources": sources,
+                return {"answer": fallback["answer"], "sources": fallback["sources"],
                         "stats": {"tokens": 0, "tool_calls": tool_calls_count,
                                    "retrieval_calls": retrieval_calls_count},
                         "tool_trace": tool_trace}
@@ -355,13 +371,15 @@ class AgentEngine:
         except Exception as e:
             if self._is_max_iter_error(e):  # 迭代上限兜底：携带 tool_trace 生成最终回答
                 print("[AgentEngine] 流式迭代上限，携带工具结果兜底作答")
-                answer = await self._fallback_answer(
+                fallback = await self._fallback_answer(
                     config, message, conversation, tool_trace, partial_answer)
+                answer = fallback["answer"]
+                fallback_sources = fallback["sources"]
                 if answer:
                     payload = json.dumps({'type': 'token', 'data': '\n\n' + answer}, ensure_ascii=False)
                     yield f"data: {payload}\n\n"
-                if sources:
-                    yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
+                if fallback_sources:
+                    yield f"data: {json.dumps({'type': 'sources', 'data': fallback_sources}, ensure_ascii=False)}\n\n"
                 yield f"data: {json.dumps({'type': 'done', 'data': {'stats': {'tokens': 0, 'tool_calls': tool_calls_count, 'retrieval_calls': retrieval_calls_count}}}, ensure_ascii=False)}\n\n"
             else:
                 yield f"data: {json.dumps({'type': 'error', 'data': str(e)}, ensure_ascii=False)}\n\n"

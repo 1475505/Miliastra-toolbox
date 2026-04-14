@@ -2,4 +2,4 @@
 
 用户QQ群：1007538100
 
-欢迎使用新方式：WorkBuddy + Skill： https://skillhub.tencent.com/skills/miliastra-toolbox
+推荐大家使用 WorkBuddy + Skill方式，参考教程 https://www.bilibili.com/video/BV1fSDJB7Emi/
