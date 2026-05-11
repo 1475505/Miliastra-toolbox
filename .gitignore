@@ -49,6 +49,9 @@ design-tokens/
 /src/styles/design-tokens.css
 /src/styles/specify/
 
+# Generated term DB
+*.db
+
 .kilocode/
 
 CLAUDE.md

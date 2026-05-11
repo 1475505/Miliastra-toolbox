@@ -87,7 +87,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhbn4i09l5ns",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhbn4i09l5ns",
       "scope": "guide",
-      "updated_at": "2026-03-12 18:33:43",
+      "updated_at": "2026-04-13 16:29:18",
       "localPath": "Miliastra-knowledge/official/guide/mhbn4i09l5ns_全屏界面动效控件.md"
     },
     {
@@ -618,7 +618,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhz064iplia4",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhz064iplia4",
       "scope": "guide",
-      "updated_at": "2026-03-12 18:25:15",
+      "updated_at": "2026-04-10 11:11:34",
       "localPath": "Miliastra-knowledge/official/guide/mhz064iplia4_执行节点.md"
     },
     {
@@ -780,7 +780,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhs2w008wf14",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhs2w008wf14",
       "scope": "guide",
-      "updated_at": "2026-03-25 17:21:01",
+      "updated_at": "2026-04-09 17:32:20",
       "localPath": "Miliastra-knowledge/official/guide/mhs2w008wf14_更新日志.md"
     },
     {
@@ -807,7 +807,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhwbqlrw655q",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhwbqlrw655q",
       "scope": "guide",
-      "updated_at": "2026-03-12 11:23:51",
+      "updated_at": "2026-04-09 17:46:26",
       "localPath": "Miliastra-knowledge/official/guide/mhwbqlrw655q_查询节点.md"
     },
     {
@@ -825,7 +825,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhpw06rvah3a",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhpw06rvah3a",
       "scope": "guide",
-      "updated_at": "2026-03-11 18:31:53",
+      "updated_at": "2026-04-10 10:52:53",
       "localPath": "Miliastra-knowledge/official/guide/mhpw06rvah3a_查询节点.md"
     },
     {
@@ -1041,7 +1041,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhnapxrumtzy",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhnapxrumtzy",
       "scope": "guide",
-      "updated_at": "2026-03-20 14:50:05",
+      "updated_at": "2026-04-09 18:16:17",
       "localPath": "Miliastra-knowledge/official/guide/mhnapxrumtzy_界面控件.md"
     },
     {
@@ -1050,7 +1050,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhg1700h8bug",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhg1700h8bug",
       "scope": "guide",
-      "updated_at": "2025-09-22 11:12:43",
+      "updated_at": "2026-04-10 10:37:50",
       "localPath": "Miliastra-knowledge/official/guide/mhg1700h8bug_界面控件组.md"
     },
     {
@@ -1185,7 +1185,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhkrafr3w6um",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhkrafr3w6um",
       "scope": "guide",
-      "updated_at": "2026-03-20 14:59:18",
+      "updated_at": "2026-04-09 17:44:51",
       "localPath": "Miliastra-knowledge/official/guide/mhkrafr3w6um_自定义开关控件.md"
     },
     {
@@ -1677,7 +1677,7 @@
   ],
   "metadata": {
     "source": "guide",
-    "extractedAt": "2026-04-08T02:15:11.205Z",
+    "extractedAt": "2026-04-30T13:37:50.420Z",
     "totalCount": 186,
     "scopes": {
       "guide": 186

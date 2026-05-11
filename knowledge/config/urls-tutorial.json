@@ -10,6 +10,15 @@
       "localPath": "Miliastra-knowledge/official/tutorial/mhg94h90x3oq_关卡导出.md"
     },
     {
+      "id": "mh8xj90jx5r4",
+      "title": "【奇匠小贴士】数据中心食用指南—游玩时长",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh8xj90jx5r4",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh8xj90jx5r4",
+      "scope": "tutorial",
+      "updated_at": "2026-04-24 14:39:05",
+      "localPath": "Miliastra-knowledge/official/tutorial/mh8xj90jx5r4_【奇匠小贴士】数据中心食用指南—游玩时长.md"
+    },
+    {
       "id": "mh76jr0msx4g",
       "title": "【奇匠小贴士】灵感激励计划一页流",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh76jr0msx4g",
@@ -69,7 +78,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhgf8i0hvzag",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhgf8i0hvzag",
       "scope": "tutorial",
-      "updated_at": "2026-01-08 14:24:30",
+      "updated_at": "2026-04-21 16:27:27",
       "localPath": "Miliastra-knowledge/official/tutorial/mhgf8i0hvzag_1.6奇域资产中心.md"
     },
     {
@@ -469,6 +478,15 @@
       "localPath": "Miliastra-knowledge/official/tutorial/mhyrrdiy2zis_千星奇域创作分享.md"
     },
     {
+      "id": "mhzzrx0fu1i8",
+      "title": "千星灵感小报-第一期",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhzzrx0fu1i8",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhzzrx0fu1i8",
+      "scope": "tutorial",
+      "updated_at": "2026-04-15 13:41:16",
+      "localPath": "Miliastra-knowledge/official/tutorial/mhzzrx0fu1i8_千星灵感小报-第一期.md"
+    },
+    {
       "id": "mhjdic0zyw8o",
       "title": "基础功能逻辑&玩法流程",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhjdic0zyw8o",
@@ -687,10 +705,10 @@
   ],
   "metadata": {
     "source": "tutorial",
-    "extractedAt": "2026-04-08T02:15:12.504Z",
-    "totalCount": 76,
+    "extractedAt": "2026-04-30T13:37:52.729Z",
+    "totalCount": 78,
     "scopes": {
-      "tutorial": 76
+      "tutorial": 78
     }
   }
 }

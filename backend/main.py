@@ -13,11 +13,20 @@ from upload.router import router as upload_router
 from agent.router import router as agent_router
 from data.router import router as data_router
 from skill.router import router as skill_router
+from translate.router import router as translate_router
+from translate import term_service
 from common.llm_config import openrouter_availability_loop
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Soft-failure: term table initialisation must not break other features.
+    try:
+        term_service.initialise("../TermTable_15Lang.csv")
+    except Exception:
+        # Error is already logged inside TermService.
+        pass
+
     task = asyncio.create_task(openrouter_availability_loop())
     try:
         yield
@@ -52,6 +61,7 @@ app.include_router(upload_router, prefix="/api/v1")
 app.include_router(agent_router, prefix="/api/v1")
 app.include_router(data_router, prefix="/api/v1")
 app.include_router(skill_router, prefix="/api/v1")
+app.include_router(translate_router, prefix="/api/v1")
 
 @app.get("/health")
 async def health():
