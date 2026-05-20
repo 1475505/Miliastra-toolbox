@@ -135,6 +135,32 @@ def check_document_exists(persist_dir: str, collection_name: str, doc_id: str) -
         # 集合不存在或其他错误，返回False
         return False
 
+def get_document_crawled_at(persist_dir: str, collection_name: str, doc_id: str) -> Optional[str]:
+    """
+    获取指定文档在知识库中已存储的 crawledAt 元数据值。
+
+    Args:
+        persist_dir: 数据库目录
+        collection_name: 集合名称
+        doc_id: 文档ID（对应 LlamaIndex 的 ref_doc_id）
+
+    Returns:
+        crawledAt 字符串（如存在），否则返回 None
+    """
+    try:
+        db = chromadb.PersistentClient(path=persist_dir)
+        collection = db.get_collection(name=collection_name)
+        results = collection.get(
+            where={"ref_doc_id": doc_id},
+            include=['metadatas']
+        )
+        if results['ids'] and results['metadatas']:
+            return results['metadatas'][0].get('crawledAt')
+        return None
+    except Exception:
+        return None
+
+
 def delete_document_by_id(persist_dir: str, collection_name: str, doc_id: str) -> int:
     """
     删除知识库中指定 ref_doc_id 的所有节点。

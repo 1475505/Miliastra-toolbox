@@ -3,7 +3,8 @@ RAG引擎核心模块
 """
 import logging
 import os
-from typing import List, Dict, Any, Optional
+from datetime import datetime, timezone
+from typing import List, Dict, Any, Optional, Union
 import tiktoken
 
 from .config import config
@@ -17,6 +18,33 @@ from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core.vector_stores.types import MetadataFilters, MetadataFilter, FilterOperator
 from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
+
+
+def _parse_crawled_at(value: Union[str, datetime, None]) -> Optional[datetime]:
+    """
+    将 crawledAt 字段解析为带时区的 datetime 对象。
+    支持：
+      - datetime 对象（PyYAML 可能直接解析出）
+      - ISO 8601 字符串，含 Z 后缀或 +00:00 偏移
+      - str(datetime) 格式（ChromaDB 存储时的序列化结果）
+    解析失败返回 None。
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return None
+        try:
+            # 将 Z 替换为 +00:00，兼容 Python < 3.11
+            return datetime.fromisoformat(stripped.replace('Z', '+00:00'))
+        except ValueError:
+            return None
+    return None
 
 
 class RAGEngine:
@@ -243,8 +271,26 @@ class RAGEngine:
                 should_process = True
                 reason = "文档元数据force=true"
             else:
-                should_process = False
-                reason = "文档已存在且force=false"
+                # 尝试通过 crawledAt 时间戳判断文档是否有更新
+                current_crawled_at = _parse_crawled_at(document.metadata.get('crawledAt'))
+                if current_crawled_at is not None:
+                    from .db import get_document_crawled_at
+                    stored_raw = get_document_crawled_at(
+                        config.KNOWLEDGE_BASE_PATH,
+                        config.CHROMA_COLLECTION_NAME,
+                        doc_id
+                    )
+                    stored_crawled_at = _parse_crawled_at(stored_raw)
+                    if stored_crawled_at is None or current_crawled_at > stored_crawled_at:
+                        should_process = True
+                        reason = f"文档crawledAt已更新 ({stored_raw} → {document.metadata.get('crawledAt')})"
+                    else:
+                        should_process = False
+                        reason = "文档已存在且crawledAt未更新"
+                else:
+                    # 无 crawledAt 信息，退化为跳过
+                    should_process = False
+                    reason = "文档已存在且force=false"
         
         if not should_process:
             logging.info(f"跳过文档: {doc_title} ({doc_id}) - {reason}")
