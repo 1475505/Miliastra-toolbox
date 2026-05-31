@@ -31,6 +31,10 @@
 - [Translation API](#translation-api)
   - [1. 术语翻译查询](#1-术语翻译查询)
 
+- [SVG 一图流 API](#svg-一图流-api)
+  - [1. 获取目录结构](#1-获取目录结构)
+  - [2. 获取 SVG 文件](#2-获取-svg-文件)
+
 ---
 
 # RAG API
@@ -1502,4 +1506,58 @@ curl -sL "http://localhost:8000/api/v1/translate/terms?query=某某词"
 
 - `rapidfuzz` — 用于高性能模糊匹配（C++ 后端）
 - `sqlite3`（Python 标准库）— SQLite + FTS5 全文索引
+
+---
+
+# SVG 一图流 API
+
+提供对 `knowledge/Miliastra-knowledge/derived/svg/` 目录的文档浏览能力，以 `svg_index.md` 作为目录索引（`##` 作为文件夹分组）。
+
+前端页面入口：`/svg`
+
+---
+
+## 1. 获取目录结构
+
+### 接口地址
+**GET** `/api/v1/svg/index`
+
+### 响应示例
+
+```json
+{
+  "sections": [
+    {
+      "title": "地形编辑",
+      "level": 2,
+      "items": [
+        { "number": "02", "title": "02-地形编辑", "filename": "02-地形编辑.svg" },
+        { "number": "03", "title": "03-环境配置", "filename": "03-环境配置.svg" },
+        { "number": "04", "title": "04-快捷设置（编辑界面右上角齿轮）", "filename": "04-快捷设置.svg" }
+      ]
+    }
+  ]
+}
+```
+
+- `level`：`2` 表示 `##` 普通分组，`1` 表示 `#` 顶层特殊分组（如版本更新）
+- `filename`：若对应 SVG 文件尚不存在则为 `null`
+
+---
+
+## 2. 获取 SVG 文件
+
+### 接口地址
+**GET** `/api/v1/svg/file/{filename}`
+
+### 路径参数
+
+| 参数       | 类型   | 说明                                        |
+| ---------- | ------ | ------------------------------------------- |
+| `filename` | string | SVG 文件名，如 `02-地形编辑.svg`（URL 编码）|
+
+### 响应
+
+- 成功：返回 SVG 文件内容，`Content-Type: image/svg+xml`
+- 失败：`400`（非法文件名）/ `404`（文件不存在）
 

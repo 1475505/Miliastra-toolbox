@@ -91,6 +91,7 @@ export default function Sidebar({
     { id: 'tools', label: '工具调用' },
     { id: 'notes', label: '笔记' },
     { id: 'data', label: '数据查询' },
+    { id: 'svg', label: '一图流' },
   ]
 
   return (

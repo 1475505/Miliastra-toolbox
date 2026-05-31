@@ -6,11 +6,13 @@ const Chat = lazy(() => import('./components/Chat'))
 const ToolCall = lazy(() => import('./components/ToolCall'))
 const Notes = lazy(() => import('./components/Notes'))
 const DataQuery = lazy(() => import('./components/DataQuery'))
+const SvgDocs = lazy(() => import('./components/SvgDocs'))
 
 const PATH_TO_TAB: Record<string, Tab> = {
   '/tool': 'tools',
   '/note': 'notes',
   '/data': 'data',
+  '/svg': 'svg',
 }
 
 const TAB_TO_PATH: Record<Tab, string> = {
@@ -18,6 +20,7 @@ const TAB_TO_PATH: Record<Tab, string> = {
   tools: '/tool',
   notes: '/note',
   data: '/data',
+  svg: '/svg',
 }
 
 function getTabFromPath(): Tab {
@@ -118,6 +121,13 @@ export default function App() {
           <div className={`h-full ${activeTab === 'data' ? '' : 'hidden'}`}>
             <Suspense fallback={<div className="flex h-full items-center justify-center text-slate-500">加载中...</div>}>
               <DataQuery />
+            </Suspense>
+          </div>
+        )}
+        {visitedTabs.has('svg') && (
+          <div className={`h-full ${activeTab === 'svg' ? '' : 'hidden'}`}>
+            <Suspense fallback={<div className="flex h-full items-center justify-center text-slate-500">加载中...</div>}>
+              <SvgDocs />
             </Suspense>
           </div>
         )}
