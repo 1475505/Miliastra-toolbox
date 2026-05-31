@@ -101,9 +101,9 @@ export default function Notes() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="border-b border-gray-200 p-6 pl-16 lg:pl-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <h2 className="text-xl lg:text-2xl font-bold text-slate-900">笔记</h2>
+      <div className="border-b border-slate-200 p-4 pl-16 lg:pl-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <h2 className="text-xl font-semibold text-slate-800">笔记</h2>
           
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             {/* 搜索框 */}
@@ -124,7 +124,7 @@ export default function Notes() {
                 setSearch(searchInput)
                 setPage(1)
               }}
-              className="px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm bg-white/60"
             />
             
             {/* 排序选择 */}
@@ -134,7 +134,7 @@ export default function Notes() {
                 setSortBy(e.target.value as 'likes' | 'created_at')
                 setPage(1)
               }}
-              className="px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm bg-white/60"
             >
               <option value="likes">按点赞数排序</option>
               <option value="created_at">按创建时间排序</option>
@@ -143,7 +143,7 @@ export default function Notes() {
             {/* 新增按钮 */}
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors text-sm whitespace-nowrap"
+              className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors text-sm whitespace-nowrap"
             >
               ✏️ 新增笔记
             </button>
@@ -375,7 +375,7 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
   }
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all p-4 flex flex-col">
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all p-4 flex flex-col">
       {isEditing ? (
         <>
           {/* 编辑模式 */}
@@ -385,28 +385,28 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
               value={editAuthor}
               onChange={(e) => setEditAuthor(e.target.value)}
               placeholder="作者（可选）"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm"
             />
             <textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               placeholder="笔记内容"
               rows={6}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm resize-none"
             />
             <input
               type="text"
               value={editImgUrl}
               onChange={(e) => setEditImgUrl(e.target.value)}
               placeholder="图片链接（可选）"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm"
             />
             <input
               type="text"
               value={editVideoUrl}
               onChange={(e) => setEditVideoUrl(e.target.value)}
               placeholder="视频链接（可选）"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm"
             />
           </div>
           
@@ -414,7 +414,7 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 px-4 py-2 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors text-sm"
+              className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors text-sm"
             >
               {saving ? '保存中...' : '保存'}
             </button>
@@ -521,12 +521,15 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
                     href={ensureProtocol(note.video_url)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+                    className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 border border-purple-100 text-purple-700 hover:bg-purple-100 transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <span className="text-xl">🎥</span>
-                    <span className="text-sm font-medium truncate flex-1">{note.video_url}</span>
-                    <span className="text-xs opacity-70">点击观看</span>
+                    <span className="text-lg">🎥</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">观看视频</div>
+                      <div className="text-xs text-purple-500 truncate mt-0.5">{note.video_url}</div>
+                    </div>
+                    <span className="shrink-0 text-xs text-purple-400">↗</span>
                   </a>
                 )}
               </div>
@@ -535,7 +538,7 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
             {note.content.length > 100 && (
               <button
                 onClick={onToggleExpand}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                className="mt-2 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
               >
                 {isExpanded ? '收起' : '展开全文'}
               </button>
@@ -571,7 +574,7 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
             
             <button
               onClick={onEdit}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/80 text-slate-700 hover:bg-blue-50 hover:text-blue-600 text-sm font-medium transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/80 text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 text-sm font-medium transition-colors"
             >
               <span>✏️</span>
               <span>修正</span>
@@ -651,7 +654,7 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
               placeholder="输入作者名称"
-              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
             />
           </div>
           
@@ -664,7 +667,7 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="输入笔记内容..."
               rows={8}
-              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 resize-none"
             />
           </div>
 
@@ -677,7 +680,7 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
               value={imgUrl}
               onChange={(e) => setImgUrl(e.target.value)}
               placeholder="可通过图床功能上传图片"
-              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
             />
           </div>
 
@@ -690,7 +693,7 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
               placeholder="输入千星奇域相关的B站视频链接"
-              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
             />
           </div>
         </div>
@@ -699,7 +702,7 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
           <button
             onClick={handleCreate}
             disabled={creating}
-            className="flex-1 px-6 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
+            className="flex-1 px-6 py-3 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
           >
             {creating ? '创建中...' : '创建'}
           </button>

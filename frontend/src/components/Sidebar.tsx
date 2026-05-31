@@ -242,17 +242,17 @@ export default function Sidebar({
           ))}
 
           <a
-            href="/tool"
+            href="/all"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2 block w-full rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-left text-sm transition-all hover:border-amber-300 hover:bg-amber-100/70"
+            className="mt-2 block w-full rounded-xl border border-emerald-200 bg-emerald-100/60 px-4 py-3 text-left text-sm transition-all hover:border-emerald-300 hover:bg-emerald-200/60"
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="font-medium text-amber-900">Tool 导航</div>
-                <div className="mt-1 text-xs text-amber-700">打开独立工具页，查看站点入口与教程</div>
+                <div className="font-medium text-emerald-900">嘟嘟可工具集</div>
+                <div className="mt-1 text-xs text-emerald-700">查看所有工具入口与使用教程</div>
               </div>
-              <span className="shrink-0 text-amber-700">↗</span>
+              <span className="shrink-0 text-emerald-700">↗</span>
             </div>
           </a>
         </nav>

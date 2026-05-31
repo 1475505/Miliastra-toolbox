@@ -247,8 +247,11 @@ export default function DataQuery() {
   }
 
   return (
-    <div className="h-full overflow-y-auto p-6 space-y-6">
-      <h2 className="text-2xl font-bold text-slate-800">Data 查询</h2>
+    <div className="flex flex-col h-full">
+      <div className="border-b border-slate-200 p-4 pl-16 lg:pl-6">
+        <h2 className="text-xl font-semibold text-slate-800">数据查询</h2>
+      </div>
+      <div className="flex-1 overflow-y-auto p-5 space-y-5">
 
       <section className="rounded-2xl border border-slate-200 bg-white/70 p-5 shadow-sm">
         <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -277,14 +280,14 @@ export default function DataQuery() {
               }
             }}
             placeholder="输入中文术语，例如：黑名单"
-            className="rounded-lg border border-slate-300 px-3 py-2 bg-white"
+            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
           />
           <button
             onClick={() => {
               void queryTranslations()
             }}
             disabled={translateLoading}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 disabled:bg-slate-400"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
           >
             {translateLoading ? '查询中...' : '查询'}
           </button>
@@ -356,19 +359,19 @@ export default function DataQuery() {
             value={gadgetId}
             onChange={(e) => setGadgetId(e.target.value)}
             placeholder="输入实体 ID（整数）"
-            className="rounded-lg border border-slate-300 px-3 py-2 bg-white"
+            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
           />
           <input
             type="text"
             value={gadgetName}
             onChange={(e) => setGadgetName(e.target.value)}
             placeholder="输入实体中文名"
-            className="rounded-lg border border-slate-300 px-3 py-2 bg-white"
+            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
           />
           <button
             onClick={queryGadgets}
             disabled={gadgetLoading}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 disabled:bg-slate-400"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
           >
             {gadgetLoading ? '查询中...' : '查询'}
           </button>
@@ -418,19 +421,19 @@ export default function DataQuery() {
             value={effectId}
             onChange={(e) => setEffectId(e.target.value)}
             placeholder="输入特效 ID（整数）"
-            className="rounded-lg border border-slate-300 px-3 py-2 bg-white"
+            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
           />
           <input
             type="text"
             value={effectName}
             onChange={(e) => setEffectName(e.target.value)}
             placeholder="输入特效中文名"
-            className="rounded-lg border border-slate-300 px-3 py-2 bg-white"
+            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
           />
           <button
             onClick={queryEffects}
             disabled={effectLoading}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 disabled:bg-slate-400"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
           >
             {effectLoading ? '查询中...' : '查询'}
           </button>
@@ -478,19 +481,19 @@ export default function DataQuery() {
             value={bgmId}
             onChange={(e) => setBgmId(e.target.value)}
             placeholder="输入音乐 ID（整数）"
-            className="rounded-lg border border-slate-300 px-3 py-2 bg-white"
+            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
           />
           <input
             type="text"
             value={bgmName}
             onChange={(e) => setBgmName(e.target.value)}
             placeholder="输入音乐中文名"
-            className="rounded-lg border border-slate-300 px-3 py-2 bg-white"
+            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
           />
           <button
             onClick={queryBgm}
             disabled={bgmLoading}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 disabled:bg-slate-400"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
           >
             {bgmLoading ? '查询中...' : '查询'}
           </button>
@@ -528,7 +531,6 @@ export default function DataQuery() {
             </table>
           </div>
         )}
-      </section>
-    </div>
+      </section>      </div>    </div>
   )
 }

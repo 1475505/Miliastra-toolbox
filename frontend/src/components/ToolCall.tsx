@@ -201,10 +201,12 @@ export default function ToolCall() {
   }
 
   return (
-    <div className="h-full overflow-y-auto p-6 space-y-6">
-      <h2 className="text-2xl font-bold text-slate-800">工具调用</h2>
-
-      <div className="rounded-2xl border border-slate-200 bg-white/70 p-5 shadow-sm">
+    <div className="flex flex-col h-full">
+      <div className="border-b border-slate-200 p-4 pl-16 lg:pl-6">
+        <h2 className="text-xl font-semibold text-slate-800">工具调用</h2>
+      </div>
+      <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="rounded-2xl border border-slate-200 bg-white/70 p-5 shadow-sm">
         <p className="text-sm leading-6 text-slate-600">
           这里直接调用千星知识 skill API，用于结构化查询节点、获取文档内容和检索文档标题。输入支持逗号、中文逗号、分号或换行批量调用。
         </p>
@@ -351,6 +353,7 @@ export default function ToolCall() {
           </div>
         </div>
       </section>
+      </div>
     </div>
   )
 }

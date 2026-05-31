@@ -51,7 +51,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [imageInfo, setImageInfo] = useState<string>('')
-  const [agentMode, setAgentMode] = useState(false)
+  const [agentMode, setAgentMode] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
 
@@ -571,13 +571,13 @@ export default function Chat({ configVersion, currentConversationId, onConversat
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b border-gray-200 p-6 pl-16 lg:pl-6 flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">知识库问答</h2>
+      <div className="border-b border-slate-200 p-4 pl-16 lg:pl-6 flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-slate-800">知识库问答</h2>
         <div className="flex gap-2">
           {messages.length > 0 && (
             <button
               onClick={handleDownload}
-              className="px-3 py-1.5 text-sm bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors text-blue-700 font-medium"
+              className="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors text-slate-600 font-medium"
               title="下载对话为纯文本"
             >
               💾 下载对话
@@ -712,8 +712,8 @@ export default function Chat({ configVersion, currentConversationId, onConversat
               <div
                 className={`max-w-2xl px-4 py-3 rounded-2xl ${
                   'role' in msg && msg.role === 'user'
-                    ? 'bg-amber-50 text-slate-900 border border-amber-50'
-                    : 'bg-gray-100 text-gray-900'
+                    ? 'bg-amber-50 text-slate-900 border border-amber-100'
+                    : 'bg-slate-100 text-slate-900'
                 }`}
               >
                 {'role' in msg && msg.role === 'user' ? (
@@ -779,14 +779,14 @@ export default function Chat({ configVersion, currentConversationId, onConversat
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t border-gray-200 p-6">
-        <div className="flex flex-col gap-3">
-          <div className="flex gap-3 items-center">
+      <div className="border-t border-slate-200 p-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
             <label
-              className={`flex items-center gap-1.5 px-3 py-3 text-sm cursor-pointer select-none rounded-xl border transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm cursor-pointer select-none rounded-xl border transition-colors ${
                 agentMode
                   ? 'border-violet-300 bg-violet-50 text-violet-700'
-                  : 'border-gray-300 bg-white/60 text-gray-500 hover:border-violet-300'
+                  : 'border-slate-200 bg-white/60 text-slate-500 hover:border-violet-300'
               }`}
               title="启用高智商模式，使用工具调用进行深度问答"
             >
@@ -797,7 +797,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                 aria-checked={agentMode}
                 onClick={() => setAgentMode(!agentMode)}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                  agentMode ? 'bg-violet-500' : 'bg-gray-300'
+                  agentMode ? 'bg-violet-500' : 'bg-slate-300'
                 }`}
               >
                 <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
@@ -805,7 +805,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                 }`} />
               </button>
             </label>
-            <label className="px-3 py-3 border border-dashed border-gray-300 rounded-xl bg-white/60 text-sm text-gray-600 cursor-pointer hover:border-yellow-400 hover:bg-white">
+            <label className="px-3 py-2 border border-dashed border-slate-200 rounded-xl bg-white/60 text-sm text-slate-500 cursor-pointer hover:border-yellow-400 hover:bg-white transition-colors">
               <span>📷 图片</span>
               <input
                 type="file"
@@ -815,22 +815,24 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                 disabled={loading}
               />
             </label>
+          </div>
+          <div className="flex items-center gap-2">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
               onPaste={handlePaste}
-              placeholder="输入问题/粘贴图片；AI回答可能有误，仅供参考，以提供的官方文档为准"
+              placeholder="输入问题 / 粘贴图片；AI 回答仅供参考，以官方文档为准"
               disabled={loading}
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300"
+              className="flex-1 min-w-0 px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300 text-sm"
             />
             <button
               onClick={handleSend}
               disabled={loading || (!input.trim() && !imageBase64)}
-              className="px-6 py-3 bg-yellow-300 text-slate-900 rounded-xl hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
+              className="shrink-0 px-5 py-2 bg-yellow-300 text-slate-900 rounded-xl hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm text-sm"
             >
-              {loading ? '...' : '发送'}
+              {loading ? '…' : '发送'}
             </button>
           </div>
           {imagePreview && (
@@ -857,7 +859,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
             <div className="text-xs text-gray-500">{imageInfo}</div>
           )}
         </div>
-        <div className="text-center text-xs text-gray-500 mt-3">
+        <div className="text-center text-xs text-slate-400 mt-2">
           千星奇域官方文档和相关信息版权归米哈游所有，本网站为个人兴趣，与米哈游无关
         </div>
       </div>

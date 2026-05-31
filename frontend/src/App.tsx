@@ -1,4 +1,4 @@
-import { useState, Suspense, lazy } from 'react'
+import { useState, Suspense, lazy, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
 import { Tab } from './types'
 
@@ -7,13 +7,40 @@ const ToolCall = lazy(() => import('./components/ToolCall'))
 const Notes = lazy(() => import('./components/Notes'))
 const DataQuery = lazy(() => import('./components/DataQuery'))
 
+const PATH_TO_TAB: Record<string, Tab> = {
+  '/tool': 'tools',
+  '/note': 'notes',
+  '/data': 'data',
+}
+
+const TAB_TO_PATH: Record<Tab, string> = {
+  chat: '/',
+  tools: '/tool',
+  notes: '/note',
+  data: '/data',
+}
+
+function getTabFromPath(): Tab {
+  return PATH_TO_TAB[window.location.pathname] ?? 'chat'
+}
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('chat')
-  const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(new Set(['chat']))
+  const [activeTab, setActiveTab] = useState<Tab>(getTabFromPath)
+  const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(new Set([getTabFromPath()]))
   const [configVersion, setConfigVersion] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [currentConversationId, setCurrentConversationId] = useState<string>()
   const [conversationRefreshTrigger, setConversationRefreshTrigger] = useState(0)
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const tab = getTabFromPath()
+      setActiveTab(tab)
+      setVisitedTabs((prev) => new Set(prev).add(tab))
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   const handleConfigSaved = () => {
     setConfigVersion((v) => v + 1)
@@ -23,6 +50,7 @@ export default function App() {
     setActiveTab(tab)
     setVisitedTabs((prev) => new Set(prev).add(tab))
     setSidebarOpen(false) // Close sidebar on mobile after selecting tab
+    window.history.pushState({}, '', TAB_TO_PATH[tab])
   }
 
   const handleConversationSelect = (id: string) => {

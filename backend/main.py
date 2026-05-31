@@ -3,6 +3,7 @@ RAG Chat API 服务
 FastAPI 启动文件
 """
 import asyncio
+import os
 from dataclasses import dataclass
 from contextlib import asynccontextmanager
 from html import escape
@@ -117,7 +118,7 @@ def _render_tool_page() -> str:
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>工具导航</title>
+        <title>嘟嘟可工具集</title>
         <style>
             :root {{
                 color-scheme: light;
@@ -218,8 +219,8 @@ def _render_tool_page() -> str:
     </head>
     <body>
         <main>
-            <h1>工具导航</h1>
-            <p class="intro">该页面仅展示当前可用的工具入口、教程和补充说明。</p>
+            <h1>嘟嘟可工具集</h1>
+            <p class="intro">当前可用的工具入口、教程与补充说明。</p>
             <div class="tool-grid">
                 {cards}
             </div>
@@ -279,9 +280,32 @@ async def health():
     return {"status": "ok"}
 
 
-@app.get("/tool", response_class=HTMLResponse, include_in_schema=False)
-async def tool_page() -> HTMLResponse:
+@app.get("/all", response_class=HTMLResponse, include_in_schema=False)
+async def all_tools_page() -> HTMLResponse:
     return HTMLResponse(content=_render_tool_page())
+
+
+def _serve_spa() -> HTMLResponse:
+    index_path = os.path.join("static", "index.html")
+    with open(index_path, encoding="utf-8") as f:
+        content = f.read()
+    return HTMLResponse(content=content)
+
+
+@app.get("/tool", response_class=HTMLResponse, include_in_schema=False)
+async def tool_spa() -> HTMLResponse:
+    return _serve_spa()
+
+
+@app.get("/note", response_class=HTMLResponse, include_in_schema=False)
+async def note_spa() -> HTMLResponse:
+    return _serve_spa()
+
+
+@app.get("/data", response_class=HTMLResponse, include_in_schema=False)
+async def data_spa() -> HTMLResponse:
+    return _serve_spa()
+
 
 # 托管前端静态文件（必须放在最后）
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
