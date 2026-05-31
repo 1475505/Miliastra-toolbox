@@ -153,9 +153,8 @@ export default function SvgDocs() {
   const selectItem = (item: SvgItem) => {
     if (!item.filename) return
     setSelectedFilename(item.filename)
-    // Use filename stem as slug: "31-技能.svg" → "/svg/31-技能"
-    const slug = item.filename.replace(/\.svg$/, '')
-    const newPath = `/svg/${encodeURIComponent(slug)}`
+    // Use number as slug: "31-技能.svg" → "/svg/31"（兼容旧的 /svg/31-技能 格式）
+    const newPath = `/svg/${item.number}`
     if (window.location.pathname !== newPath) {
       window.history.pushState({}, '', newPath)
     }

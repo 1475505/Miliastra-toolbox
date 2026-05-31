@@ -185,5 +185,7 @@ async def resolve_svg_url(
     if filename is None:
         raise HTTPException(status_code=404, detail=f"未找到与 '{q}' 匹配的图表")
     stem = Path(filename).stem
+    m = re.match(r"^(\d+)", stem)
+    doc_id = m.group(1) if m else stem
     base = str(request.base_url).rstrip("/")
-    return {"query": q, "title": stem, "url": f"{base}/svg/{stem}"}
+    return {"query": q, "title": stem, "url": f"{base}/svg/{doc_id}"}

@@ -1629,7 +1629,7 @@ curl -o terrain.png "http://localhost:8000/api/v1/svg/search?name=地形&png=tru
 {
   "query": "变量",
   "title": "16-变量",
-  "url": "https://ugc.070077.xyz/svg/16-变量"
+  "url": "https://ugc.070077.xyz/svg/16"
 }
 ```
 

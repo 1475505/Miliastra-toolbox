@@ -19,7 +19,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-6">OpenAI 配置（仅浏览器存储，后端不保存，放心填写）</h2>
+        <h2 className="text-xl font-semibold mb-6">LLM 配置（仅浏览器存储，后端不保存，放心填写）</h2>
 
         <div className="space-y-4">
           <label className="flex items-center">

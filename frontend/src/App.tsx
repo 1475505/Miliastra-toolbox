@@ -76,7 +76,6 @@ export default function App() {
       <Sidebar 
         activeTab={activeTab} 
         onTabChange={handleTabChange} 
-        onConfigSaved={handleConfigSaved}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         currentConversationId={currentConversationId}
@@ -102,6 +101,7 @@ export default function App() {
               currentConversationId={currentConversationId}
               onConversationChange={setCurrentConversationId}
               onRefreshConversations={handleRefreshConversations}
+              onConfigSaved={handleConfigSaved}
             />
           </Suspense>
         </div>

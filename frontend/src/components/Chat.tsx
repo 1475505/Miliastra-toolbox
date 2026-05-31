@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Message, Source, ToolTrace } from '../types'
 import { getConfig } from '../utils/config'
+import ConfigModal from './ConfigModal'
 import { 
   createNewConversation, 
   saveConversation, 
@@ -35,9 +36,10 @@ interface ChatProps {
   currentConversationId?: string
   onConversationChange?: (id: string) => void
   onRefreshConversations?: () => void
+  onConfigSaved?: () => void
 }
 
-export default function Chat({ configVersion, currentConversationId, onConversationChange, onRefreshConversations }: ChatProps) {
+export default function Chat({ configVersion, currentConversationId, onConversationChange, onRefreshConversations, onConfigSaved }: ChatProps) {
   const [conversationId, setConversationId] = useState<string>('')
   const [messages, setMessages] = useState<ExtendedMessage[]>([])
   const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([])
@@ -52,6 +54,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [imageInfo, setImageInfo] = useState<string>('')
   const [agentMode, setAgentMode] = useState(true)
+  const [showConfig, setShowConfig] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
 
@@ -585,7 +588,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
           )}
           <button
             onClick={handleNewConversation}
-            className="px-3 py-1.5 text-sm bg-yellow-100 hover:bg-yellow-200 rounded-lg transition-colors font-medium"
+            className="px-3 py-1.5 text-sm bg-emerald-100/80 hover:bg-emerald-200/80 rounded-lg transition-colors font-medium text-emerald-800"
           >
             ✨ 新对话
           </button>
@@ -615,7 +618,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
             <div className="inline-block bg-yellow-50 border border-yellow-200 rounded-xl px-6 py-4 text-sm max-w-md">
               <div className="text-yellow-800 mb-2 font-medium">⚠️ 请先配置 API Key</div>
               <div className="text-yellow-600">
-                请点击<span className="hidden lg:inline">左下角</span><span className="lg:hidden">菜单中</span>「⚙️ OpenAI 配置」按钮进行配置（或勾选免费模型）
+                请点击下方「⚙️ LLM 配置」按钮进行配置（或勾选免费模型）
               </div>
             </div>
           </div>
@@ -785,8 +788,8 @@ export default function Chat({ configVersion, currentConversationId, onConversat
             <label
               className={`flex items-center gap-1.5 px-3 py-2 text-sm cursor-pointer select-none rounded-xl border transition-colors ${
                 agentMode
-                  ? 'border-violet-300 bg-violet-50 text-violet-700'
-                  : 'border-slate-200 bg-white/60 text-slate-500 hover:border-violet-300'
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                  : 'border-slate-200 bg-white/60 text-slate-500 hover:border-emerald-300'
               }`}
               title="启用高智商模式，使用工具调用进行深度问答"
             >
@@ -797,7 +800,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                 aria-checked={agentMode}
                 onClick={() => setAgentMode(!agentMode)}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                  agentMode ? 'bg-violet-500' : 'bg-slate-300'
+                  agentMode ? 'bg-emerald-500' : 'bg-slate-300'
                 }`}
               >
                 <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
@@ -815,6 +818,14 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                 disabled={loading}
               />
             </label>
+            <button
+              type="button"
+              onClick={() => setShowConfig(true)}
+              className="px-3 py-2 border border-slate-200 rounded-xl bg-white/60 text-sm text-slate-500 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+              title="LLM 配置"
+            >
+              ⚙️ LLM 配置
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -825,7 +836,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
               onPaste={handlePaste}
               placeholder="输入问题 / 粘贴图片；AI 回答仅供参考，以官方文档为准"
               disabled={loading}
-              className="flex-1 min-w-0 px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-300 text-sm"
+              className="flex-1 min-w-0 px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm"
             />
             <button
               onClick={handleSend}
@@ -863,6 +874,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
           千星奇域官方文档和相关信息版权归米哈游所有，本网站为个人兴趣，与米哈游无关
         </div>
       </div>
+      {showConfig && <ConfigModal onClose={() => setShowConfig(false)} onConfigSaved={onConfigSaved} />}
     </div>
   )
 }

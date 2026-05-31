@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Tab, Conversation } from '../types'
-import ConfigModal from './ConfigModal'
 import { getAllConversations, deleteConversation, updateConversationTitle, deleteAllConversations } from '../utils/conversations'
 
 interface SidebarProps {
   activeTab: Tab
   onTabChange: (tab: Tab) => void
-  onConfigSaved?: () => void
   isOpen?: boolean
   onToggle?: () => void
   currentConversationId?: string
@@ -18,7 +16,6 @@ interface SidebarProps {
 export default function Sidebar({ 
   activeTab, 
   onTabChange, 
-  onConfigSaved, 
   isOpen = true, 
   onToggle,
   currentConversationId,
@@ -26,7 +23,6 @@ export default function Sidebar({
   onConversationDeleted,
   conversationRefreshTrigger
 }: SidebarProps) {
-  const [showConfig, setShowConfig] = useState(false)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [showClearHint, setShowClearHint] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -88,10 +84,10 @@ export default function Sidebar({
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'chat', label: '知识库问答' },
+    { id: 'svg', label: '文档一图流' },
     { id: 'tools', label: '工具调用' },
-    { id: 'notes', label: '笔记' },
     { id: 'data', label: '数据查询' },
-    { id: 'svg', label: '一图流' },
+    { id: 'notes', label: '笔记' },
   ]
 
   return (
@@ -246,14 +242,14 @@ export default function Sidebar({
             href="/all"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2 block w-full rounded-xl border border-emerald-200 bg-emerald-100/60 px-4 py-3 text-left text-sm transition-all hover:border-emerald-300 hover:bg-emerald-200/60"
+            className="mt-2 block w-full rounded-xl border border-teal-200 bg-gradient-to-br from-emerald-100/80 to-teal-50/70 px-4 py-3 text-left text-sm shadow-sm transition-all hover:border-teal-300 hover:shadow-md hover:from-emerald-100 hover:to-teal-100/80"
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="font-medium text-emerald-900">嘟嘟可工具集</div>
-                <div className="mt-1 text-xs text-emerald-700">查看所有工具入口与使用教程</div>
+                <div className="font-semibold text-teal-900">嘟嘟可工具集</div>
+                <div className="mt-1 text-xs text-teal-700">查看所有工具入口与使用教程</div>
               </div>
-              <span className="shrink-0 text-emerald-700">↗</span>
+              <span className="shrink-0 text-teal-600">↗</span>
             </div>
           </a>
         </nav>
@@ -295,19 +291,7 @@ export default function Sidebar({
           </div>
         </div>
 
-        <div className="border-t border-emerald-100 p-4">
-          <button
-            onClick={() => setShowConfig(true)}
-            className="w-full rounded-xl px-4 py-2.5 text-sm font-medium bg-emerald-200/80 text-emerald-900 border border-emerald-300 hover:bg-emerald-300/80 focus:outline-none focus:ring-2 focus:ring-emerald-300 transition-all"
-            title="OpenAI 配置"
-            aria-label="OpenAI 配置"
-          >
-            ⚙️ OpenAI 配置
-          </button>
-        </div>
       </aside>
-
-      {showConfig && <ConfigModal onClose={() => setShowConfig(false)} onConfigSaved={onConfigSaved} />}
     </>
   )
 }
