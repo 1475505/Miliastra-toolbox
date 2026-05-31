@@ -186,11 +186,13 @@ export default function SvgDocs() {
       )}
       {/* 左侧目录面板 */}
       <div
-        className={`flex flex-col border-r border-white/20 bg-emerald-50/60
+        className={`flex flex-col bg-emerald-50/60
+          transition-all duration-200 ease-in-out
           absolute inset-y-0 left-0 z-20 w-72 shadow-2xl
-          transition-transform duration-200 ease-in-out
-          md:relative md:z-auto md:w-56 md:flex-shrink-0 md:shadow-none md:translate-x-0
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+          md:relative md:z-auto md:flex-shrink-0 md:shadow-none md:translate-x-0
+          ${sidebarOpen
+            ? 'translate-x-0 border-r border-white/20 md:w-56'
+            : '-translate-x-full md:w-0 md:overflow-hidden md:border-r-0'}`}
       >
         <div className="p-3 border-b border-emerald-100">
           <div className="flex items-center justify-between mb-2">
@@ -294,7 +296,7 @@ export default function SvgDocs() {
       {/* 右侧 SVG 查看器 */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* 顶部工具栏：始终显示 */}
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-white/20 bg-white/20 flex-shrink-0">
+        <div className="flex items-center gap-2 pl-14 pr-3 py-2 lg:pl-3 border-b border-white/20 bg-white/20 flex-shrink-0">
           <button
             onClick={() => setSidebarOpen((s) => !s)}
             className="p-1.5 rounded-lg hover:bg-white/50 text-slate-600 transition-colors flex-shrink-0"
