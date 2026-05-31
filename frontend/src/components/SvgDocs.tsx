@@ -46,6 +46,9 @@ export default function SvgDocs() {
   const [svgContent, setSvgContent] = useState<string | null>(null)
   const [svgLoading, setSvgLoading] = useState(false)
   const [svgLinks, setSvgLinks] = useState<SvgLink[]>([])
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  )
 
   // slug present in the URL before index loads (e.g. /svg/31-技能 → "31-技能")
   const pendingDocId = useRef<string | null>(getDocIdFromPath())
@@ -158,6 +161,10 @@ export default function SvgDocs() {
     if (window.location.pathname !== newPath) {
       window.history.pushState({}, '', newPath)
     }
+    // 移动端选中后自动关闭侧边栏
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false)
+    }
   }
 
   const selectedItem = useMemo(
@@ -169,13 +176,36 @@ export default function SvgDocs() {
   )
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full overflow-hidden relative">
+      {/* 移动端遮罩 */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden absolute inset-0 z-10 bg-black/40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       {/* 左侧目录面板 */}
-      <div className="w-56 flex-shrink-0 border-r border-white/20 bg-emerald-50/60 flex flex-col">
+      <div
+        className={`flex flex-col border-r border-white/20 bg-emerald-50/60
+          absolute inset-y-0 left-0 z-20 w-72 shadow-2xl
+          transition-transform duration-200 ease-in-out
+          md:relative md:z-auto md:w-56 md:flex-shrink-0 md:shadow-none md:translate-x-0
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
         <div className="p-3 border-b border-emerald-100">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-            一图流文档
-          </h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              一图流文档
+            </h2>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-1 rounded-lg hover:bg-emerald-100 text-slate-400 hover:text-slate-600 transition-colors"
+              aria-label="收起目录"
+              title="收起目录"
+            >
+              <span className="text-sm leading-none select-none">←</span>
+            </button>
+          </div>
           <input
             type="text"
             placeholder="搜索..."
@@ -262,12 +292,20 @@ export default function SvgDocs() {
       </div>
 
       {/* 右侧 SVG 查看器 */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {selectedFilename ? (
-          <>
-            {/* 标题栏 + 缩放控件 */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-white/20 bg-white/20 flex-shrink-0">
-              <span className="text-sm font-medium text-slate-700 truncate mr-4">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        {/* 顶部工具栏：始终显示 */}
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-white/20 bg-white/20 flex-shrink-0">
+          <button
+            onClick={() => setSidebarOpen((s) => !s)}
+            className="p-1.5 rounded-lg hover:bg-white/50 text-slate-600 transition-colors flex-shrink-0"
+            aria-label="切换目录"
+            title="切换目录"
+          >
+            <span className="text-base leading-none select-none">☰</span>
+          </button>
+          {selectedFilename && (
+            <>
+              <span className="flex-1 text-sm font-medium text-slate-700 truncate">
                 {selectedItem?.title ?? selectedFilename}
               </span>
               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -293,52 +331,52 @@ export default function SvgDocs() {
                   重置
                 </button>
               </div>
-            </div>
+            </>
+          )}
+        </div>
+        {selectedFilename ? (
+          <div className="flex-1 overflow-auto p-4">
+            {svgLoading ? (
+              <div className="flex h-full items-center justify-center text-slate-400 text-sm">
+                加载中...
+              </div>
+            ) : svgContent ? (
+              <div className="space-y-6 pb-6">
+                <div
+                  style={{ zoom: svgScale }}
+                  // SVG 来自受控知识库，已确认无 <script> 标签
+                  // eslint-disable-next-line react/no-danger
+                  dangerouslySetInnerHTML={{ __html: svgContent }}
+                />
 
-            {/* Inline SVG 区域 */}
-            <div className="flex-1 overflow-auto p-4">
-              {svgLoading ? (
-                <div className="flex h-full items-center justify-center text-slate-400 text-sm">
-                  加载中...
-                </div>
-              ) : svgContent ? (
-                <div className="space-y-6 pb-6">
-                  <div
-                    style={{ zoom: svgScale }}
-                    // SVG 来自受控知识库，已确认无 <script> 标签
-                    // eslint-disable-next-line react/no-danger
-                    dangerouslySetInnerHTML={{ __html: svgContent }}
-                  />
-
-                  <div className="mt-2 pt-2 border-t border-white/20 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <span className="text-xs text-slate-400 flex-shrink-0">相关文档</span>
-                    {svgLinks.length > 0 ? (
-                      svgLinks.map((link, i) => (
-                        <a
-                          key={i}
-                          href={link.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-emerald-600 hover:text-emerald-800 hover:underline"
-                        >
-                          {link.text}
-                        </a>
-                      ))
-                    ) : (
+                <div className="mt-2 pt-2 border-t border-white/20 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-xs text-slate-400 flex-shrink-0">相关文档</span>
+                  {svgLinks.length > 0 ? (
+                    svgLinks.map((link, i) => (
                       <a
-                        href="https://act.mihoyo.com/ys/ugc/tutorial/detail/mhs2w008wf14"
+                        key={i}
+                        href={link.href}
                         target="_blank"
                         rel="noreferrer"
                         className="text-xs text-emerald-600 hover:text-emerald-800 hover:underline"
                       >
-                        奇匠学院
+                        {link.text}
                       </a>
-                    )}
-                  </div>
+                    ))
+                  ) : (
+                    <a
+                      href="https://act.mihoyo.com/ys/ugc/tutorial/detail/mhs2w008wf14"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-emerald-600 hover:text-emerald-800 hover:underline"
+                    >
+                      奇匠学院
+                    </a>
+                  )}
                 </div>
-              ) : null}
-            </div>
-          </>
+              </div>
+            ) : null}
+          </div>
         ) : (
           <div className="flex-1 flex items-center justify-center text-slate-400 select-none">
             <div className="text-center space-y-4">
