@@ -1,12 +1,13 @@
 """Agent API 路由 - /api/v1/agent/*"""
 import json
 import uuid
-from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
 from agent.agentEngine import AgentEngine
+from agent.diagram import diagram_store
 
 router = APIRouter()
 
@@ -81,4 +82,15 @@ async def agent_chat_stream(request: AgentChatRequest):
 async def agent_capabilities():
     return {"success": True, "data": {
         "mode": "agent", "streaming": True, "image_input": False,
-        "tools": ["get_node_info", "list_documents", "get_document", "search_knowledge"]}}
+        "tools": ["get_node_info", "list_documents", "get_document", "search_knowledge", "generate_diagram"]}}
+
+
+@router.get("/agent/diagram/{diagram_id}")
+async def get_diagram_png(diagram_id: str):
+    """返回由 generate_diagram 工具生成的 PNG 图片。"""
+    entry = diagram_store.get(diagram_id)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="图表不存在或已过期")
+    png_bytes, _ = entry
+    return Response(content=png_bytes, media_type="image/png",
+                    headers={"Cache-Control": "public, max-age=3600"})

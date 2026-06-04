@@ -29,6 +29,7 @@ from llama_index.core.agent.workflow.workflow_events import AgentStream, ToolCal
 from common.llm_config import resolve_llm_config, openrouter_availability_loop
 from agent.prompt import DEFAULT_SYSTEM_PROMPT, NON_STREAM_OUTPUT_INSTRUCTION
 from skill.service import get_document_json, get_node_info_json, list_documents_json, rag_search_json
+from agent.diagram import generate_diagram, diagram_store
 
 TOOLBOX_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -138,11 +139,27 @@ AGENT_TOOLS = [
         description="根据文档标题获取完整内容。支持模糊匹配。输入 titles: list[str]。"),
     FunctionTool.from_defaults(fn=rag_search_json, name="search_knowledge",
         description="向量检索知识库。输入 queries: list[str], top_k: int=5。"),
+    FunctionTool.from_defaults(fn=generate_diagram, name="generate_diagram",
+        description=(
+            "当回答涉及节点连接关系、执行流程、实体层级或逻辑结构时，生成 SVG 图表并转为 PNG 供用户查看。"
+            "输入 svg_content: str（完整 SVG XML），title: str（图表标题，选填）。"
+            "图表文本只允许使用中文、英文、数字和基础标点；不要使用 emoji或其他装饰性 Unicode 字符。"
+            "调用成功后，必须将返回 JSON 中的 markdown 字段内容原样嵌入回答正文。"
+        )),
 ]
 
 # ── AgentEngine ─────────────────────────────────────────────
 AGENT_MAX_ITERATIONS = int(os.getenv("AGENT_MAX_ITERATIONS", "10"))
 AGENT_TIMEOUT = float(os.getenv("AGENT_TIMEOUT", "300"))
+
+
+def _mask_tool_args(tool_name: str, kwargs: dict[str, Any]) -> dict[str, Any]:
+    """过滤工具参数中的冗长内容，避免 SVG 源码出现在 trace/SSE 中。"""
+    if tool_name == "generate_diagram" and "svg_content" in kwargs:
+        svg = kwargs["svg_content"]
+        length = len(svg) if isinstance(svg, str) else 0
+        return {**kwargs, "svg_content": f"<SVG {length} chars>"}
+    return kwargs
 
 
 class AgentEngine:
@@ -244,6 +261,7 @@ class AgentEngine:
     @staticmethod
     def _extract_trace(ev: ToolCallResult) -> dict[str, str | dict[str, str] | list[dict[str, str]]]:
         """提取工具调用跟踪信息，返回用户友好的摘要和来源链接"""
+
         raw = ev.tool_output.raw_output
         status = "error" if ev.tool_output.is_error else "success"
 
@@ -334,6 +352,16 @@ class AgentEngine:
                 else:
                     summary = "未检索到相关内容"
 
+            elif ev.tool_name == "generate_diagram":
+                if isinstance(data, dict) and "diagram_id" in data:
+                    title = str(data.get("title", "图表"))
+                    png_url = str(data.get("png_url", ""))
+                    summary = f"已生成图表「{title}」"
+                    if png_url:
+                        sources.append({"title": title, "url": png_url})
+                elif isinstance(data, dict) and "error" in data:
+                    summary = f"图表生成失败: {data['error']}"
+
         except (json.JSONDecodeError, TypeError, AttributeError):
             pass
 
@@ -341,7 +369,7 @@ class AgentEngine:
             summary = (str(raw)[:200] + "...") if isinstance(raw, str) and len(raw) > 200 else str(raw)[:200]
 
         result: dict[str, str | dict[str, str] | list[dict[str, str]]] = {
-            "tool": ev.tool_name, "args": ev.tool_kwargs,
+            "tool": ev.tool_name, "args": _mask_tool_args(ev.tool_name, ev.tool_kwargs),
             "status": status, "summary": summary,
         }
         if sources:
@@ -389,9 +417,10 @@ class AgentEngine:
                     last_response += ev.delta
 
             result = await handler
+            diagrams = _collect_diagrams(tool_trace)
             return {"answer": result.response.content or "", "sources": sources,
                     "stats": {"tokens": 0, "tool_calls": tool_calls_count, "retrieval_calls": retrieval_calls_count},
-                    "tool_trace": tool_trace}
+                    "tool_trace": tool_trace, "diagrams": diagrams}
         except Exception as e:
             if self._is_max_iter_error(e):  # 迭代上限兜底：携带 tool_trace 生成最终回答
                 print("[AgentEngine] 达到迭代上限，携带工具结果兜底作答")
@@ -417,7 +446,7 @@ class AgentEngine:
                                 max_iterations=AGENT_MAX_ITERATIONS)
             async for ev in handler.stream_events():
                 if isinstance(ev, ToolCall):
-                    yield f"data: {json.dumps({'type': 'tool_call', 'data': {'tool': ev.tool_name, 'args': ev.tool_kwargs}}, ensure_ascii=False)}\n\n"
+                    yield f"data: {json.dumps({'type': 'tool_call', 'data': {'tool': ev.tool_name, 'args': _mask_tool_args(ev.tool_name, ev.tool_kwargs)}}, ensure_ascii=False)}\n\n"
                 elif isinstance(ev, ToolCallResult):
                     tool_calls_count += 1
                     if ev.tool_name == "search_knowledge":
@@ -448,3 +477,27 @@ class AgentEngine:
                 yield f"data: {json.dumps({'type': 'done', 'data': {'stats': {'tokens': 0, 'tool_calls': tool_calls_count, 'retrieval_calls': retrieval_calls_count}}}, ensure_ascii=False)}\n\n"
             else:
                 yield f"data: {json.dumps({'type': 'error', 'data': str(e)}, ensure_ascii=False)}\n\n"
+
+
+def _collect_diagrams(tool_trace: list[dict]) -> list[dict[str, str]]:
+    """从 tool_trace 中收集 generate_diagram 的结果，附加 png_base64。"""
+    import base64
+    diagrams: list[dict[str, str]] = []
+    for t in tool_trace:
+        if t.get("tool") != "generate_diagram" or t.get("status") != "success":
+            continue
+        for src in t.get("sources", []):
+            url = src.get("url", "")
+            if not url.startswith("/api/v1/agent/diagram/"):
+                continue
+            diagram_id = url.rsplit("/", 1)[-1]
+            entry = diagram_store.get(diagram_id)
+            if entry is None:
+                continue
+            png_bytes, title = entry
+            diagrams.append({
+                "diagram_id": diagram_id,
+                "title": title,
+                "png_base64": base64.b64encode(png_bytes).decode("ascii"),
+            })
+    return diagrams

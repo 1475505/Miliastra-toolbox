@@ -31,6 +31,93 @@ interface ExtendedMessage extends Message {
 
 type ChatMessage = ExtendedMessage | SourceMessage | ToolCallMessage
 
+interface ConversationTurn {
+  key: string
+  user?: ExtendedMessage
+  assistant?: ExtendedMessage
+  toolTraces: ToolCallMessage[]
+  sources: SourceMessage[]
+}
+
+function buildConversationTurns(chatMessages: ChatMessage[]): ConversationTurn[] {
+  const turns: ConversationTurn[] = []
+
+  const ensureTurn = () => {
+    const currentTurn = turns[turns.length - 1]
+    if (currentTurn) {
+      return currentTurn
+    }
+
+    const nextTurn: ConversationTurn = {
+      key: `turn_${turns.length}`,
+      toolTraces: [],
+      sources: [],
+    }
+    turns.push(nextTurn)
+    return nextTurn
+  }
+
+  chatMessages.forEach((msg, index) => {
+    if ('role' in msg && msg.role === 'user') {
+      turns.push({
+        key: `turn_${index}`,
+        user: msg,
+        toolTraces: [],
+        sources: [],
+      })
+      return
+    }
+
+    const currentTurn = ensureTurn()
+
+    if ('role' in msg && msg.role === 'assistant') {
+      if (currentTurn.assistant) {
+        turns.push({
+          key: `turn_${index}`,
+          assistant: msg,
+          toolTraces: [],
+          sources: [],
+        })
+        return
+      }
+
+      currentTurn.assistant = msg
+      return
+    }
+
+    if ('type' in msg && msg.type === 'tool_trace') {
+      currentTurn.toolTraces.push(msg)
+      return
+    }
+
+    if ('type' in msg && msg.type === 'sources') {
+      currentTurn.sources.push(msg)
+    }
+  })
+
+  return turns.filter((turn) => turn.user || turn.assistant || turn.toolTraces.length > 0 || turn.sources.length > 0)
+}
+
+function getLatestToolStats(toolTraces: ToolCallMessage[]): ToolCallMessage['stats'] {
+  for (let index = toolTraces.length - 1; index >= 0; index--) {
+    if (toolTraces[index].stats) {
+      return toolTraces[index].stats
+    }
+  }
+
+  return undefined
+}
+
+function getLatestSourceTokens(sourceMessages: SourceMessage[]): number | undefined {
+  for (let index = sourceMessages.length - 1; index >= 0; index--) {
+    if (sourceMessages[index].tokens) {
+      return sourceMessages[index].tokens
+    }
+  }
+
+  return undefined
+}
+
 interface ChatProps {
   configVersion: number
   currentConversationId?: string
@@ -57,6 +144,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   const [showConfig, setShowConfig] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
+  const conversationTurns = buildConversationTurns(displayMessages)
 
   // 初始化或加载对话
   useEffect(() => {
@@ -84,39 +172,10 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   useEffect(() => {
     if (conversationId && messages.length > 0) {
       const title = generateConversationTitle(messages)
-      // 重新排序：将 Sources/ToolTrace 移到对应的 A 后面
-      const reorderedMessages: ChatMessage[] = []
-      let pendingSources: ChatMessage[] = []
-      
-      displayMessages.forEach((msg) => {
-        if ('type' in msg && (msg.type === 'sources' || msg.type === 'tool_trace')) {
-          pendingSources.push(msg)
-        } else if ('role' in msg) {
-          // 如果是用户消息，先把之前的 sources 放进去（处理已保存过的对话中 sources 在 assistant 后的情况）
-          if (msg.role === 'user' && pendingSources.length > 0) {
-            reorderedMessages.push(...pendingSources)
-            pendingSources = []
-          }
-
-          reorderedMessages.push(msg)
-
-          // 如果是助手消息，把 sources 放到后面（处理新生成的对话中 sources 在 assistant 前的情况）
-          if (msg.role === 'assistant' && pendingSources.length > 0) {
-            reorderedMessages.push(...pendingSources)
-            pendingSources = []
-          }
-        }
-      })
-      
-      // 处理末尾的 sources
-      if (pendingSources.length > 0) {
-        reorderedMessages.push(...pendingSources)
-      }
-      
       saveConversation({
         id: conversationId,
         title,
-        messages: reorderedMessages,
+        messages: displayMessages,
         createdAt: parseInt(conversationId.split('_')[1]) || Date.now(),
         updatedAt: Date.now()
       })
@@ -228,39 +287,10 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   const handleDownload = () => {
     if (conversationId && messages.length > 0) {
       const title = generateConversationTitle(messages)
-      // 重新排序：将 Sources/ToolTrace 移到对应的 A 后面
-      const reorderedMessages: ChatMessage[] = []
-      let pendingSources: ChatMessage[] = []
-      
-      displayMessages.forEach((msg) => {
-        if ('type' in msg && (msg.type === 'sources' || msg.type === 'tool_trace')) {
-          pendingSources.push(msg)
-        } else if ('role' in msg) {
-          // 如果是用户消息，先把之前的 sources 放进去
-          if (msg.role === 'user' && pendingSources.length > 0) {
-            reorderedMessages.push(...pendingSources)
-            pendingSources = []
-          }
-
-          reorderedMessages.push(msg)
-
-          // 如果是助手消息，把 sources 放到后面
-          if (msg.role === 'assistant' && pendingSources.length > 0) {
-            reorderedMessages.push(...pendingSources)
-            pendingSources = []
-          }
-        }
-      })
-      
-      // 处理末尾的 sources
-      if (pendingSources.length > 0) {
-        reorderedMessages.push(...pendingSources)
-      }
-      
       downloadConversation({
         id: conversationId,
         title,
-        messages: reorderedMessages,
+        messages: displayMessages,
         createdAt: parseInt(conversationId.split('_')[1]) || Date.now(),
         updatedAt: Date.now()
       })
@@ -624,136 +654,138 @@ export default function Chat({ configVersion, currentConversationId, onConversat
           </div>
         )}
 
-        {displayMessages.map((msg, idx) => {
-          if ('type' in msg && msg.type === 'sources') {
-            return (
-              <div key={idx} className="flex justify-start">
-                <div className="max-w-2xl px-4 py-3 rounded-2xl bg-blue-50 text-gray-900">
-                  <div className="font-semibold mb-2 text-sm">📚 引用来源</div>
-                  {msg.sources.map((src, i) => (
-                    <div key={i} className="mb-2 pb-2 border-b border-blue-100 last:border-0">
-                      <a
-                        href={src.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline font-medium text-sm"
-                      >
-                        {src.title}
-                      </a>
-                      <span className="text-gray-500 ml-2 text-xs">({Math.round(src.similarity * 100)}%)</span>
-                      {src.text_snippet && (
-                        <div className="text-gray-600 text-xs mt-1">
-                          {src.text_snippet.substring(0, 100)}...
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {msg.tokens && msg.tokens > 0 && (
-                    <div className="text-gray-500 text-xs mt-2">💬 消耗 tokens: {msg.tokens}</div>
-                  )}
-                </div>
-              </div>
-            )
-          }
+        {conversationTurns.map((turn) => {
+          const turnStats = getLatestToolStats(turn.toolTraces)
+          const sourceTokens = getLatestSourceTokens(turn.sources)
 
-          if ('type' in msg && msg.type === 'tool_trace') {
-            return (
-              <div key={idx} className="flex justify-start">
-                <div className="max-w-2xl px-4 py-3 rounded-2xl bg-violet-50 text-gray-900">
-                  <div className="font-semibold mb-2 text-sm">🔧 工具调用</div>
-                  {msg.traces.map((trace, i) => (
-                    <div key={i} className="mb-2 pb-2 border-b border-violet-100 last:border-0">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-block w-1.5 h-1.5 rounded-full ${
-                          trace.status === 'success' ? 'bg-green-500' : trace.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
-                        }`} />
-                        <span className="font-medium text-sm text-violet-800">{trace.tool}</span>
-                        <span className={`text-xs ${trace.status === 'success' ? 'text-green-600' : trace.status === 'error' ? 'text-red-600' : 'text-yellow-600'}`}>
-                          {trace.status === 'success' ? '✓' : trace.status === 'error' ? '✗' : '⏳'}
-                        </span>
-                      </div>
-                      {trace.args && Object.keys(trace.args).length > 0 && (
-                        <div className="text-gray-500 text-xs mt-1 font-mono bg-violet-100/50 rounded px-2 py-1">
-                          {Object.entries(trace.args).map(([k, v]) => `${k}: ${v}`).join(', ')}
+          return (
+            <div key={turn.key} className="space-y-3">
+              {turn.user && (
+                <div className="flex justify-end">
+                  <div className="max-w-2xl px-4 py-3 rounded-2xl bg-amber-50 text-slate-900 border border-amber-100">
+                    <div className="whitespace-pre-wrap">
+                      {turn.user.imageBase64 && (
+                        <div className="mb-2">
+                          <img 
+                            src={turn.user.imageBase64} 
+                            alt="用户上传的图片" 
+                            className="max-w-full h-auto rounded-lg border border-white/20"
+                            style={{ maxHeight: '300px' }}
+                          />
                         </div>
                       )}
-                      <div className="text-gray-600 text-xs mt-1">{trace.summary}</div>
-                      {trace.sources && trace.sources.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-1.5">
-                          {trace.sources.map((src, si) => (
-                            <a
-                              key={si}
-                              href={src.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 hover:underline bg-violet-100/60 rounded px-1.5 py-0.5"
-                            >
-                              📄 {src.title}
-                            </a>
+                      {turn.user.content}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(turn.assistant || turn.toolTraces.length > 0 || turn.sources.length > 0) && (
+                <div className="flex justify-start">
+                  <div className="max-w-3xl w-full rounded-3xl border border-slate-200/80 bg-white/75 p-4 shadow-sm backdrop-blur-sm">
+                    {turn.toolTraces.length > 0 && (
+                      <div className="mb-4 rounded-2xl border border-violet-200/80 bg-violet-50/70 px-4 py-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <div className="text-sm font-semibold text-violet-900">工具调用</div>
+                          {turnStats && (
+                            <div className="flex flex-wrap gap-2 text-[11px] text-violet-700">
+                              <span className="rounded-full bg-white/70 px-2 py-0.5">tokens {turnStats.tokens}</span>
+                              <span className="rounded-full bg-white/70 px-2 py-0.5">工具 {turnStats.tool_calls}</span>
+                              <span className="rounded-full bg-white/70 px-2 py-0.5">检索 {turnStats.retrieval_calls}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          {turn.toolTraces.flatMap((toolMessage) => toolMessage.traces).map((trace, index) => (
+                            <div key={`${trace.tool}_${index}`} className="rounded-2xl border border-violet-100 bg-white/80 px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <span className={`inline-block h-1.5 w-1.5 rounded-full ${
+                                  trace.status === 'success' ? 'bg-green-500' : trace.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
+                                }`} />
+                                <span className="text-sm font-medium text-violet-900">{trace.tool}</span>
+                                <span className={`text-xs ${trace.status === 'success' ? 'text-green-600' : trace.status === 'error' ? 'text-red-600' : 'text-yellow-600'}`}>
+                                  {trace.status === 'success' ? '✓' : trace.status === 'error' ? '✗' : '⏳'}
+                                </span>
+                              </div>
+                              {trace.args && Object.keys(trace.args).length > 0 && (
+                                <div className="mt-1 rounded-lg bg-violet-100/70 px-2 py-1 font-mono text-xs text-slate-600">
+                                  {Object.entries(trace.args).map(([key, value]) => `${key}: ${value}`).join(', ')}
+                                </div>
+                              )}
+                              <div className="mt-1 text-xs text-slate-600">{trace.summary}</div>
+                              {trace.sources && trace.sources.length > 0 && (
+                                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                  {trace.sources.map((src, sourceIndex) => (
+                                    <a
+                                      key={`${src.url}_${sourceIndex}`}
+                                      href={src.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 rounded-full bg-violet-100/80 px-2 py-0.5 text-xs text-violet-700 hover:text-violet-900 hover:underline"
+                                    >
+                                      📄 {src.title}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           ))}
                         </div>
-                      )}
-                    </div>
-                  ))}
-                  {msg.stats && (
-                    <div className="text-gray-500 text-xs mt-2 flex gap-3">
-                      <span>💬 tokens: {msg.stats.tokens}</span>
-                      <span>🔧 工具调用: {msg.stats.tool_calls}次</span>
-                      <span>🔍 检索: {msg.stats.retrieval_calls}次</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          }
-          
-          return (
-            <div
-              key={idx}
-              className={`flex ${'role' in msg && msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-2xl px-4 py-3 rounded-2xl ${
-                  'role' in msg && msg.role === 'user'
-                    ? 'bg-amber-50 text-slate-900 border border-amber-100'
-                    : 'bg-slate-100 text-slate-900'
-                }`}
-              >
-                {'role' in msg && msg.role === 'user' ? (
-                  <div className="whitespace-pre-wrap">
-                    {'imageBase64' in msg && msg.imageBase64 && (
-                      <div className="mb-2">
-                        <img 
-                          src={msg.imageBase64} 
-                          alt="用户上传的图片" 
-                          className="max-w-full h-auto rounded-lg border border-white/20"
-                          style={{ maxHeight: '300px' }}
-                        />
                       </div>
                     )}
-                    {'content' in msg ? msg.content : ''}
-                  </div>
-                ) : (
-                  <div className="prose prose-sm max-w-none prose-slate">
-                    {'reasoning' in msg && msg.reasoning && (
-                      <details 
-                        className="mb-4 border border-gray-200 rounded-lg bg-white overflow-hidden"
-                        open={msg.isReasoning}
-                      >
-                        <summary className="px-4 py-2 bg-gray-50 cursor-pointer text-xs font-medium text-gray-500 hover:bg-gray-100 select-none flex items-center">
-                          <span>💭 思考过程</span>
-                        </summary>
-                        <div className="px-4 py-3 text-gray-600 text-sm bg-gray-50/50 whitespace-pre-wrap border-t border-gray-100">
-                          {msg.reasoning}
-                        </div>
-                      </details>
+
+                    {turn.assistant && (
+                      <div className="prose prose-sm max-w-none prose-slate">
+                        {turn.assistant.reasoning && (
+                          <details 
+                            className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
+                            open={turn.assistant.isReasoning}
+                          >
+                            <summary className="flex cursor-pointer items-center px-4 py-2 text-xs font-medium text-slate-500 hover:bg-slate-100 select-none">
+                              <span>💭 思考过程</span>
+                            </summary>
+                            <div className="border-t border-slate-200 px-4 py-3 text-sm text-slate-600 whitespace-pre-wrap">
+                              {turn.assistant.reasoning}
+                            </div>
+                          </details>
+                        )}
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {turn.assistant.content}
+                        </ReactMarkdown>
+                      </div>
                     )}
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {'content' in msg ? msg.content : ''}
-                    </ReactMarkdown>
+
+                    {turn.sources.length > 0 && (
+                      <div className="mt-4 rounded-2xl border border-blue-200/80 bg-blue-50/70 px-4 py-3">
+                        <div className="mb-2 text-sm font-semibold text-blue-900">引用来源</div>
+                        <div className="space-y-2">
+                          {turn.sources.flatMap((sourceMessage) => sourceMessage.sources).map((src, index) => (
+                            <div key={`${src.url}_${index}`} className="rounded-2xl border border-blue-100 bg-white/80 px-3 py-2">
+                              <a
+                                href={src.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-medium text-blue-700 hover:underline"
+                              >
+                                {src.title}
+                              </a>
+                              <span className="ml-2 text-xs text-slate-500">({Math.round(src.similarity * 100)}%)</span>
+                              {src.text_snippet && (
+                                <div className="mt-1 text-xs text-slate-600">
+                                  {src.text_snippet.substring(0, 100)}...
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        {sourceTokens && sourceTokens > 0 && (
+                          <div className="mt-2 text-xs text-slate-500">💬 消耗 tokens: {sourceTokens}</div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )
         })}

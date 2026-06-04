@@ -88,6 +88,26 @@ export function downloadConversation(conversation: Conversation): void {
         content += `   Tokens: ${msg.tokens}\n`
       }
       content += '\n'
+    } else if ('type' in msg && msg.type === 'tool_trace') {
+      content += '[Tool Calls]\n'
+      msg.traces.forEach((trace: any, idx: number) => {
+        content += `${idx + 1}. ${trace.tool} [${trace.status}]\n`
+        if (trace.args && Object.keys(trace.args).length > 0) {
+          content += `   Args: ${Object.entries(trace.args).map(([key, value]) => `${key}: ${value}`).join(', ')}\n`
+        }
+        if (trace.summary) {
+          content += `   ${trace.summary}\n`
+        }
+        if (trace.sources && trace.sources.length > 0) {
+          trace.sources.forEach((src: any) => {
+            content += `   Ref: ${src.title} ${src.url}\n`
+          })
+        }
+      })
+      if (msg.stats) {
+        content += `   Tokens: ${msg.stats.tokens}, Tool Calls: ${msg.stats.tool_calls}, Retrieval: ${msg.stats.retrieval_calls}\n`
+      }
+      content += '\n'
     } else if ('role' in msg) {
       if (msg.role === 'user') {
         content += `Q. ${msg.content}`
