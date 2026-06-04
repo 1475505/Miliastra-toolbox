@@ -132,36 +132,39 @@
 
 ### 5.3 事件类型
 
-1. `status` — Agent 状态变化（如"正在查询节点信息..."）
-2. `tool_call` — 即将调用工具
-3. `tool_result` — 工具调用结果摘要
+1. `tool_call` — 即将调用工具
+2. `tool_result` — 工具调用结果摘要
+3. `token` — 流式文本片段
 4. `sources` — 最终来源列表
-5. `token` — 流式文本片段
-6. `done` — 本轮完成，含统计信息
-7. `error` — 错误
+5. `done` — 本轮完成，含统计信息
+6. `error` — 错误
 
 ### 5.4 SSE 数据格式
 
 ```text
-data: {"type": "status", "data": {"message": "正在查询碰撞触发器节点信息..."}}
-
-data: {"type": "tool_call", "data": {"tool": "get_node_info", "args": {"name": "碰撞触发器"}}}
+data: {"type": "tool_call", "data": {"tool": "get_node_info", "args": {"names": ["碰撞触发器"]}}}
 
 data: {"type": "tool_result", "data": {"tool": "get_node_info", "status": "success", "summary": "找到1个匹配节点"}}
 
+data: {"type": "tool_call", "data": {"tool": "generate_diagram", "args": {"svg_content": "<SVG 980 chars>", "title": "碰撞触发器流程"}}}
+
+data: {"type": "tool_result", "data": {"tool": "generate_diagram", "status": "success", "summary": "已生成图表「碰撞触发器流程」", "sources": [{"title": "碰撞触发器流程", "url": "/api/v1/agent/diagram/abc..."}]}}
+
 data: {"type": "token", "data": "碰撞触发器是事件节点，"}
 
-data: {"type": "token", "data": "当碰撞盒组件发生碰撞时触发。"}
+data: {"type": "token", "data": "\n\n![碰撞触发器流程](/api/v1/agent/diagram/abc...)"}
 
-data: {"type": "sources", "data": [{"title": "碰撞触发器", "source_doc": "事件节点"}]}
+data: {"type": "sources", "data": [{"title": "碰撞触发器", "url": ""}]}
 
-data: {"type": "done", "data": {"stats": {"tokens": 420, "tool_calls": 1, "retrieval_calls": 0}}}
+data: {"type": "done", "data": {"stats": {"tokens": 0, "tool_calls": 2, "retrieval_calls": 0}}}
 ```
+
+> `generate_diagram` 的 `args.svg_content` 在 SSE 和 trace 中被自动脱敏为 `"<SVG N chars>"`，不透传原始 SVG 文本。
 
 ### 5.5 事件约束
 
-1. `tool_call` 事件必须在真实调用工具前发送。
-2. `tool_result` 事件只发送摘要，不发送超长原始正文。
+1. `tool_call` 事件在真实调用工具前发送。
+2. `tool_result` 事件只发送摘要；`generate_diagram` 的 `svg_content` 参数自动截断为 `<SVG N chars>`。
 3. `done` 事件必须包含本轮统计信息。
 
 ## 6. 错误语义
@@ -205,7 +208,8 @@ data: {"type": "done", "data": {"stats": {"tokens": 420, "tool_calls": 1, "retri
       "get_node_info",
       "list_documents",
       "get_document",
-      "search_knowledge"
+      "search_knowledge",
+      "generate_diagram"
     ]
   }
 }
@@ -312,7 +316,40 @@ curl -X POST http://localhost:8000/api/v1/agent/chat \
 2. 新 Agent API 保持"tool-calling 的问答模式"。
 3. Agent API 内部通过 `search_knowledge` 工具复用现有 RAG 能力。
 
-## 10. 非目标
+## 10. generate_diagram 工具规范
+
+### 10.1 输入
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `svg_content` | string | 是 | 完整 SVG XML。文本只允许中文、英文、数字和基础标点，禁止 emoji 及装饰性 Unicode 符号（棋子、播放控制、天气、表情等） |
+| `title` | string | 否 | 图表标题，用于 alt 文本和 trace 展示 |
+
+### 10.2 输出（JSON 字符串）
+
+```json
+{
+  "diagram_id": "hex-uuid",
+  "png_url": "/api/v1/agent/diagram/{diagram_id}",
+  "markdown": "![title](/api/v1/agent/diagram/{diagram_id})",
+  "title": "string"
+}
+```
+
+错误时返回 `{"error": "string"}`。
+
+### 10.3 约束
+
+- SVG 不得引用外部字体或图片资源（SSRF 防护，`<script>` 及外部 `href`/`src` 会被自动剥离）
+- 建议画布宽度不超过 1200px
+- 模型调用成功后必须将 `markdown` 字段原样嵌入回答正文
+- `svg_content` 在 SSE/trace 中自动脱敏为 `<SVG N chars>`
+
+### 10.4 PNG 服务
+
+`GET /api/v1/agent/diagram/{diagram_id}` — 返回 `image/png`；图片仅存于进程内存（LRU，默认上限 100 张，由 `DIAGRAM_STORE_MAX` 控制），服务重启后失效。
+
+## 11. 非目标
 
 当前阶段不包含：
 

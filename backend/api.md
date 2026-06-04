@@ -10,6 +10,7 @@
   - [1. 非流式接口](#1-agent-非流式接口)
   - [2. 流式接口](#2-agent-流式接口)
   - [3. 能力发现](#3-能力发现接口)
+  - [4. 获取图表 PNG](#4-获取图表-png)
 
 - [Skill API](#skill-api)
   - [1. Skill 列表](#1-skill-列表)
@@ -380,6 +381,7 @@ for line in response.iter_lines():
 | `list_documents` | 列出文档标题和路径，可选关键词模糊过滤 |
 | `get_document` | 输入文档标题，返回文档全文，并附带相关节点匹配 |
 | `search_knowledge` | 向量检索知识库，语义搜索 |
+| `generate_diagram` | 生成 SVG 流程/节点图并转为 PNG，返回图片 URL 和 markdown 嵌入代码 |
 
 ---
 
@@ -423,11 +425,20 @@ for line in response.iter_lines():
     "mode": "agent",
     "tool_trace": [
       {"tool": "get_node_info", "args": {"names": ["碰撞触发器"]}, "status": "success", "summary": "..."}
+    ],
+    "diagrams": [
+      {
+        "diagram_id": "a1b2c3d4...",
+        "title": "碰撞触发器流程",
+        "png_base64": "iVBORw0KGgoAAAANSUhEUgAA..."
+      }
     ]
   },
   "error": null
 }
 ```
+
+**`diagrams` 字段说明**：AI 调用 `generate_diagram` 时自动填充，每项含 `diagram_id`、`title`、`png_base64`；无图表时为空数组 `[]`。PNG 同时可通过 `GET /api/v1/agent/diagram/{diagram_id}` 直接访问（内存存储，服务重启后失效）。
 
 ---
 
@@ -455,10 +466,15 @@ for line in response.iter_lines():
 ```text
 data: {"type": "tool_call", "data": {"tool": "get_node_info", "args": {"names": ["碰撞触发器"]}}}
 data: {"type": "tool_result", "data": {"tool": "get_node_info", "status": "success", "summary": "找到1个匹配节点"}}
+data: {"type": "tool_call", "data": {"tool": "generate_diagram", "args": {"svg_content": "<SVG 980 chars>", "title": "碰撞触发器流程"}}}
+data: {"type": "tool_result", "data": {"tool": "generate_diagram", "status": "success", "summary": "已生成图表「碰撞触发器流程」", "sources": [{"title": "碰撞触发器流程", "url": "/api/v1/agent/diagram/abc..."}]}}
 data: {"type": "token", "data": "碰撞触发器是事件节点，"}
+data: {"type": "token", "data": "\n\n![碰撞触发器流程](/api/v1/agent/diagram/abc...)"}
 data: {"type": "sources", "data": [...]}
-data: {"type": "done", "data": {"stats": {"tokens": 0, "tool_calls": 1, "retrieval_calls": 0}}}
+data: {"type": "done", "data": {"stats": {"tokens": 0, "tool_calls": 2, "retrieval_calls": 0}}}
 ```
+
+> `generate_diagram` 的 `args.svg_content` 在 SSE 和 trace 中被自动脱敏为 `"<SVG N chars>"`，不透传原始 SVG 文本。流式模式下图表以 `![title](url)` markdown 格式内嵌在 `token` 事件中，前端 markdown 渲染器可直接展示。
 
 ---
 
@@ -476,7 +492,7 @@ data: {"type": "done", "data": {"stats": {"tokens": 0, "tool_calls": 1, "retriev
     "mode": "agent",
     "streaming": true,
     "image_input": false,
-    "tools": ["get_node_info", "list_documents", "get_document", "search_knowledge"]
+    "tools": ["get_node_info", "list_documents", "get_document", "search_knowledge", "generate_diagram"]
   }
 }
 ```
@@ -488,6 +504,38 @@ data: {"type": "done", "data": {"stats": {"tokens": 0, "tool_calls": 1, "retriev
 | 最大工具调用轮次 | 6 | `AGENT_MAX_TOOL_ROUNDS` | 超出后截断事件流 |
 | 最大思考迭代数 | 10 | `AGENT_MAX_ITERATIONS` | 超出后禁用工具，将已有工具结果摘要交给模型生成最终回答 |
 | 超时时间 | 300s | `AGENT_TIMEOUT` | 超时后 Agent 强制终止 |
+
+---
+
+## 4. 获取图表 PNG
+
+### 接口地址
+**GET** `/api/v1/agent/diagram/{diagram_id}`
+
+### 说明
+
+返回 AI 在本轮对话中通过 `generate_diagram` 工具生成的 PNG 图片。
+
+- **内存存储**：图片仅存于进程内存（LRU 缓存，最多 `DIAGRAM_STORE_MAX` 张，默认 100），服务重启后失效
+- **缓存控制**：响应包含 `Cache-Control: public, max-age=3600`
+- **分辨率**：以 2x 缩放渲染，适合高 DPI 屏幕
+
+### 请求示例
+
+```bash
+# 浏览器直接访问（在 markdown 中自动触发）
+GET /api/v1/agent/diagram/abc1234...
+
+# cURL 保存到文件
+curl -o diagram.png http://localhost:8000/api/v1/agent/diagram/abc1234...
+```
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 200 | 成功，返回 `image/png` |
+| 404 | 图表不存在（ID 无效或服务已重启） |
 
 ---
 

@@ -680,108 +680,110 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                 </div>
               )}
 
-              {(turn.assistant || turn.toolTraces.length > 0 || turn.sources.length > 0) && (
+              {turn.toolTraces.length > 0 && (
                 <div className="flex justify-start">
-                  <div className="max-w-3xl w-full rounded-3xl border border-slate-200/80 bg-white/75 p-4 shadow-sm backdrop-blur-sm">
-                    {turn.toolTraces.length > 0 && (
-                      <div className="mb-4 rounded-2xl border border-violet-200/80 bg-violet-50/70 px-4 py-3">
-                        <div className="mb-2 flex items-center justify-between gap-3">
-                          <div className="text-sm font-semibold text-violet-900">工具调用</div>
-                          {turnStats && (
-                            <div className="flex flex-wrap gap-2 text-[11px] text-violet-700">
-                              <span className="rounded-full bg-white/70 px-2 py-0.5">tokens {turnStats.tokens}</span>
-                              <span className="rounded-full bg-white/70 px-2 py-0.5">工具 {turnStats.tool_calls}</span>
-                              <span className="rounded-full bg-white/70 px-2 py-0.5">检索 {turnStats.retrieval_calls}</span>
+                  <div className="max-w-2xl px-4 py-3 rounded-2xl bg-violet-50 text-gray-900">
+                    <details open className="group">
+                      <summary className="flex cursor-pointer items-center justify-between gap-3 select-none list-none">
+                        <div className="font-semibold text-sm">🔧 工具调用</div>
+                        {turnStats && (
+                          <div className="flex gap-3 text-gray-500 text-xs">
+                            <span>💬 {turnStats.tokens}</span>
+                            <span>🔧 {turnStats.tool_calls}次</span>
+                            <span>🔍 {turnStats.retrieval_calls}次</span>
+                          </div>
+                        )}
+                      </summary>
+                      <div className="mt-2 space-y-1.5">
+                        {turn.toolTraces.flatMap((toolMessage) => toolMessage.traces).map((trace, index) => (
+                          <div key={`${trace.tool}_${index}`} className="pb-1.5 border-b border-violet-100 last:border-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${
+                                trace.status === 'success' ? 'bg-green-500' : trace.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
+                              }`} />
+                              <span className="font-medium text-sm text-violet-800">{trace.tool}</span>
+                              <span className={`text-xs ${trace.status === 'success' ? 'text-green-600' : trace.status === 'error' ? 'text-red-600' : 'text-yellow-600'}`}>
+                                {trace.status === 'success' ? '✓' : trace.status === 'error' ? '✗' : '⏳'}
+                              </span>
                             </div>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          {turn.toolTraces.flatMap((toolMessage) => toolMessage.traces).map((trace, index) => (
-                            <div key={`${trace.tool}_${index}`} className="rounded-2xl border border-violet-100 bg-white/80 px-3 py-2">
-                              <div className="flex items-center gap-2">
-                                <span className={`inline-block h-1.5 w-1.5 rounded-full ${
-                                  trace.status === 'success' ? 'bg-green-500' : trace.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
-                                }`} />
-                                <span className="text-sm font-medium text-violet-900">{trace.tool}</span>
-                                <span className={`text-xs ${trace.status === 'success' ? 'text-green-600' : trace.status === 'error' ? 'text-red-600' : 'text-yellow-600'}`}>
-                                  {trace.status === 'success' ? '✓' : trace.status === 'error' ? '✗' : '⏳'}
-                                </span>
+                            {trace.args && Object.keys(trace.args).length > 0 && (
+                              <div className="text-gray-500 text-xs mt-1 font-mono bg-violet-100/50 rounded px-2 py-1">
+                                {Object.entries(trace.args).map(([k, v]) => `${k}: ${v}`).join(', ')}
                               </div>
-                              {trace.args && Object.keys(trace.args).length > 0 && (
-                                <div className="mt-1 rounded-lg bg-violet-100/70 px-2 py-1 font-mono text-xs text-slate-600">
-                                  {Object.entries(trace.args).map(([key, value]) => `${key}: ${value}`).join(', ')}
-                                </div>
-                              )}
-                              <div className="mt-1 text-xs text-slate-600">{trace.summary}</div>
-                              {trace.sources && trace.sources.length > 0 && (
-                                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                  {trace.sources.map((src, sourceIndex) => (
-                                    <a
-                                      key={`${src.url}_${sourceIndex}`}
-                                      href={src.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 rounded-full bg-violet-100/80 px-2 py-0.5 text-xs text-violet-700 hover:text-violet-900 hover:underline"
-                                    >
-                                      📄 {src.title}
-                                    </a>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
+                            )}
+                            <div className="text-gray-600 text-xs mt-1">{trace.summary}</div>
+                            {trace.sources && trace.sources.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                {trace.sources.map((src, si) => (
+                                  <a
+                                    key={`${src.url}_${si}`}
+                                    href={src.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 hover:underline bg-violet-100/60 rounded px-1.5 py-0.5"
+                                  >
+                                    📄 {src.title}
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    )}
+                    </details>
+                  </div>
+                </div>
+              )}
 
-                    {turn.assistant && (
-                      <div className="prose prose-sm max-w-none prose-slate">
-                        {turn.assistant.reasoning && (
-                          <details 
-                            className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
-                            open={turn.assistant.isReasoning}
-                          >
-                            <summary className="flex cursor-pointer items-center px-4 py-2 text-xs font-medium text-slate-500 hover:bg-slate-100 select-none">
-                              <span>💭 思考过程</span>
-                            </summary>
-                            <div className="border-t border-slate-200 px-4 py-3 text-sm text-slate-600 whitespace-pre-wrap">
-                              {turn.assistant.reasoning}
-                            </div>
-                          </details>
-                        )}
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {turn.assistant.content}
-                        </ReactMarkdown>
-                      </div>
-                    )}
+              {turn.assistant && (
+                <div className="flex justify-start">
+                  <div className="max-w-2xl px-4 py-3 rounded-2xl bg-slate-100 text-slate-900">
+                    <div className="prose prose-sm max-w-none prose-slate">
+                      {turn.assistant.reasoning && (
+                        <details 
+                          className="mb-4 border border-gray-200 rounded-lg bg-white overflow-hidden"
+                          open={turn.assistant.isReasoning}
+                        >
+                          <summary className="px-4 py-2 bg-gray-50 cursor-pointer text-xs font-medium text-gray-500 hover:bg-gray-100 select-none flex items-center">
+                            <span>💭 思考过程</span>
+                          </summary>
+                          <div className="px-4 py-3 text-gray-600 text-sm bg-gray-50/50 whitespace-pre-wrap border-t border-gray-100">
+                            {turn.assistant.reasoning}
+                          </div>
+                        </details>
+                      )}
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {turn.assistant.content}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-                    {turn.sources.length > 0 && (
-                      <div className="mt-4 rounded-2xl border border-blue-200/80 bg-blue-50/70 px-4 py-3">
-                        <div className="mb-2 text-sm font-semibold text-blue-900">引用来源</div>
-                        <div className="space-y-2">
-                          {turn.sources.flatMap((sourceMessage) => sourceMessage.sources).map((src, index) => (
-                            <div key={`${src.url}_${index}`} className="rounded-2xl border border-blue-100 bg-white/80 px-3 py-2">
-                              <a
-                                href={src.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm font-medium text-blue-700 hover:underline"
-                              >
-                                {src.title}
-                              </a>
-                              <span className="ml-2 text-xs text-slate-500">({Math.round(src.similarity * 100)}%)</span>
-                              {src.text_snippet && (
-                                <div className="mt-1 text-xs text-slate-600">
-                                  {src.text_snippet.substring(0, 100)}...
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        {sourceTokens && sourceTokens > 0 && (
-                          <div className="mt-2 text-xs text-slate-500">💬 消耗 tokens: {sourceTokens}</div>
+              {turn.sources.length > 0 && (
+                <div className="flex justify-start">
+                  <div className="max-w-2xl px-4 py-3 rounded-2xl bg-blue-50 text-gray-900">
+                    <div className="font-semibold mb-2 text-sm">📚 引用来源</div>
+                    {turn.sources.flatMap((sourceMessage) => sourceMessage.sources).map((src, index) => (
+                      <div key={`${src.url}_${index}`} className="mb-2 pb-2 border-b border-blue-100 last:border-0">
+                        <a
+                          href={src.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline font-medium text-sm"
+                        >
+                          {src.title}
+                        </a>
+                        <span className="text-gray-500 ml-2 text-xs">({Math.round(src.similarity * 100)}%)</span>
+                        {src.text_snippet && (
+                          <div className="text-gray-600 text-xs mt-1">
+                            {src.text_snippet.substring(0, 100)}...
+                          </div>
                         )}
                       </div>
+                    ))}
+                    {sourceTokens && sourceTokens > 0 && (
+                      <div className="text-gray-500 text-xs mt-2">💬 消耗 tokens: {sourceTokens}</div>
                     )}
                   </div>
                 </div>
