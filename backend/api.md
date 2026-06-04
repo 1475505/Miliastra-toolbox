@@ -430,7 +430,7 @@ for line in response.iter_lines():
       {
         "diagram_id": "a1b2c3d4...",
         "title": "碰撞触发器流程",
-        "png_base64": "iVBORw0KGgoAAAANSUhEUgAA..."
+        "png_data_uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
       }
     ]
   },
@@ -438,7 +438,7 @@ for line in response.iter_lines():
 }
 ```
 
-**`diagrams` 字段说明**：AI 调用 `generate_diagram` 时自动填充，每项含 `diagram_id`、`title`、`png_base64`；无图表时为空数组 `[]`。PNG 同时可通过 `GET /api/v1/agent/diagram/{diagram_id}` 直接访问（内存存储，服务重启后失效）。
+**`diagrams` 字段说明**：AI 调用 `generate_diagram` 时自动填充，每项含 `diagram_id`、`title`、`png_data_uri`；无图表时为空数组 `[]`。PNG 同时可通过 `GET /api/v1/agent/diagram/{diagram_id}` 直接访问（内存存储，服务重启后失效）。
 
 ---
 

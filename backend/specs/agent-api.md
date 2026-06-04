@@ -103,7 +103,7 @@
       {
         "diagram_id": "string",
         "title": "string",
-        "png_base64": "string"
+        "png_data_uri": "string"
       }
     ]
   },
@@ -117,7 +117,7 @@
 2. `tool_trace` 用于展示本轮调用过的工具链路。
 3. `retrieval_calls` 仅统计 `search_knowledge` 调用次数。
 4. `sources` 为最终回答引用来源的统一视图。
-5. `diagrams` 为本轮由 `generate_diagram` 工具生成的图表列表，每条含 `diagram_id`、`title` 和 `png_base64`（base64 编码 PNG）。无图表时为空数组。
+5. `diagrams` 为本轮由 `generate_diagram` 工具生成的图表列表，每条含 `diagram_id`、`title` 和 `png_data_uri`（包含 Data URI 前缀的 base64 PNG）。无图表时为空数组。
 6. PNG 图片也可通过 `GET /api/v1/agent/diagram/{diagram_id}` 单独获取（内存存储，服务重启后失效）。
 
 ## 5. 流式接口

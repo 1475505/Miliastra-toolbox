@@ -480,7 +480,7 @@ class AgentEngine:
 
 
 def _collect_diagrams(tool_trace: list[dict]) -> list[dict[str, str]]:
-    """从 tool_trace 中收集 generate_diagram 的结果，附加 png_base64。"""
+    """从 tool_trace 中收集 generate_diagram 的结果，附加 png_data_uri。"""
     import base64
     diagrams: list[dict[str, str]] = []
     for t in tool_trace:
@@ -495,9 +495,10 @@ def _collect_diagrams(tool_trace: list[dict]) -> list[dict[str, str]]:
             if entry is None:
                 continue
             png_bytes, title = entry
+            b64_str = base64.b64encode(png_bytes).decode("ascii")
             diagrams.append({
                 "diagram_id": diagram_id,
                 "title": title,
-                "png_base64": base64.b64encode(png_bytes).decode("ascii"),
+                "png_data_uri": f"data:image/png;base64,{b64_str}",
             })
     return diagrams
