@@ -26,7 +26,7 @@ from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.agent.workflow.workflow_events import AgentStream, ToolCall, ToolCallResult
 
-from common.llm_config import resolve_llm_config, openrouter_availability_loop
+from common.llm_config import resolve_llm_config
 from agent.prompt import DEFAULT_SYSTEM_PROMPT, NON_STREAM_OUTPUT_INSTRUCTION
 from skill.service import get_document_json, get_node_info_json, list_documents_json, rag_search_json
 from agent.diagram import generate_diagram, diagram_store

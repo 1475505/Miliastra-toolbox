@@ -2,7 +2,6 @@
 RAG Chat API 服务
 FastAPI 启动文件
 """
-import asyncio
 import os
 from dataclasses import dataclass
 from contextlib import asynccontextmanager
@@ -21,7 +20,7 @@ from skill.router import router as skill_router
 from translate.router import router as translate_router
 from translate import term_service
 from svg.router import router as svg_router
-from common.llm_config import openrouter_availability_loop
+
 
 
 @dataclass(frozen=True)
@@ -240,15 +239,7 @@ async def lifespan(app: FastAPI):
         # Error is already logged inside TermService.
         pass
 
-    task = asyncio.create_task(openrouter_availability_loop())
-    try:
-        yield
-    finally:
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
+    yield
 
 
 app = FastAPI(
