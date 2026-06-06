@@ -3,6 +3,7 @@
 PNG 存储在内存 LRU 缓存中（重启后丢失），通过
 GET /api/v1/agent/diagram/{diagram_id} 提供访问。
 """
+import contextvars
 import io
 import json
 import re
@@ -12,6 +13,10 @@ from typing import Optional
 import os
 
 _STORE_MAXSIZE = int(os.getenv("DIAGRAM_STORE_MAX", "100"))
+
+_host_context: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "diagram_host_base", default=""
+)
 
 
 # ── 内存 LRU 存储 ────────────────────────────────────────────
@@ -42,6 +47,11 @@ class _DiagramStore:
 diagram_store = _DiagramStore()
 
 
+def set_host_base(url: str) -> None:
+    """设置当前请求的 host base URL（从 HTTP 请求自动获取）。"""
+    _host_context.set(url)
+
+
 # ── SVG 净化（防 SSRF）───────────────────────────────────────
 _SCRIPT_RE = re.compile(r"<script[\s\S]*?</script>", re.IGNORECASE)
 # 匹配 href / xlink:href / src 中指向外部文件的 URL（保留 data: 和 # 锚点）
@@ -69,6 +79,14 @@ def _inject_cjk_font(svg: str) -> str:
     return result if n else svg
 
 
+# ── 白色背景注入 ────────────────────────────────────────────
+def _inject_white_background(svg: str) -> str:
+    """在 <svg> 开标签后插入白色背景矩形，避免生成的 PNG 背景透明。"""
+    rect = '<rect width="100%" height="100%" fill="white"/>'
+    result, n = _SVG_OPEN_RE.subn(lambda m: m.group(1) + rect, svg, count=1)
+    return result if n else svg
+
+
 # ── SVG → PNG ────────────────────────────────────────────────
 def _svg_to_png(svg_content: str, scale: float = 2.0) -> bytes:
     import cairosvg  # lazy import
@@ -93,10 +111,13 @@ def generate_diagram(svg_content: str, title: str = "") -> str:
     try:
         clean_svg = _svg_sanitize(svg_content)
         clean_svg = _inject_cjk_font(clean_svg)
+        clean_svg = _inject_white_background(clean_svg)
         png_bytes = _svg_to_png(clean_svg)
         diagram_id = uuid.uuid4().hex
         diagram_store.put(diagram_id, png_bytes, title)
-        png_url = f"/api/v1/agent/diagram/{diagram_id}"
+        base = _host_context.get()
+        png_path = f"/api/v1/agent/diagram/{diagram_id}"
+        png_url = f"{base}{png_path}" if base else png_path
         alt = title or "图表"
         return json.dumps({
             "diagram_id": diagram_id,

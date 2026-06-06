@@ -1,13 +1,13 @@
 """Agent API 路由 - /api/v1/agent/*"""
 import json
 import uuid
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
 from agent.agentEngine import AgentEngine
-from agent.diagram import diagram_store
+from agent.diagram import diagram_store, set_host_base
 
 router = APIRouter()
 
@@ -46,16 +46,18 @@ def _get_engine() -> AgentEngine:
 
 # ── 端点 ────────────────────────────────────────────────────
 @router.post("/agent/chat")
-async def agent_chat(request: AgentChatRequest):
+async def agent_chat(req: Request, body: AgentChatRequest):
     try:
+        base = f"{req.url.scheme}://{req.headers.get('host', '')}"
+        set_host_base(base)
         result = await _get_engine().chat(
-            message=request.message,
-            conversation=[m.model_dump() for m in request.conversation],
-            config=request.config.model_dump(),
+            message=body.message,
+            conversation=[m.model_dump() for m in body.conversation],
+            config=body.config.model_dump(),
         )
         return {"success": True, "data": {
-            "id": request.id or f"agent-{uuid.uuid4().hex[:12]}",
-            "question": request.message, "mode": "agent", **result}, "error": None}
+            "id": body.id or f"agent-{uuid.uuid4().hex[:12]}",
+            "question": body.message, "mode": "agent", **result}, "error": None}
     except ValueError as e:
         return {"success": False, "data": None, "error": {"code": "INVALID_CONFIG", "message": str(e)}}
     except Exception as e:
@@ -63,13 +65,15 @@ async def agent_chat(request: AgentChatRequest):
 
 
 @router.post("/agent/chat/stream")
-async def agent_chat_stream(request: AgentChatRequest):
+async def agent_chat_stream(req: Request, body: AgentChatRequest):
     try:
+        base = f"{req.url.scheme}://{req.headers.get('host', '')}"
+        set_host_base(base)
         return StreamingResponse(
             _get_engine().chat_stream(
-                message=request.message,
-                conversation=[m.model_dump() for m in request.conversation],
-                config=request.config.model_dump()),
+                message=body.message,
+                conversation=[m.model_dump() for m in body.conversation],
+                config=body.config.model_dump()),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"})
     except Exception as e:

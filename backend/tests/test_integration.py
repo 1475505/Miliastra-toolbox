@@ -28,7 +28,7 @@ def deepseek_config():
     return {
         "api_key": api_key,
         "api_base_url": "https://api.deepseek.com/v1",
-        "model": "deepseek-chat"
+        "model": "deepseek-v4-flash"
     }
 
 

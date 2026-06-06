@@ -23,7 +23,7 @@ export const getRandomChannel = (): number => {
 const defaultConfig: LLMConfig = {
   api_key: '',
   api_base_url: 'https://api.deepseek.com/v1',
-  model: 'deepseek-chat',
+  model: 'deepseek-v4-flash',
   use_default_model: getRandomChannel(),
   context_length: 1,
 }

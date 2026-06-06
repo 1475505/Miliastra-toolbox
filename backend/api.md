@@ -106,7 +106,7 @@
   "config": {
     "api_key": "sk-xxxxxxxx",
     "api_base_url": "https://api.deepseek.com/v1",
-    "model": "deepseek-chat",
+    "model": "deepseek-v4-flash",
     "use_default_model": 0
   }
 }
@@ -209,7 +209,7 @@ const response = await fetch('/api/v1/rag/chat', {
     config: {
       api_key: 'sk-xxxxxxxx',
       api_base_url: 'https://api.deepseek.com/v1',
-      model: 'deepseek-chat'
+      model: 'deepseek-v4-flash'
     }
   })
 });
@@ -231,7 +231,7 @@ response = requests.post('http://localhost:8000/api/v1/rag/chat', json={
     'config': {
         'api_key': 'sk-xxxxxxxx',
         'api_base_url': 'https://api.deepseek.com/v1',
-        'model': 'deepseek-chat'
+        'model': 'deepseek-v4-flash'
     }
 })
 
@@ -250,7 +250,7 @@ curl -X POST http://localhost:8000/api/v1/rag/chat \
     "config": {
       "api_key": "sk-xxxxxxxx",
       "api_base_url": "https://api.deepseek.com/v1",
-      "model": "deepseek-chat"
+      "model": "deepseek-v4-flash"
     }
   }'
 ```
@@ -305,7 +305,7 @@ const response = await fetch('/api/v1/rag/chat/stream', {
     config: {
       api_key: 'sk-xxxxxxxx',
       api_base_url: 'https://api.deepseek.com/v1',
-      model: 'deepseek-chat'
+      model: 'deepseek-v4-flash'
     }
   })
 });
@@ -347,7 +347,7 @@ response = requests.post(
         'config': {
             'api_key': 'sk-xxxxxxxx',
             'api_base_url': 'https://api.deepseek.com/v1',
-            'model': 'deepseek-chat'
+            'model': 'deepseek-v4-flash'
         }
     },
     stream=True

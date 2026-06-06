@@ -99,7 +99,7 @@ run_test_3() {
       \"config\": {
         \"api_key\": \"$DEEPSEEK_API_KEY\",
         \"api_base_url\": \"https://api.deepseek.com/v1\",
-        \"model\": \"deepseek-chat\"
+        \"model\": \"deepseek-v4-flash\"
       }
     }"
 }
