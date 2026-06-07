@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
 from agent.agentEngine import AgentEngine
-from agent.diagram import diagram_store, set_host_base
+from agent.diagram import diagram_store
 
 router = APIRouter()
 
@@ -49,12 +49,16 @@ def _get_engine() -> AgentEngine:
 async def agent_chat(req: Request, body: AgentChatRequest):
     try:
         base = f"{req.url.scheme}://{req.headers.get('host', '')}"
-        set_host_base(base)
         result = await _get_engine().chat(
             message=body.message,
             conversation=[m.model_dump() for m in body.conversation],
             config=body.config.model_dump(),
         )
+        answer = result.get("answer", "")
+        if base and "/api/v1/agent/diagram/" in answer:
+            result["answer"] = answer.replace(
+                "/api/v1/agent/diagram/", f"{base}/api/v1/agent/diagram/"
+            )
         return {"success": True, "data": {
             "id": body.id or f"agent-{uuid.uuid4().hex[:12]}",
             "question": body.message, "mode": "agent", **result}, "error": None}
@@ -64,16 +68,23 @@ async def agent_chat(req: Request, body: AgentChatRequest):
         return {"success": False, "data": None, "error": {"code": "INTERNAL_ERROR", "message": str(e)}}
 
 
+async def _rewrite_diagram_urls(agen, base: str):
+    prefix = f"{base}/api/v1/agent/diagram/"
+    async for chunk in agen:
+        yield chunk.replace("/api/v1/agent/diagram/", prefix)
+
+
 @router.post("/agent/chat/stream")
 async def agent_chat_stream(req: Request, body: AgentChatRequest):
     try:
         base = f"{req.url.scheme}://{req.headers.get('host', '')}"
-        set_host_base(base)
+        stream = _get_engine().chat_stream(
+            message=body.message,
+            conversation=[m.model_dump() for m in body.conversation],
+            config=body.config.model_dump(),
+        )
         return StreamingResponse(
-            _get_engine().chat_stream(
-                message=body.message,
-                conversation=[m.model_dump() for m in body.conversation],
-                config=body.config.model_dump()),
+            _rewrite_diagram_urls(stream, base) if base else stream,
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"})
     except Exception as e:

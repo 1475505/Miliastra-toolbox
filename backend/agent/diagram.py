@@ -3,7 +3,6 @@
 PNG 存储在内存 LRU 缓存中（重启后丢失），通过
 GET /api/v1/agent/diagram/{diagram_id} 提供访问。
 """
-import contextvars
 import io
 import json
 import re
@@ -13,10 +12,6 @@ from typing import Optional
 import os
 
 _STORE_MAXSIZE = int(os.getenv("DIAGRAM_STORE_MAX", "100"))
-
-_host_context: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "diagram_host_base", default=""
-)
 
 
 # ── 内存 LRU 存储 ────────────────────────────────────────────
@@ -45,11 +40,6 @@ class _DiagramStore:
 
 
 diagram_store = _DiagramStore()
-
-
-def set_host_base(url: str) -> None:
-    """设置当前请求的 host base URL（从 HTTP 请求自动获取）。"""
-    _host_context.set(url)
 
 
 # ── SVG 净化（防 SSRF）───────────────────────────────────────
@@ -115,9 +105,7 @@ def generate_diagram(svg_content: str, title: str = "") -> str:
         png_bytes = _svg_to_png(clean_svg)
         diagram_id = uuid.uuid4().hex
         diagram_store.put(diagram_id, png_bytes, title)
-        base = _host_context.get()
-        png_path = f"/api/v1/agent/diagram/{diagram_id}"
-        png_url = f"{base}{png_path}" if base else png_path
+        png_url = f"/api/v1/agent/diagram/{diagram_id}"
         alt = title or "图表"
         return json.dumps({
             "diagram_id": diagram_id,
