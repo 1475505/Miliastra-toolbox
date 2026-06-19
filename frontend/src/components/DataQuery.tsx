@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface GadgetItem {
   list_id: number
@@ -40,6 +40,26 @@ interface TranslationItem {
   tr: string
   vi: string
 }
+
+type LangKey = keyof Omit<TranslationItem, 'rowid'>
+
+const LANGUAGES = [
+  { key: 'chs' as LangKey, label: '简中', color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+  { key: 'cht' as LangKey, label: '繁中', color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+  { key: 'en' as LangKey, label: '英语', color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+  { key: 'jp' as LangKey, label: '日语', color: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
+  { key: 'kr' as LangKey, label: '韩语', color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+  { key: 'de' as LangKey, label: '德语', color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+  { key: 'fr' as LangKey, label: '法语', color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
+  { key: 'es' as LangKey, label: '西语', color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+  { key: 'it' as LangKey, label: '意语', color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200' },
+  { key: 'pt' as LangKey, label: '葡语', color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
+  { key: 'ru' as LangKey, label: '俄语', color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
+  { key: 'th' as LangKey, label: '泰语', color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
+  { key: 'tr' as LangKey, label: '土语', color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
+  { key: 'vi' as LangKey, label: '越语', color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
+  { key: 'id' as LangKey, label: '印尼语', color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+]
 
 interface DataResponse<T> {
   success: boolean
@@ -90,6 +110,24 @@ export default function DataQuery() {
   const [translateExactMatch, setTranslateExactMatch] = useState(false)
   const [translateMessage, setTranslateMessage] = useState('')
   const [translateItems, setTranslateItems] = useState<TranslationItem[]>([])
+  const [activeLang, setActiveLang] = useState<LangKey | null>(null)
+  const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (translateItems.length > 0) {
+      setSelectedRowId(translateItems[0].rowid)
+    } else {
+      setSelectedRowId(null)
+    }
+  }, [translateItems])
+
+  const scrollToLang = (key: LangKey) => {
+    setActiveLang(key)
+    const el = document.querySelector(`[data-lang="${key}"]`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }
 
   const [gadgetId, setGadgetId] = useState('')
   const [gadgetName, setGadgetName] = useState('')
@@ -296,57 +334,76 @@ export default function DataQuery() {
         {translateMessage && !translateError && <p className="text-sm text-slate-600 mb-2">{translateMessage}</p>}
 
         {translateHasSearched && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm border border-slate-200">
-              <thead className="bg-slate-100">
-                <tr>
-                  <th className="px-3 py-2 text-left">RowID</th>
-                  <th className="px-3 py-2 text-left">简中</th>
-                  <th className="px-3 py-2 text-left">繁中</th>
-                  <th className="px-3 py-2 text-left">英语</th>
-                  <th className="px-3 py-2 text-left">日语</th>
-                  <th className="px-3 py-2 text-left">韩语</th>
-                  <th className="px-3 py-2 text-left">德语</th>
-                  <th className="px-3 py-2 text-left">法语</th>
-                  <th className="px-3 py-2 text-left">西语</th>
-                  <th className="px-3 py-2 text-left">意语</th>
-                  <th className="px-3 py-2 text-left">葡语</th>
-                  <th className="px-3 py-2 text-left">俄语</th>
-                  <th className="px-3 py-2 text-left">泰语</th>
-                  <th className="px-3 py-2 text-left">土语</th>
-                  <th className="px-3 py-2 text-left">越语</th>
-                  <th className="px-3 py-2 text-left">印尼语</th>
-                </tr>
-              </thead>
-              <tbody>
-                {translateItems.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-3 text-slate-500" colSpan={16}>未找到结果</td>
-                  </tr>
-                ) : (
-                  translateItems.map((item) => (
-                    <tr key={item.rowid} className="border-t border-slate-200 align-top">
-                      <td className="px-3 py-2 whitespace-nowrap">{item.rowid}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.chs}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.cht}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.en}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.jp}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.kr}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.de}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.fr}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.es}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.it}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.pt}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.ru}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.th}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.tr}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.vi}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{item.id}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div>
+            {translateItems.length === 0 ? (
+              <p className="text-sm text-slate-500 py-3">未找到结果</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="overflow-x-auto pb-1">
+                  <div className="flex gap-2 flex-nowrap">
+                    {translateItems.map((item) => (
+                      <button
+                        key={item.rowid}
+                        onClick={() => setSelectedRowId(item.rowid)}
+                        className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
+                          selectedRowId === item.rowid
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {item.chs}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="sticky top-0 z-10 -mx-5 bg-white/95 backdrop-blur border-b border-slate-200 px-5 py-2 overflow-x-auto">
+                  <div className="flex gap-1.5 flex-nowrap">
+                    {LANGUAGES.map(({ key, label, color }) => (
+                      <button
+                        key={key}
+                        onClick={() => scrollToLang(key)}
+                        className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                          activeLang === key
+                            ? `${color} ring-2 ring-emerald-400 ring-offset-1`
+                            : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {(() => {
+                  const item = translateItems.find((i) => i.rowid === selectedRowId)
+                  if (!item) return null
+                  return (
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                      <div className="text-xs text-slate-400 mb-2 font-mono">RowID: {item.rowid}</div>
+                      <div className="space-y-0.5">
+                        {LANGUAGES.map(({ key, label, color }) => (
+                          <div
+                            key={key}
+                            data-lang={key}
+                            className={`flex gap-3 rounded-md px-3 py-1.5 transition-colors ${
+                              activeLang === key ? 'bg-emerald-50/80 ring-1 ring-emerald-300' : ''
+                            }`}
+                          >
+                            <span className={`w-10 shrink-0 rounded px-1 py-0.5 text-center text-xs font-medium ${color}`}>
+                              {label}
+                            </span>
+                            <span className="text-sm text-slate-800 break-words whitespace-pre-wrap min-w-0">
+                              {item[key]}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
           </div>
         )}
       </section>
