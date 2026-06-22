@@ -4,12 +4,16 @@ SVG 一图流文档 API
 """
 import io
 import re
+import threading
 from pathlib import Path
 from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response
 
 router = APIRouter()
+
+_RENDER_CONCURRENCY = int(__import__("os").getenv("SVG_RENDER_CONCURRENCY", "2"))
+_RENDER_SEM = threading.Semaphore(_RENDER_CONCURRENCY)
 
 _BASE = Path(__file__).resolve().parent.parent.parent
 _SVG_DIR = _BASE / "knowledge" / "Miliastra-knowledge" / "derived" / "svg"
@@ -88,9 +92,11 @@ def _svg_to_png(svg_path: Path, scale: float = 2.0) -> bytes:
     """将 SVG 文件渲染为 PNG 字节流。"""
     import cairosvg  # lazy import，仅在需要时加载
 
-    buf = io.BytesIO()
-    cairosvg.svg2png(url=str(svg_path), write_to=buf, scale=scale)
-    return buf.getvalue()
+    # 限制并发渲染数量，防止多个大 SVG 同时渲染撑爆内存
+    with _RENDER_SEM:
+        buf = io.BytesIO()
+        cairosvg.svg2png(url=str(svg_path), write_to=buf, scale=scale)
+        return buf.getvalue()
 
 
 

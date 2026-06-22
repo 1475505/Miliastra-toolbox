@@ -170,7 +170,7 @@ class TermService:
             rid = self._rowid_list[i]
             if rid in seen:
                 continue
-                contained_indices.append(i)
+            contained_indices.append(i)
             seen.add(rid)
             if len(contained_indices) >= limit:
                 break
@@ -184,6 +184,7 @@ class TermService:
                 self._chs_list,
                 scorer=fuzz.partial_ratio,
                 limit=max(limit * 4, 20),
+                score_cutoff=60,
             )
             for m in matches:
                 idx = m[2]  # type: ignore[index]

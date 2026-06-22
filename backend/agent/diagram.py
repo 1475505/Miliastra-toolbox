@@ -6,12 +6,15 @@ GET /api/v1/agent/diagram/{diagram_id} 提供访问。
 import io
 import json
 import re
+import threading
 import uuid
 from collections import OrderedDict
 from typing import Optional
 import os
 
-_STORE_MAXSIZE = int(os.getenv("DIAGRAM_STORE_MAX", "100"))
+_STORE_MAXSIZE = int(os.getenv("DIAGRAM_STORE_MAX", "30"))
+_RENDER_CONCURRENCY = int(os.getenv("DIAGRAM_RENDER_CONCURRENCY", "2"))
+_RENDER_SEM = threading.Semaphore(_RENDER_CONCURRENCY)
 
 
 # ── 内存 LRU 存储 ────────────────────────────────────────────
@@ -81,9 +84,11 @@ def _inject_white_background(svg: str) -> str:
 def _svg_to_png(svg_content: str, scale: float = 2.0) -> bytes:
     import cairosvg  # lazy import
 
-    buf = io.BytesIO()
-    cairosvg.svg2png(bytestring=svg_content.encode("utf-8"), write_to=buf, scale=scale)
-    return buf.getvalue()
+    # 限制并发渲染数量，防止多个大 SVG 同时渲染撑爆内存
+    with _RENDER_SEM:
+        buf = io.BytesIO()
+        cairosvg.svg2png(bytestring=svg_content.encode("utf-8"), write_to=buf, scale=scale)
+        return buf.getvalue()
 
 
 # ── 工具函数（供 FunctionTool 注册）────────────────────────────
