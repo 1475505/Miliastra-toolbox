@@ -144,7 +144,16 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   const [showConfig, setShowConfig] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const conversationTurns = buildConversationTurns(displayMessages)
+
+  // 输入框自动撑高
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto'
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 160)}px`
+    }
+  }, [input])
 
   // 初始化或加载对话
   useEffect(() => {
@@ -861,16 +870,23 @@ export default function Chat({ configVersion, currentConversationId, onConversat
               ⚙️ LLM 配置
             </button>
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
+          <div className="flex items-end gap-2">
+            <textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSend()
+                }
+              }}
               onPaste={handlePaste}
               placeholder="输入问题 / 粘贴图片；AI 回答仅供参考，以官方文档为准"
               disabled={loading}
-              className="flex-1 min-w-0 px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm"
+              rows={1}
+              className="flex-1 min-w-0 px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm resize-none overflow-y-auto"
+              style={{ minHeight: '40px', maxHeight: '160px' }}
             />
             <button
               onClick={handleSend}
