@@ -376,7 +376,16 @@ export default function Chat({ configVersion, currentConversationId, onConversat
       
       clearTimeout(timeoutId)
 
-      if (!response.ok) throw new Error('请求失败')
+      if (!response.ok) {
+        let errorDetail = `请求失败（HTTP ${response.status}）`
+        try {
+          const errorText = await response.text()
+          if (errorText) errorDetail = `${errorDetail}: ${errorText}`
+        } catch {
+          // 忽略读取响应体失败
+        }
+        throw new Error(errorDetail)
+      }
 
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
@@ -604,7 +613,9 @@ export default function Chat({ configVersion, currentConversationId, onConversat
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '网络错误')
+      console.error('对话流异常:', err)
+      const detail = err instanceof Error ? (err.message || '网络错误') : '网络错误'
+      setError(`连接异常：${detail}。若反复出现，可能是模型已达限额或配置有误，请检查 LLM 配置`)
     } finally {
       setLoading(false)
       setStatusMessage('')

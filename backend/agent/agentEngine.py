@@ -26,7 +26,7 @@ from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.agent.workflow.workflow_events import AgentStream, ToolCall, ToolCallResult
 
-from common.llm_config import resolve_llm_config
+from common.llm_config import resolve_llm_config, format_llm_error
 from agent.prompt import DEFAULT_SYSTEM_PROMPT, NON_STREAM_OUTPUT_INSTRUCTION
 from skill.service import get_document_json, get_node_info_json, list_documents_json, rag_search_json
 from agent.diagram import generate_diagram, diagram_store
@@ -434,7 +434,11 @@ class AgentEngine:
 
     async def chat_stream(self, message: str, conversation: List[Dict[str, str]],
                           config: Dict[str, Any]):
-        agent, chat_history = self._run_agent(config, conversation, plain_text_output=False)
+        try:
+            agent, chat_history = self._run_agent(config, conversation, plain_text_output=False)
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'data': format_llm_error(e)}, ensure_ascii=False)}\n\n"
+            return
         yield ": connected\n\n"
 
         tool_calls_count = retrieval_calls_count = 0
@@ -476,7 +480,8 @@ class AgentEngine:
                     yield f"data: {json.dumps({'type': 'sources', 'data': fallback_sources}, ensure_ascii=False)}\n\n"
                 yield f"data: {json.dumps({'type': 'done', 'data': {'stats': {'tokens': 0, 'tool_calls': tool_calls_count, 'retrieval_calls': retrieval_calls_count}}}, ensure_ascii=False)}\n\n"
             else:
-                yield f"data: {json.dumps({'type': 'error', 'data': str(e)}, ensure_ascii=False)}\n\n"
+                print(f"[AgentEngine] 流式生成失败: {format_llm_error(e)}")
+                yield f"data: {json.dumps({'type': 'error', 'data': format_llm_error(e)}, ensure_ascii=False)}\n\n"
 
 
 def _collect_diagrams(tool_trace: list[dict]) -> list[dict[str, str]]:

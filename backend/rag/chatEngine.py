@@ -44,7 +44,7 @@ from llama_index.core.vector_stores.types import MetadataFilters, MetadataFilter
 import tiktoken
 
 from src.rag_engine import create_rag_engine
-from common.llm_config import resolve_llm_config
+from common.llm_config import resolve_llm_config, format_llm_error
 
 
 class CombinedRetriever:
@@ -379,111 +379,113 @@ class ChatEngine:
     
     async def chat_stream_async(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str], image_base64: Optional[str] = None):
         """执行异步流式对话查询（带心跳机制防止超时）"""
-        # 1. 解析 LLM 配置
-        resolved_config = resolve_llm_config(config)
-        
-        # 2. 获取上下文长度配置
-        context_length = config.get("context_length", 1)
-        if context_length == 0:
-            limited_conversation = []
-        elif len(conversation) > context_length * 2:
-            limited_conversation = conversation[-(context_length * 2):]
-        else:
-            limited_conversation = conversation
-
-        # 3. 创建 LLM
-        llm = OpenAILike(
-            api_key=resolved_config["api_key"],
-            api_base=resolved_config["api_base_url"],
-            model=resolved_config["model"],
-            is_chat_model=True
-        )
-        print(f"[ChatEngine Stream] 使用模型: {resolved_config['model']} (API: {resolved_config['api_base_url']})")
-        
-        # 4. 转换对话历史为 ChatMessage 格式
-        chat_history = [
-            ChatMessage(role=msg["role"], content=msg["content"])
-            for msg in limited_conversation
-        ]
-        
-        # 5. 重置 token 计数器
-        self.token_counter.reset_counts()
-        
-        # 6. 设置全局 callback manager
+        # 保存原始 callback manager，确保异常时也能恢复
         original_callback_manager = LlamaSettings.callback_manager
-        LlamaSettings.callback_manager = CallbackManager([self.token_counter])
-        
         try:
+            # 1. 解析 LLM 配置
+            resolved_config = resolve_llm_config(config)
+
+            # 2. 获取上下文长度配置
+            context_length = config.get("context_length", 1)
+            if context_length == 0:
+                limited_conversation = []
+            elif len(conversation) > context_length * 2:
+                limited_conversation = conversation[-(context_length * 2):]
+            else:
+                limited_conversation = conversation
+
+            # 3. 创建 LLM
+            llm = OpenAILike(
+                api_key=resolved_config["api_key"],
+                api_base=resolved_config["api_base_url"],
+                model=resolved_config["model"],
+                is_chat_model=True
+            )
+            print(f"[ChatEngine Stream] 使用模型: {resolved_config['model']} (API: {resolved_config['api_base_url']})")
+
+            # 4. 转换对话历史为 ChatMessage 格式
+            chat_history = [
+                ChatMessage(role=msg["role"], content=msg["content"])
+                for msg in limited_conversation
+            ]
+
+            # 5. 重置 token 计数器
+            self.token_counter.reset_counts()
+
+            # 6. 设置全局 callback manager
+            LlamaSettings.callback_manager = CallbackManager([self.token_counter])
+
             # 步骤1：发送初始心跳
             yield ": connected\n\n"
-            
+
             # 步骤1.5：发送对话引擎就绪状态
             yield ": chat_engine_created\n\n"
-            
+
             # 步骤2：阶段1 - 让 LLM 生成检索查询
             yield f"data: {json.dumps({'type': 'status', 'data': '正在分析问题...'}, ensure_ascii=False)}\n\n"
             retrieval_query = await self._generate_retrieval_query_async(llm, message, image_base64)
             yield ": query_generated\n\n"
-            
+
             # 步骤3：阶段2 - 执行检索（TOP_K/DOC_MAX 由环境变量覆盖默认值）
             similarity_top_k = int(os.getenv("TOP_K", "12"))
             similarity_cutoff = float(os.getenv("SIMILARITY_THRESHOLD", "0.3"))
-            
+
             retriever = CombinedRetriever(
                 rag_engine=self.rag_engine,
                 total_k=similarity_top_k,
                 doc_max=int(os.getenv("DOC_MAX", "8")),
                 similarity_cutoff=similarity_cutoff
             )
-            
+
             # 使用 LLM 生成的查询进行检索
             nodes = await asyncio.to_thread(retriever.retrieve, retrieval_query)
             node_ids = [nd.node_id[:12] for nd in nodes]
             print(f"[ChatEngine Stream] 召回 {len(nodes)} 条, ids={node_ids}")
-            
+
             # 完成后立即发送心跳
             yield ": retrieval_done\n\n"
-            
+
             # 步骤4：发送来源信息
             sources = self._extract_sources(nodes)
             yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
             yield ": sources_sent\n\n"
-            
+
             # 步骤5：阶段3 - 构建 prompt 和消息，让 LLM 根据检索结果回答
             context_str = "\n\n".join([n.get_content() for n in nodes])
             fmt_msg = self._build_context_prompt(context_str, plain_text_output=False) + f"\n\n用户问题：{message}"
-            
+
             blocks = [TextBlock(text=fmt_msg)]
             if image_base64:
                 blocks.append(ImageBlock(url=image_base64))
                 print("[ChatEngine Stream] 已加载图片数据")
-            
+
             last_msg = ChatMessage(role=MessageRole.USER, blocks=blocks)
-            
+
             # 步骤6：流式发送文本
             stream_gen = await llm.astream_chat(chat_history + [last_msg])
-            
+
             chunk_count = 0
             async for response_chunk in stream_gen:
                 # response_chunk 是 ChatResponseChunk，包含 delta
                 content = response_chunk.delta
-                
+
                 if content:
                     yield f"data: {json.dumps({'type': 'token', 'data': content}, ensure_ascii=False)}\n\n"
-                
+
                 chunk_count += 1
                 if chunk_count % 10 == 0:
                     yield ": generating\n\n"
-            
+
             # 步骤7：发送完成信号
             completion_tokens = self.token_counter.completion_llm_token_count
             yield f"data: {json.dumps({'type': 'done', 'data': {'tokens': completion_tokens}}, ensure_ascii=False)}\n\n"
             yield ": completed\n\n"
-            
+
         except Exception as e:
-            # 发送错误信息
-            yield f"data: {json.dumps({'type': 'error', 'data': str(e)}, ensure_ascii=False)}\n\n"
-            
+            # 发送详细错误信息（覆盖每日限额、上游 API 429/配额超限等）
+            print(f"[ChatEngine Stream] 流式失败: {format_llm_error(e)}")
+            yield f"data: {json.dumps({'type': 'error', 'data': format_llm_error(e)}, ensure_ascii=False)}\n\n"
+
         finally:
             # 恢复原来的 callback manager
             LlamaSettings.callback_manager = original_callback_manager

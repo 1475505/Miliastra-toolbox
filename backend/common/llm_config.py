@@ -16,10 +16,43 @@ _CHANNEL_ENV: dict[int, tuple[str, str, str]] = {
 }
 
 
+def format_llm_error(err: Exception) -> str:
+    """将 LLM/上游 API 异常格式化为面向用户的详细错误信息。
+
+    覆盖常见情形：
+    - 后端每日限额 ValueError：str(err) 已含中文说明，原样返回。
+    - OpenAI 兼容 SDK 的 APIStatusError：提取 status_code、body、message。
+    - 其他异常：回退到 str(err)。
+    """
+    msg = str(err).strip()
+    status = getattr(err, "status_code", None)
+    body = getattr(err, "body", None)
+    api_message = getattr(err, "message", None)
+
+    parts: list[str] = []
+    if status:
+        parts.append(f"HTTP {status}")
+    if api_message and api_message not in msg:
+        parts.append(str(api_message))
+    if body:
+        if isinstance(body, dict):
+            # OpenAI 风格：{"error": {"message": "...", "type": "..."}}
+            inner = body.get("error") if isinstance(body.get("error"), dict) else body
+            detail = inner.get("message") or inner.get("detail") or ""
+            if detail and detail not in msg:
+                parts.append(str(detail))
+        elif isinstance(body, str) and body not in msg:
+            parts.append(body)
+
+    if parts:
+        return f"{msg}（{' | '.join(parts)}）" if msg else " | ".join(parts)
+    return msg or err.__class__.__name__
+
+
 def resolve_llm_config(config: Dict[str, Any]) -> Dict[str, str | int]:
     """解析 LLM 配置，返回 {api_key, api_base_url, model, channel_id}
 
-    所有渠道 1-5 均记录用量（渠道 1/2/5 同时强制每日限额）。
+    所有渠道 1-5 均记录用量（渠道 1/2/5 同时强制每日限额，
     """
     ch = config.get("use_default_model", 0)
 

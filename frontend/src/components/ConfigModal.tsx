@@ -38,7 +38,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
             <div className="ml-6 space-y-3">
               <div>
                 <label className="block text-sm text-gray-600 mb-2">
-                  渠道（各个渠道无优劣之分，若某渠道无法使用可尝试其他渠道）
+                  渠道（仅保证渠道 1 支持图片，但限额较大，按需使用）
                 </label>
                 <select
                   value={config.use_default_model}

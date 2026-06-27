@@ -13,6 +13,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+# ── 模型渠道限额配置（修改请在此调整）──────────────────────────
+# 需要限额的渠道及每日限额
+RATE_LIMITED_CHANNELS = {1: 50, 2: 250, 5: 250}
+# 仅追踪用量、不限额的渠道（免费渠道）
+TRACKED_CHANNELS = {3, 4}
+# 兼容性默认值（当渠道未在 RATE_LIMITED_CHANNELS 中配置时使用）
+DEFAULT_DAILY_LIMIT = 250
+
+
 class PGClient:
     """统一的 PostgreSQL 调用入口，支持简单事务控制。"""
 
@@ -118,11 +127,14 @@ class ModelUsageManager:
     其中 channel_id 存储在某个字段中以区分不同渠道
     """
     
-    # 需要限额的渠道（每日250次）
-    RATE_LIMITED_CHANNELS = {1, 2, 5}
-    # 仅追踪用量、不限额的渠道（OpenRouter 免费渠道）
-    TRACKED_CHANNELS = {3, 4}
-    DAILY_LIMIT = 250
+    # 引用文件顶部模块级配置，便于集中管理
+    RATE_LIMITED_CHANNELS = RATE_LIMITED_CHANNELS
+    TRACKED_CHANNELS = TRACKED_CHANNELS
+    DEFAULT_DAILY_LIMIT = DEFAULT_DAILY_LIMIT
+
+    def _get_channel_limit(self, channel_id: int) -> int:
+        """获取指定渠道的每日限额"""
+        return self.RATE_LIMITED_CHANNELS.get(channel_id, self.DEFAULT_DAILY_LIMIT)
     
     def __init__(self, pg_client: PGClient):
         self.pg_client = pg_client
@@ -167,14 +179,16 @@ class ModelUsageManager:
         
         is_limited = channel_id in self.RATE_LIMITED_CHANNELS
         
+        channel_limit = self._get_channel_limit(channel_id)
+
         # 数据库不可用，认为未限额
         if not self.pg_client.is_db_available():
             print("pg not available")
             return {
                 "allowed": True,
                 "usage": 0,
-                "limit": self.DAILY_LIMIT if is_limited else -1,
-                "remaining": self.DAILY_LIMIT if is_limited else -1
+                "limit": channel_limit if is_limited else -1,
+                "remaining": channel_limit if is_limited else -1
             }
         
         today = date.today()
@@ -198,11 +212,11 @@ class ModelUsageManager:
                 record_id = None
             
             # 检查是否超限（仅限额渠道）
-            if is_limited and current_usage >= self.DAILY_LIMIT:
+            if is_limited and current_usage >= channel_limit:
                 return {
                     "allowed": False,
                     "usage": current_usage,
-                    "limit": self.DAILY_LIMIT,
+                    "limit": channel_limit,
                     "remaining": 0
                 }
             
@@ -235,26 +249,26 @@ class ModelUsageManager:
             return {
                 "allowed": True,
                 "usage": new_usage,
-                "limit": self.DAILY_LIMIT if is_limited else -1,
-                "remaining": (self.DAILY_LIMIT - new_usage) if is_limited else -1
+                "limit": channel_limit if is_limited else -1,
+                "remaining": (channel_limit - new_usage) if is_limited else -1
             }
-            
+
         except Exception as e:
             print(f"[ModelUsageManager] 检查限额失败: {e}")
             # 出错时认为未限额
             return {
                 "allowed": True,
                 "usage": 0,
-                "limit": self.DAILY_LIMIT if is_limited else -1,
-                "remaining": self.DAILY_LIMIT if is_limited else -1
+                "limit": channel_limit if is_limited else -1,
+                "remaining": channel_limit if is_limited else -1
             }
     
     def get_usage(self, channel_id: int) -> Dict[str, Any]:
         """获取当前使用量（不递增）
-        
+
         Args:
             channel_id: 模型渠道ID
-            
+
         Returns:
             {"usage": int, "limit": int, "remaining": int}
         """
@@ -265,35 +279,37 @@ class ModelUsageManager:
                 "limit": -1,
                 "remaining": -1
             }
-        
+
+        channel_limit = self._get_channel_limit(channel_id)
+
         # 数据库不可用
         if not self.pg_client.is_db_available():
             return {
                 "usage": 0,
-                "limit": self.DAILY_LIMIT,
-                "remaining": self.DAILY_LIMIT
+                "limit": channel_limit,
+                "remaining": channel_limit
             }
-        
+
         today = date.today()
-        
+
         try:
             query = "SELECT usage FROM models WHERE model_id = %s AND date = %s"
             result = self.pg_client.execute_query(query, (channel_id, today))
-            
+
             current_usage = result[0][0] if result else 0
-            
+
             return {
                 "usage": current_usage or 0,
-                "limit": self.DAILY_LIMIT,
-                "remaining": max(0, self.DAILY_LIMIT - (current_usage or 0))
+                "limit": channel_limit,
+                "remaining": max(0, channel_limit - (current_usage or 0))
             }
-            
+
         except Exception as e:
             print(f"[ModelUsageManager] 获取使用量失败: {e}")
             return {
                 "usage": 0,
-                "limit": self.DAILY_LIMIT,
-                "remaining": self.DAILY_LIMIT
+                "limit": channel_limit,
+                "remaining": channel_limit
             }
 
 
