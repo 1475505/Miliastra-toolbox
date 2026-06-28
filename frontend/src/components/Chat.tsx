@@ -137,9 +137,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   const [statusMessage, setStatusMessage] = useState('')
   const [showConfigHint, setShowConfigHint] = useState(false)
   const [noticeContent, setNoticeContent] = useState('')
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [imageBase64, setImageBase64] = useState<string | null>(null)
-  const [imageInfo, setImageInfo] = useState<string>('')
+  const [images, setImages] = useState<{ base64: string; info: string }[]>([])
   const [agentMode, setAgentMode] = useState(true)
   const [showConfig, setShowConfig] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -162,7 +160,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
       if (conv) {
         setConversationId(conv.id)
         // 分离 messages 和 displayMessages
-        const userAssistantMessages = conv.messages.filter((m: any) => 'role' in m) as ExtendedMessage[]
+        const userAssistantMessages = conv.messages.filter((m: ChatMessage) => 'role' in m) as ExtendedMessage[]
         setMessages(userAssistantMessages)
         setDisplayMessages(conv.messages as ChatMessage[])
       }
@@ -242,14 +240,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
     })
   }
 
-  const handleImageChange = async (file: File | null) => {
-    if (!file) {
-      setImagePreview(null)
-      setImageBase64(null)
-      setImageInfo('')
-      return
-    }
-
+  const addImage = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setError('请选择图片文件')
       return
@@ -257,30 +248,40 @@ export default function Chat({ configVersion, currentConversationId, onConversat
 
     try {
       setError('')
-      setImageInfo('正在压缩图片...')
       const { base64, info } = await compressImageToBase64(file)
-      setImagePreview(base64)
-      setImageBase64(base64)
-      setImageInfo(info)
+      setImages((prev) => [...prev, { base64, info }])
     } catch (e) {
-      setImagePreview(null)
-      setImageBase64(null)
-      setImageInfo('')
       setError(e instanceof Error ? e.message : '图片处理失败')
     }
   }
 
+  const handleImageFiles = (files: FileList | null) => {
+    if (!files) return
+    Array.from(files).forEach((file) => addImage(file))
+  }
+
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const clearImages = () => {
+    setImages([])
+  }
+
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData.items
+    const imageFiles: File[] = []
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         const file = items[i].getAsFile()
         if (file) {
-          e.preventDefault()
-          handleImageChange(file)
-          return
+          imageFiles.push(file)
         }
       }
+    }
+    if (imageFiles.length > 0) {
+      e.preventDefault()
+      imageFiles.forEach((file) => addImage(file))
     }
   }
 
@@ -329,7 +330,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   }, [])
 
   const handleSend = async () => {
-    if ((!input.trim() && !imageBase64) || loading) return
+    if ((!input.trim() && images.length === 0) || loading) return
 
     const config = getConfig()
     if (!config.use_default_model && !config.api_key) {
@@ -338,17 +339,17 @@ export default function Chat({ configVersion, currentConversationId, onConversat
     }
 
     setShowConfigHint(false)
+    const imageBase64s = images.map((img) => img.base64)
+    const messageText = input.trim() || (imageBase64s.length > 0 ? '[图片提问]' : '')
     const userMessage: Message = { 
       role: 'user', 
-      content: input || (imageBase64 ? '[图片提问]' : ''),
-      imageBase64: imageBase64 || undefined,
+      content: messageText,
+      imageBase64s: imageBase64s.length > 0 ? imageBase64s : undefined,
     }
     setMessages((prev) => [...prev, userMessage])
     setDisplayMessages((prev) => [...prev, userMessage])
     setInput('')
-    setImagePreview(null)
-    setImageBase64(null)
-    setImageInfo('')
+    clearImages()
     setLoading(true)
     setError('')
     setTimeoutWarning('')
@@ -363,9 +364,12 @@ export default function Chat({ configVersion, currentConversationId, onConversat
       const timeoutId = setTimeout(() => controller.abort(), 20 * 60 * 1000) // 20分钟超时
       
       const apiUrl = agentMode ? '/api/v1/agent/chat/stream' : '/api/v1/rag/chat/stream'
-      const requestBody = agentMode
-        ? { message: input, conversation: contextMessages, config }
-        : { message: input, conversation: contextMessages, config, image_base64: imageBase64 }
+      const requestBody = {
+        message: messageText,
+        conversation: contextMessages,
+        config,
+        image_base64s: imageBase64s.length > 0 ? imageBase64s : undefined,
+      }
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -684,16 +688,21 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                 <div className="flex justify-end">
                   <div className="max-w-2xl px-4 py-3 rounded-2xl bg-amber-50 text-slate-900 border border-amber-100">
                     <div className="whitespace-pre-wrap">
-                      {turn.user.imageBase64 && (
-                        <div className="mb-2">
-                          <img 
-                            src={turn.user.imageBase64} 
-                            alt="用户上传的图片" 
+                      {(turn.user.imageBase64s && turn.user.imageBase64s.length > 0
+                        ? turn.user.imageBase64s
+                        : turn.user.imageBase64
+                          ? [turn.user.imageBase64]
+                          : []
+                      ).map((src, idx) => (
+                        <div key={`${src.slice(0, 32)}_${idx}`} className="mb-2">
+                          <img
+                            src={src}
+                            alt="用户上传的图片"
                             className="max-w-full h-auto rounded-lg border border-white/20"
                             style={{ maxHeight: '300px' }}
                           />
                         </div>
-                      )}
+                      ))}
                       {turn.user.content}
                     </div>
                   </div>
@@ -862,16 +871,25 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                 }`} />
               </button>
             </label>
-            <label className="px-3 py-2 border border-dashed border-slate-200 rounded-xl bg-white/60 text-sm text-slate-500 cursor-pointer hover:border-yellow-400 hover:bg-white transition-colors">
-              <span>📷 图片</span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handleImageChange(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
-                disabled={loading}
-              />
-            </label>
+            <div className="relative group">
+              <label
+                className="px-3 py-2 border border-dashed border-slate-200 rounded-xl bg-white/60 text-sm text-slate-500 cursor-pointer hover:border-yellow-400 hover:bg-white transition-colors"
+                aria-label="仅部分支持多模态的模型支持图片输入"
+              >
+                <span>📷 图片</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleImageFiles(e.target.files)}
+                  disabled={loading}
+                />
+              </label>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-none whitespace-nowrap pointer-events-none z-50">
+                仅部分支持多模态的模型支持图片输入
+              </div>
+            </div>
             <button
               type="button"
               onClick={() => setShowConfig(true)}
@@ -901,34 +919,35 @@ export default function Chat({ configVersion, currentConversationId, onConversat
             />
             <button
               onClick={handleSend}
-              disabled={loading || (!input.trim() && !imageBase64)}
+              disabled={loading || (!input.trim() && images.length === 0)}
               className="shrink-0 px-5 py-2 bg-yellow-300 text-slate-900 rounded-xl hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm text-sm"
             >
               {loading ? '…' : '发送'}
             </button>
           </div>
-          {imagePreview && (
-            <div className="flex items-center gap-3">
-              <img
-                src={imagePreview}
-                alt="已选择的图片"
-                className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-              />
-              <div className="flex-1 text-xs text-gray-600">
-                <div>已附带图片发送（{imageInfo || '大小信息计算中...'}）</div>
-                <button
-                  type="button"
-                  onClick={() => handleImageChange(null)}
-                  className="mt-1 text-xs text-red-500 hover:underline"
-                  disabled={loading}
-                >
-                  移除图片
-                </button>
-              </div>
+          {images.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3">
+              {images.map((img, idx) => (
+                <div key={`${img.base64.slice(0, 32)}_${idx}`} className="flex items-center gap-2 bg-white/60 border border-slate-100 rounded-lg px-2 py-1">
+                  <img
+                    src={img.base64}
+                    alt={`已选择的图片 ${idx + 1}`}
+                    className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                  />
+                  <div className="text-xs text-gray-600">
+                    <div>{img.info || '大小信息计算中...'}</div>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="mt-1 text-xs text-red-500 hover:underline"
+                      disabled={loading}
+                    >
+                      移除
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-          {!imagePreview && imageInfo && (
-            <div className="text-xs text-gray-500">{imageInfo}</div>
           )}
         </div>
         <div className="text-center text-xs text-slate-400 mt-2">

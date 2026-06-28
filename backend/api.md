@@ -77,7 +77,9 @@
     "api_base_url": "string - 用户自定义 API 基础 URL",
     "model": "string - 用户自定义模型名称",
     "use_default_model": "number - 0:不使用, 1:默认免费模型, 2:备用免费模型"
-  }
+  },
+  "image_base64": "string - 单张图片 Base64 Data URI（兼容旧版，可选）",
+  "image_base64s": ["string - 多张图片 Base64 Data URI（可选）"]
 }
 ```
 
@@ -405,7 +407,9 @@ for line in response.iter_lines():
     "model": "string",
     "use_default_model": 0,
     "context_length": 3
-  }
+  },
+  "image_base64": "string - 单张图片 Base64 Data URI（兼容旧版，可选）",
+  "image_base64s": ["string - 多张图片 Base64 Data URI（可选）"]
 }
 ```
 
@@ -491,7 +495,7 @@ data: {"type": "done", "data": {"stats": {"tokens": 0, "tool_calls": 2, "retriev
   "data": {
     "mode": "agent",
     "streaming": true,
-    "image_input": false,
+    "image_input": true,
     "tools": ["get_node_info", "list_documents", "get_document", "search_knowledge", "generate_diagram"]
   }
 }

@@ -1,4 +1,4 @@
-import { Conversation, Message } from '../types'
+import { Conversation, Message, Source, ToolTrace } from '../types'
 
 const STORAGE_KEY = 'chat_conversations'
 
@@ -77,7 +77,7 @@ export function downloadConversation(conversation: Conversation): void {
     if ('type' in msg && msg.type === 'sources') {
       // 处理引用来源
       content += '[Sources]\n'
-      msg.sources.forEach((src: any, idx: number) => {
+      msg.sources.forEach((src: Source, idx: number) => {
         content += `${idx + 1}. ${src.title} (${Math.round(src.similarity * 100)}%)\n`
         content += `   ${src.url}\n`
         if (src.text_snippet) {
@@ -90,7 +90,7 @@ export function downloadConversation(conversation: Conversation): void {
       content += '\n'
     } else if ('type' in msg && msg.type === 'tool_trace') {
       content += '[Tool Calls]\n'
-      msg.traces.forEach((trace: any, idx: number) => {
+      msg.traces.forEach((trace: ToolTrace, idx: number) => {
         content += `${idx + 1}. ${trace.tool} [${trace.status}]\n`
         if (trace.args && Object.keys(trace.args).length > 0) {
           content += `   Args: ${Object.entries(trace.args).map(([key, value]) => `${key}: ${value}`).join(', ')}\n`
@@ -99,7 +99,7 @@ export function downloadConversation(conversation: Conversation): void {
           content += `   ${trace.summary}\n`
         }
         if (trace.sources && trace.sources.length > 0) {
-          trace.sources.forEach((src: any) => {
+          trace.sources.forEach((src: { title: string; url: string }) => {
             content += `   Ref: ${src.title} ${src.url}\n`
           })
         }
@@ -111,8 +111,9 @@ export function downloadConversation(conversation: Conversation): void {
     } else if ('role' in msg) {
       if (msg.role === 'user') {
         content += `Q. ${msg.content}`
-        if ('imageBase64' in msg && msg.imageBase64) {
-          content += '\n[用户发送了图片]'
+        const imageCount = msg.imageBase64s?.length || (msg.imageBase64 ? 1 : 0)
+        if (imageCount > 0) {
+          content += `\n[用户发送了${imageCount}张图片]`
         }
         content += '\n\n'
       } else if (msg.role === 'assistant') {

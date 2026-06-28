@@ -61,7 +61,7 @@ def resolve_llm_config(config: Dict[str, Any]) -> Dict[str, str | int]:
         if not quota["allowed"]:
             raise ValueError(
                 f"渠道 {ch} 已达每日限额 {quota['limit']} 次，"
-                f"当前使用 {quota['usage']} 次，请明天再试或使用其他渠道"
+                f"当前使用 {quota['usage']} 次，请明天再试或在 LLM 配置自行提供模型API服务/使用其他免费渠道"
             )
         if quota["limit"] != -1:
             print(f"[LLMConfig] 渠道 {ch} 用量: {quota['usage']}/{quota['limit']}，"

@@ -39,6 +39,7 @@ class ChatRequest(BaseModel):
     conversation: List[Message] = Field(default_factory=list)
     config: LLMConfig
     image_base64: Optional[str] = None
+    image_base64s: Optional[List[str]] = None
 
 
 # ============ 响应模型 ============
@@ -98,12 +99,17 @@ async def chat(request: ChatRequest):
         conversation = [msg.dict() for msg in request.conversation]
         llm_config = request.config.dict()
         
-        # 3. 执行对话
+        # 3. 兼容单张/多张图片
+        image_base64s = request.image_base64s
+        if not image_base64s and request.image_base64:
+            image_base64s = [request.image_base64]
+
+        # 4. 执行对话
         result = engine.chat(
             message=request.message,
             conversation=conversation,
             config=llm_config,
-            image_base64=request.image_base64
+            image_base64s=image_base64s
         )
         
         # 4. 构建响应
@@ -157,13 +163,18 @@ async def chat_stream(request: ChatRequest):
         conversation = [msg.dict() for msg in request.conversation]
         llm_config = request.config.dict()
         
-        # 3. 返回流式响应
+        # 3. 兼容单张/多张图片
+        image_base64s = request.image_base64s
+        if not image_base64s and request.image_base64:
+            image_base64s = [request.image_base64]
+
+        # 4. 返回流式响应
         return StreamingResponse(
             engine.chat_stream_async(
                 message=request.message,
                 conversation=conversation,
                 config=llm_config,
-                image_base64=request.image_base64
+                image_base64s=image_base64s
             ),
             media_type="text/event-stream",
             headers={

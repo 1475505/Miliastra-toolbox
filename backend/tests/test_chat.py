@@ -5,7 +5,7 @@ RAG Chat 功能测试
 """
 import pytest
 from rag.chatEngine import ChatEngine
-from rag.chat import ChatRequest, ChatResponse, Message
+from rag.chat import ChatRequest, ChatResponse, Message, LLMConfig
 
 
 class TestChatEngine:
@@ -81,6 +81,22 @@ class TestChatAPI:
         assert response.data.answer == "小地图是..."
         assert len(response.data.sources) == 1
         assert response.error is None
+
+    def test_request_with_multiple_images(self):
+        """测试多张图片请求参数"""
+        request = ChatRequest(
+            message="这两张图有什么区别？",
+            conversation=[],
+            config=LLMConfig(
+                api_key="sk-test",
+                api_base_url="https://api.deepseek.com/v1",
+                model="deepseek-v4-flash"
+            ),
+            image_base64s=["data:image/png;base64,abc", "data:image/png;base64,def"]
+        )
+        assert request.message == "这两张图有什么区别？"
+        assert request.image_base64s is not None
+        assert len(request.image_base64s) == 2
 
 
 if __name__ == "__main__":

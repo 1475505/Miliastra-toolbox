@@ -10,6 +10,7 @@ export interface Message {
   role: 'user' | 'assistant'
   content: string
   imageBase64?: string
+  imageBase64s?: string[]
 }
 
 export interface Source {

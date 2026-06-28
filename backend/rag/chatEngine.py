@@ -186,21 +186,21 @@ class ChatEngine:
             "用户问题：{message}"
         )
     
-    def _generate_retrieval_query(self, llm, message: str, image_base64: Optional[str] = None) -> str:
+    def _generate_retrieval_query(self, llm, message: str, image_base64s: Optional[List[str]] = None) -> str:
         """阶段1：让 LLM 分析用户问题（+图片），生成检索查询
         
         Args:
             llm: LLM 实例
             message: 用户原始问题
-            image_base64: 可选的图片数据
+            image_base64s: 可选的图片数据列表
             
         Returns:
             生成的检索查询字符串
         """
         prompt_text = self.query_extraction_prompt.format(message=message)
         
-        blocks = [TextBlock(text=prompt_text)]
-        if image_base64:
+        blocks: List[Any] = [TextBlock(text=prompt_text)]
+        for image_base64 in image_base64s or []:
             blocks.append(ImageBlock(url=image_base64))
         
         extract_msg = ChatMessage(role=MessageRole.USER, blocks=blocks)
@@ -216,12 +216,12 @@ class ChatEngine:
             print(f"[ChatEngine] 检索查询生成失败，使用原始问题: {e}")
             return message
     
-    async def _generate_retrieval_query_async(self, llm, message: str, image_base64: Optional[str] = None) -> str:
+    async def _generate_retrieval_query_async(self, llm, message: str, image_base64s: Optional[List[str]] = None) -> str:
         """异步版本：让 LLM 分析用户问题（+图片），生成检索查询"""
         prompt_text = self.query_extraction_prompt.format(message=message)
         
-        blocks = [TextBlock(text=prompt_text)]
-        if image_base64:
+        blocks: List[Any] = [TextBlock(text=prompt_text)]
+        for image_base64 in image_base64s or []:
             blocks.append(ImageBlock(url=image_base64))
         
         extract_msg = ChatMessage(role=MessageRole.USER, blocks=blocks)
@@ -273,14 +273,14 @@ class ChatEngine:
             prompt = f"{prompt}\n{self.NON_STREAM_OUTPUT_INSTRUCTION}"
         return prompt
     
-    def chat(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str], image_base64: Optional[str] = None) -> Dict[str, Any]:
+    def chat(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str], image_base64s: Optional[List[str]] = None) -> Dict[str, Any]:
         """执行对话查询
         
         Args:
             message: 用户问题
             conversation: 对话历史 [{"role": "user|assistant", "content": "..."}]
             config: LLM 配置 {"api_key", "api_base_url", "model", "use_default_model", "context_length"}
-            image_base64: 可选的 Base64 编码图片字符串 (data:image/jpeg;base64,...)
+            image_base64s: 可选的 Base64 编码图片字符串列表 (data:image/jpeg;base64,...)
         
         Returns:
             {"answer": str, "sources": List[dict], "tokens": int}
@@ -321,7 +321,7 @@ class ChatEngine:
         
         try:
             # 7. 阶段1：让 LLM 生成检索查询
-            retrieval_query = self._generate_retrieval_query(llm, message, image_base64)
+            retrieval_query = self._generate_retrieval_query(llm, message, image_base64s)
             
             # 8. 阶段2：执行检索（TOP_K/DOC_MAX 由环境变量覆盖默认值）
             similarity_top_k = int(os.getenv("TOP_K", "12"))
@@ -341,8 +341,8 @@ class ChatEngine:
             context_str = "\n\n".join([n.get_content() for n in nodes])
             fmt_msg = self._build_context_prompt(context_str, plain_text_output=True) + f"\n\n用户问题：{message}"
             
-            blocks = [TextBlock(text=fmt_msg)]
-            if image_base64:
+            blocks: List[Any] = [TextBlock(text=fmt_msg)]
+            for image_base64 in image_base64s or []:
                 # 使用 url 传递 data URI
                 blocks.append(ImageBlock(url=image_base64))
             
@@ -354,8 +354,10 @@ class ChatEngine:
             # 10. 提取来源
             sources = self._extract_sources(nodes)
             
-            # 11. 获取 completion tokens
+            # 11. 获取 completion tokens（若上游未返回用量则按词表估算）
             completion_tokens = self.token_counter.completion_llm_token_count
+            if completion_tokens == 0 and response.message.content:
+                completion_tokens = len(self.token_counter.tokenizer(response.message.content))
             
             result = {
                 "answer": response.message.content,
@@ -377,7 +379,7 @@ class ChatEngine:
             # 恢复原来的 callback manager
             LlamaSettings.callback_manager = original_callback_manager
     
-    async def chat_stream_async(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str], image_base64: Optional[str] = None):
+    async def chat_stream_async(self, message: str, conversation: List[Dict[str, str]], config: Dict[str, str], image_base64s: Optional[List[str]] = None):
         """执行异步流式对话查询（带心跳机制防止超时）"""
         # 保存原始 callback manager，确保异常时也能恢复
         original_callback_manager = LlamaSettings.callback_manager
@@ -423,7 +425,7 @@ class ChatEngine:
 
             # 步骤2：阶段1 - 让 LLM 生成检索查询
             yield f"data: {json.dumps({'type': 'status', 'data': '正在分析问题...'}, ensure_ascii=False)}\n\n"
-            retrieval_query = await self._generate_retrieval_query_async(llm, message, image_base64)
+            retrieval_query = await self._generate_retrieval_query_async(llm, message, image_base64s)
             yield ": query_generated\n\n"
 
             # 步骤3：阶段2 - 执行检索（TOP_K/DOC_MAX 由环境变量覆盖默认值）
@@ -454,10 +456,11 @@ class ChatEngine:
             context_str = "\n\n".join([n.get_content() for n in nodes])
             fmt_msg = self._build_context_prompt(context_str, plain_text_output=False) + f"\n\n用户问题：{message}"
 
-            blocks = [TextBlock(text=fmt_msg)]
-            if image_base64:
+            blocks: List[Any] = [TextBlock(text=fmt_msg)]
+            for image_base64 in image_base64s or []:
                 blocks.append(ImageBlock(url=image_base64))
-                print("[ChatEngine Stream] 已加载图片数据")
+            if image_base64s:
+                print(f"[ChatEngine Stream] 已加载 {len(image_base64s)} 张图片数据")
 
             last_msg = ChatMessage(role=MessageRole.USER, blocks=blocks)
 
@@ -476,8 +479,10 @@ class ChatEngine:
                 if chunk_count % 10 == 0:
                     yield ": generating\n\n"
 
-            # 步骤7：发送完成信号
+            # 步骤7：发送完成信号（若上游未返回用量则按已生成文本估算）
             completion_tokens = self.token_counter.completion_llm_token_count
+            if completion_tokens == 0:
+                completion_tokens = len(self.token_counter.tokenizer(partial_answer or ""))
             yield f"data: {json.dumps({'type': 'done', 'data': {'tokens': completion_tokens}}, ensure_ascii=False)}\n\n"
             yield ": completed\n\n"
 

@@ -50,7 +50,9 @@
     "model": "string",
     "use_default_model": 0,
     "context_length": 3
-  }
+  },
+  "image_base64": "string, optional - 单张图片 Base64 Data URI（兼容旧版）",
+  "image_base64s": ["string, optional - 多张图片 Base64 Data URI"]
 }
 ```
 
@@ -203,7 +205,7 @@ data: {"type": "done", "data": {"stats": {"tokens": 0, "tool_calls": 2, "retriev
   "data": {
     "mode": "agent",
     "streaming": true,
-    "image_input": false,
+    "image_input": true,
     "tools": [
       "get_node_info",
       "list_documents",

@@ -31,6 +31,8 @@ class AgentChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
     conversation: List[Message] = Field(default_factory=list)
     config: LLMConfig
+    image_base64: Optional[str] = None
+    image_base64s: Optional[List[str]] = None
 
 
 # ── 单例 ────────────────────────────────────────────────────
@@ -44,6 +46,14 @@ def _get_engine() -> AgentEngine:
     return _engine
 
 
+def _normalize_image_base64s(body: AgentChatRequest) -> Optional[List[str]]:
+    """兼容单张/多张图片输入，统一返回图片列表（无图片时返回 None）"""
+    images = list(body.image_base64s or [])
+    if body.image_base64 and body.image_base64 not in images:
+        images.insert(0, body.image_base64)
+    return images if images else None
+
+
 # ── 端点 ────────────────────────────────────────────────────
 @router.post("/agent/chat")
 async def agent_chat(req: Request, body: AgentChatRequest):
@@ -53,6 +63,7 @@ async def agent_chat(req: Request, body: AgentChatRequest):
             message=body.message,
             conversation=[m.model_dump() for m in body.conversation],
             config=body.config.model_dump(),
+            image_base64s=_normalize_image_base64s(body),
         )
         answer = result.get("answer", "")
         if base and "/api/v1/agent/diagram/" in answer:
@@ -82,6 +93,7 @@ async def agent_chat_stream(req: Request, body: AgentChatRequest):
             message=body.message,
             conversation=[m.model_dump() for m in body.conversation],
             config=body.config.model_dump(),
+            image_base64s=_normalize_image_base64s(body),
         )
         return StreamingResponse(
             _rewrite_diagram_urls(stream, base) if base else stream,

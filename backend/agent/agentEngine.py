@@ -5,7 +5,7 @@ import asyncio
 import json
 from pathlib import Path
 from functools import lru_cache
-from typing import List, Dict, Any, cast
+from typing import List, Dict, Any, Optional, cast
 from collections import defaultdict
 
 from dotenv import load_dotenv
@@ -22,7 +22,7 @@ for p in [os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
 
 from llama_index.core.agent import FunctionAgent
 from llama_index.core.tools import FunctionTool
-from llama_index.core.llms import ChatMessage, MessageRole
+from llama_index.core.llms import ChatMessage, MessageRole, TextBlock, ImageBlock
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.agent.workflow.workflow_events import AgentStream, ToolCall, ToolCallResult
 
@@ -71,6 +71,16 @@ def _resolve_url(local_path: str) -> str:
         filename = Path(local_path).name
         url = name_map.get(filename, "")
     return url
+
+
+def _build_user_msg(message: str, image_base64s: Optional[List[str]] = None) -> str | ChatMessage:
+    """构建用户消息，支持附带多张图片。"""
+    if not image_base64s:
+        return message
+    blocks: List[Any] = [TextBlock(text=message)]
+    for image_base64 in image_base64s:
+        blocks.append(ImageBlock(url=image_base64))
+    return ChatMessage(role=MessageRole.USER, blocks=blocks)
 
 
 def _iter_search_results(data: Any) -> list[dict[str, Any]]:
@@ -182,6 +192,7 @@ class AgentEngine:
         conversation: List[Dict[str, str]],
         tool_trace: list[dict[str, str | dict[str, str] | list[dict[str, str]]]],
         partial_answer: str,
+        image_base64s: Optional[List[str]] = None,
     ) -> dict[str, Any]:
         """迭代上限兜底：禁用工具，将已有 tool_trace 作为上下文生成最终回答，并返回整理后的 sources。"""
         rc = resolve_llm_config(config)
@@ -215,18 +226,22 @@ class AgentEngine:
             "基于已有工具结果摘要和对话上下文直接作答。"
             "不要输出思考过程或过程话术，直接给最终答案；信息不足时明确说明。"
         )
-        user_msg = (
+        fallback_text = (
             f"用户问题:\n{message}\n\n"
             f"已收集的工具结果:\n{tool_ctx}\n\n"
             f"已输出的片段:\n{partial_answer or '（无）'}\n\n"
             "请基于以上信息直接产出最终答复。"
         )
+        fallback_blocks: List[Any] = [TextBlock(text=fallback_text)]
+        for image_base64 in image_base64s or []:
+            fallback_blocks.append(ImageBlock(url=image_base64))
+        fallback_msg = ChatMessage(role=MessageRole.USER, blocks=fallback_blocks)
 
         try:
             resp = await llm.achat([
                 ChatMessage(role=MessageRole.SYSTEM, content=system),
                 *history,
-                ChatMessage(role=MessageRole.USER, content=user_msg),
+                fallback_msg,
             ])
             return {
                 "answer": (resp.message.content or "").strip(),
@@ -397,14 +412,15 @@ class AgentEngine:
             return []
 
     async def chat(self, message: str, conversation: List[Dict[str, str]],
-                   config: Dict[str, Any]) -> Dict[str, Any]:
+                   config: Dict[str, Any],
+                   image_base64s: Optional[List[str]] = None) -> Dict[str, Any]:
         agent, chat_history = self._run_agent(config, conversation, plain_text_output=True)
         tool_trace, sources = [], []
         tool_calls_count = retrieval_calls_count = 0
         last_response = ""
 
         try:
-            handler = agent.run(user_msg=message, chat_history=chat_history,
+            handler = agent.run(user_msg=_build_user_msg(message, image_base64s), chat_history=chat_history,
                                 max_iterations=AGENT_MAX_ITERATIONS)
             async for ev in handler.stream_events():
                 if isinstance(ev, ToolCallResult):
@@ -425,7 +441,7 @@ class AgentEngine:
             if self._is_max_iter_error(e):  # 迭代上限兜底：携带 tool_trace 生成最终回答
                 print("[AgentEngine] 达到迭代上限，携带工具结果兜底作答")
                 fallback = await self._fallback_answer(
-                    config, message, conversation, tool_trace, last_response)
+                    config, message, conversation, tool_trace, last_response, image_base64s)
                 return {"answer": fallback["answer"], "sources": fallback["sources"],
                         "stats": {"tokens": 0, "tool_calls": tool_calls_count,
                                    "retrieval_calls": retrieval_calls_count},
@@ -433,7 +449,8 @@ class AgentEngine:
             raise
 
     async def chat_stream(self, message: str, conversation: List[Dict[str, str]],
-                          config: Dict[str, Any]):
+                          config: Dict[str, Any],
+                          image_base64s: Optional[List[str]] = None):
         try:
             agent, chat_history = self._run_agent(config, conversation, plain_text_output=False)
         except Exception as e:
@@ -446,7 +463,7 @@ class AgentEngine:
         partial_answer = ""
         sources: list[dict[str, str | float]] = []
         try:
-            handler = agent.run(user_msg=message, chat_history=chat_history,
+            handler = agent.run(user_msg=_build_user_msg(message, image_base64s), chat_history=chat_history,
                                 max_iterations=AGENT_MAX_ITERATIONS)
             async for ev in handler.stream_events():
                 if isinstance(ev, ToolCall):
@@ -470,7 +487,7 @@ class AgentEngine:
             if self._is_max_iter_error(e):  # 迭代上限兜底：携带 tool_trace 生成最终回答
                 print("[AgentEngine] 流式迭代上限，携带工具结果兜底作答")
                 fallback = await self._fallback_answer(
-                    config, message, conversation, tool_trace, partial_answer)
+                    config, message, conversation, tool_trace, partial_answer, image_base64s)
                 answer = fallback["answer"]
                 fallback_sources = fallback["sources"]
                 if answer:
