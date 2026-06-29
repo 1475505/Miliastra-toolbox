@@ -59,6 +59,14 @@ async def create_note(note: NoteCreate):
     
     try:
         with pg_client.cursor() as cur:
+            # 先查询是否已有完全相同内容的笔记
+            duplicate_query = """
+                SELECT 1 FROM public.notes WHERE content = %s LIMIT 1
+            """
+            cur.execute(duplicate_query, (note.content,))
+            if cur.fetchone():
+                raise HTTPException(status_code=409, detail="已存在内容完全相同的笔记")
+
             query = """
                 INSERT INTO public.notes (created_at, author, content, likes, img_url, video_url)
                 VALUES (NOW(), %s, %s, 0, %s, %s)
@@ -82,7 +90,9 @@ async def create_note(note: NoteCreate):
             "success": True,
             "data": result
         }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

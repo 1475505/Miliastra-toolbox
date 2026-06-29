@@ -35,7 +35,7 @@ class LLMConfig(BaseModel):
 class ChatRequest(BaseModel):
     """聊天请求"""
     id: Optional[str] = None
-    message: str = Field(..., min_length=1, max_length=2000)
+    message: str = Field(..., min_length=1, max_length=10000)
     conversation: List[Message] = Field(default_factory=list)
     config: LLMConfig
     image_base64: Optional[str] = None
