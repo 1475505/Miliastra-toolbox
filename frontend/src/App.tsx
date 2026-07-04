@@ -1,5 +1,7 @@
 import { useState, Suspense, lazy, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
+import IconButton from './components/ui/IconButton'
+import { MenuIcon } from './components/ui/icons'
 import { Tab } from './types'
 
 const Chat = lazy(() => import('./components/Chat'))
@@ -83,17 +85,15 @@ export default function App() {
         onConversationDeleted={handleConversationDeleted}
         conversationRefreshTrigger={conversationRefreshTrigger}
       />
-      <main className="flex-1 overflow-hidden border-l border-white/20 bg-white/35 backdrop-blur-xl relative">
+      <main className="flex-1 overflow-hidden bg-surface/30 backdrop-blur-xl relative">
         {/* Mobile hamburger button */}
-        <button
+        <IconButton
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white/80 backdrop-blur-sm rounded-lg shadow-lg text-slate-900"
-          aria-label="Toggle menu"
+          label="Toggle menu"
+          className="lg:hidden fixed top-2.5 left-3 z-50 bg-surface/80 backdrop-blur-sm shadow-sm"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+          <MenuIcon className="w-5 h-5" />
+        </IconButton>
         <div className={`h-full ${activeTab === 'chat' ? '' : 'hidden'}`}>
           <Suspense fallback={<div className="flex h-full items-center justify-center text-slate-500">加载中...</div>}>
             <Chat 

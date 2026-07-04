@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
 
+import PageHeader from './ui/PageHeader'
+import Surface from './ui/Surface'
+import Button from './ui/Button'
+import Input from './ui/Input'
+import Chip from './ui/Chip'
+
 interface GadgetItem {
   list_id: number
   name: string
@@ -44,21 +50,21 @@ interface TranslationItem {
 type LangKey = keyof Omit<TranslationItem, 'rowid'>
 
 const LANGUAGES = [
-  { key: 'chs' as LangKey, label: '简中', color: 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' },
-  { key: 'cht' as LangKey, label: '繁中', color: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' },
-  { key: 'en' as LangKey, label: '英语', color: 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' },
-  { key: 'jp' as LangKey, label: '日语', color: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' },
-  { key: 'kr' as LangKey, label: '韩语', color: 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' },
-  { key: 'de' as LangKey, label: '德语', color: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' },
-  { key: 'fr' as LangKey, label: '法语', color: 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' },
-  { key: 'es' as LangKey, label: '西语', color: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' },
-  { key: 'it' as LangKey, label: '意语', color: 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' },
-  { key: 'pt' as LangKey, label: '葡语', color: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' },
-  { key: 'ru' as LangKey, label: '俄语', color: 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' },
-  { key: 'th' as LangKey, label: '泰语', color: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' },
-  { key: 'tr' as LangKey, label: '土语', color: 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' },
-  { key: 'vi' as LangKey, label: '越语', color: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' },
-  { key: 'id' as LangKey, label: '印尼语', color: 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' },
+  { key: 'chs' as LangKey, label: '简中' },
+  { key: 'cht' as LangKey, label: '繁中' },
+  { key: 'en' as LangKey, label: '英语' },
+  { key: 'jp' as LangKey, label: '日语' },
+  { key: 'kr' as LangKey, label: '韩语' },
+  { key: 'de' as LangKey, label: '德语' },
+  { key: 'fr' as LangKey, label: '法语' },
+  { key: 'es' as LangKey, label: '西语' },
+  { key: 'it' as LangKey, label: '意语' },
+  { key: 'pt' as LangKey, label: '葡语' },
+  { key: 'ru' as LangKey, label: '俄语' },
+  { key: 'th' as LangKey, label: '泰语' },
+  { key: 'tr' as LangKey, label: '土语' },
+  { key: 'vi' as LangKey, label: '越语' },
+  { key: 'id' as LangKey, label: '印尼语' },
 ]
 
 interface DataResponse<T> {
@@ -196,9 +202,12 @@ export default function DataQuery() {
     setTranslateHasSearched(true)
 
     try {
-      const response = await fetch(`/api/v1/translate/terms?query=${encodeURIComponent(query)}`)
+      const response = await fetch(
+        `/api/v1/translate/terms?query=${encodeURIComponent(query)}`
+      )
       const payload = (await response.json()) as TranslationResponse
-      const detail = typeof payload.detail === 'string' ? payload.detail : '查询失败'
+      const detail =
+        typeof payload.detail === 'string' ? payload.detail : '查询失败'
 
       if (!response.ok || !payload.success) {
         throw new Error(detail)
@@ -286,308 +295,371 @@ export default function DataQuery() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b border-slate-200 p-4 pl-16 lg:pl-6">
-        <h2 className="text-xl font-semibold text-slate-800">数据查询</h2>
-      </div>
-      <div className="flex-1 overflow-y-auto p-5 space-y-5">
+      <PageHeader title="数据查询" />
 
-      <section className="rounded-2xl border border-slate-200 bg-white/70 p-5 shadow-sm">
-        <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-800">术语翻译查询</h3>
-            <p className="text-xs text-slate-500 mt-1">按中文术语查询 15 语言翻译，候选顺序为精确匹配优先，整体最多返回 10 条。</p>
-          </div>
-          {translateHasSearched && !translateError && (
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-              translateExactMatch
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-emerald-50 text-emerald-700'
-            }`}>
-              {translateExactMatch ? '含精确匹配' : '仅模糊候选'}
-            </span>
-          )}
-        </div>
-        <div className="grid gap-3 md:grid-cols-[1fr_auto] mb-3">
-          <input
-            type="text"
-            value={translateQuery}
-            onChange={(e) => setTranslateQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                void queryTranslations()
-              }
-            }}
-            placeholder="输入中文术语，例如：黑名单"
-            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
-          />
-          <button
-            onClick={() => {
-              void queryTranslations()
-            }}
-            disabled={translateLoading}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
-          >
-            {translateLoading ? '查询中...' : '查询'}
-          </button>
-        </div>
-        {translateError && <p className="text-sm text-red-600 mb-2">{translateError}</p>}
-        {translateMessage && !translateError && <p className="text-sm text-slate-600 mb-2">{translateMessage}</p>}
-
-        {translateHasSearched && (
-          <div>
-            {translateItems.length === 0 ? (
-              <p className="text-sm text-slate-500 py-3">未找到结果</p>
-            ) : (
-              <div className="space-y-4">
-                <div className="overflow-x-auto pb-1">
-                  <div className="flex gap-2 flex-nowrap">
-                    {translateItems.map((item) => (
-                      <button
-                        key={item.rowid}
-                        onClick={() => setSelectedRowId(item.rowid)}
-                        className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
-                          selectedRowId === item.rowid
-                            ? 'bg-emerald-600 text-white shadow-sm'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        {item.chs}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="sticky top-0 z-10 -mx-5 bg-white/95 backdrop-blur border-b border-slate-200 px-5 py-2 overflow-x-auto">
-                  <div className="flex gap-1.5 flex-nowrap">
-                    {LANGUAGES.map(({ key, label, color }) => (
-                      <button
-                        key={key}
-                        onClick={() => scrollToLang(key)}
-                        className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                          activeLang === key
-                            ? `${color} ring-2 ring-emerald-400 ring-offset-1`
-                            : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {(() => {
-                  const item = translateItems.find((i) => i.rowid === selectedRowId)
-                  if (!item) return null
-                  return (
-                    <div className="rounded-lg border border-slate-200 bg-white p-4">
-                      <div className="text-xs text-slate-400 mb-2 font-mono">RowID: {item.rowid}</div>
-                      <div className="space-y-0.5">
-                        {LANGUAGES.map(({ key, label, color }) => (
-                          <div
-                            key={key}
-                            data-lang={key}
-                            className={`flex gap-3 rounded-md px-3 py-1.5 transition-colors ${
-                              activeLang === key ? 'bg-emerald-50/80 ring-1 ring-emerald-300' : ''
-                            }`}
-                          >
-                            <span className={`w-10 shrink-0 rounded px-1 py-0.5 text-center text-xs font-medium ${color}`}>
-                              {label}
-                            </span>
-                            <span className="text-sm text-slate-800 break-words whitespace-pre-wrap min-w-0">
-                              {item[key]}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })()}
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
+        {/* 术语翻译查询 */}
+        <Surface className="!p-0 overflow-hidden">
+          <div className="p-5">
+            <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h3 className="text-base font-semibold text-on-surface">
+                  术语翻译查询
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  按中文术语查询 15 语言翻译，候选顺序为精确匹配优先，整体最多返回 10 条。
+                </p>
               </div>
+              {translateHasSearched && !translateError && (
+                <Chip variant={translateExactMatch ? 'primary' : 'default'}>
+                  {translateExactMatch ? '含精确匹配' : '仅模糊候选'}
+                </Chip>
+              )}
+            </div>
+            <div className="grid gap-3 md:grid-cols-[1fr_auto] mb-3">
+              <Input
+                type="text"
+                value={translateQuery}
+                onChange={(e) => setTranslateQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    void queryTranslations()
+                  }
+                }}
+                placeholder="输入中文术语，例如：黑名单"
+              />
+              <Button
+                onClick={() => {
+                  void queryTranslations()
+                }}
+                disabled={translateLoading}
+              >
+                {translateLoading ? '查询中...' : '查询'}
+              </Button>
+            </div>
+            {translateError && (
+              <p className="text-sm text-error mb-2">{translateError}</p>
+            )}
+            {translateMessage && !translateError && (
+              <p className="text-sm text-on-surface-variant mb-2">
+                {translateMessage}
+              </p>
             )}
           </div>
-        )}
-      </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white/70 p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-slate-800 mb-3">实体信息查询</h3>
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] mb-3">
-          <input
-            type="text"
-            value={gadgetId}
-            onChange={(e) => setGadgetId(e.target.value)}
-            placeholder="输入实体 ID（整数）"
-            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
-          />
-          <input
-            type="text"
-            value={gadgetName}
-            onChange={(e) => setGadgetName(e.target.value)}
-            placeholder="输入实体中文名"
-            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
-          />
-          <button
-            onClick={queryGadgets}
-            disabled={gadgetLoading}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
-          >
-            {gadgetLoading ? '查询中...' : '查询'}
-          </button>
-        </div>
-        <p className="text-xs text-slate-500 mb-2">ID 和中文名二选一；同时填写时优先 ID。</p>
-        {gadgetError && <p className="text-sm text-red-600 mb-2">{gadgetError}</p>}
+          {translateHasSearched && (
+            <div className="px-5 pb-5">
+              {translateItems.length === 0 ? (
+                <p className="text-sm text-on-surface-variant py-3">
+                  未找到结果
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto pb-1">
+                    <div className="flex gap-2 flex-nowrap">
+                      {translateItems.map((item) => (
+                        <button
+                          key={item.rowid}
+                          onClick={() => setSelectedRowId(item.rowid)}
+                          className={[
+                            'shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors duration-200',
+                            selectedRowId === item.rowid
+                              ? 'bg-primary text-on-primary'
+                              : 'bg-surface-variant text-on-surface-variant hover:bg-outline-variant',
+                          ].join(' ')}
+                        >
+                          {item.chs}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-        {gadgetHasSearched && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm border border-slate-200">
-              <thead className="bg-slate-100">
-                <tr>
-                  <th className="px-3 py-2 text-left">ID</th>
-                  <th className="px-3 py-2 text-left">中文名</th>
-                  <th className="px-3 py-2 text-left">X</th>
-                  <th className="px-3 py-2 text-left">Y</th>
-                  <th className="px-3 py-2 text-left">Z</th>
-                </tr>
-              </thead>
-              <tbody>
-                {gadgetItems.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-3 text-slate-500" colSpan={5}>未找到数据</td>
-                  </tr>
-                ) : (
-                  gadgetItems.map((item) => (
-                    <tr key={item.list_id} className="border-t border-slate-200">
-                      <td className="px-3 py-2">{item.list_id}</td>
-                      <td className="px-3 py-2">{item.name}</td>
-                      <td className="px-3 py-2">{item.size_x}</td>
-                      <td className="px-3 py-2">{item.size_y}</td>
-                      <td className="px-3 py-2">{item.size_z}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur border-y border-outline px-4 py-2 -mx-5">
+                    <div className="flex gap-1.5 flex-nowrap">
+                      {LANGUAGES.map(({ key, label }) => (
+                        <button
+                          key={key}
+                          onClick={() => scrollToLang(key)}
+                          className={[
+                            'shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors duration-200',
+                            activeLang === key
+                              ? 'bg-primary-container text-on-primary-container ring-1 ring-primary'
+                              : 'bg-surface-variant text-on-surface-variant hover:bg-outline-variant',
+                          ].join(' ')}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const item = translateItems.find(
+                      (i) => i.rowid === selectedRowId
+                    )
+                    if (!item) return null
+                    return (
+                      <Surface>
+                        <div className="text-xs text-on-surface-variant mb-2 font-mono">
+                          RowID: {item.rowid}
+                        </div>
+                        <div className="space-y-0.5">
+                          {LANGUAGES.map(({ key, label }) => (
+                            <div
+                              key={key}
+                              data-lang={key}
+                              className={[
+                                'flex gap-3 rounded-lg px-3 py-1.5 transition-colors duration-200',
+                                activeLang === key
+                                  ? 'bg-primary-container/30 ring-1 ring-primary/30'
+                                  : '',
+                              ].join(' ')}
+                            >
+                              <span className="w-10 shrink-0 rounded-lg px-1 py-0.5 text-center text-xs font-medium bg-surface-variant text-on-surface-variant">
+                                {label}
+                              </span>
+                              <span className="text-sm text-on-surface break-words whitespace-pre-wrap min-w-0">
+                                {item[key]}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </Surface>
+                    )
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+        </Surface>
+
+        {/* 实体信息查询 */}
+        <Surface>
+          <h3 className="text-base font-semibold text-on-surface mb-3">
+            实体信息查询
+          </h3>
+          <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] mb-3">
+            <Input
+              type="text"
+              value={gadgetId}
+              onChange={(e) => setGadgetId(e.target.value)}
+              placeholder="输入实体 ID（整数）"
+            />
+            <Input
+              type="text"
+              value={gadgetName}
+              onChange={(e) => setGadgetName(e.target.value)}
+              placeholder="输入实体中文名"
+            />
+            <Button onClick={queryGadgets} disabled={gadgetLoading}>
+              {gadgetLoading ? '查询中...' : '查询'}
+            </Button>
           </div>
-        )}
-      </section>
+          <p className="text-xs text-on-surface-variant mb-2">
+            ID 和中文名二选一；同时填写时优先 ID。
+          </p>
+          {gadgetError && (
+            <p className="text-sm text-error mb-2">{gadgetError}</p>
+          )}
 
-      <section className="rounded-2xl border border-slate-200 bg-white/70 p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-slate-800 mb-3">特效信息查询</h3>
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] mb-3">
-          <input
-            type="text"
-            value={effectId}
-            onChange={(e) => setEffectId(e.target.value)}
-            placeholder="输入特效 ID（整数）"
-            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
-          />
-          <input
-            type="text"
-            value={effectName}
-            onChange={(e) => setEffectName(e.target.value)}
-            placeholder="输入特效中文名"
-            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
-          />
-          <button
-            onClick={queryEffects}
-            disabled={effectLoading}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
-          >
-            {effectLoading ? '查询中...' : '查询'}
-          </button>
-        </div>
-        <p className="text-xs text-slate-500 mb-2">ID 和中文名二选一；同时填写时优先 ID。</p>
-        {effectError && <p className="text-sm text-red-600 mb-2">{effectError}</p>}
-
-        {effectHasSearched && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm border border-slate-200">
-              <thead className="bg-slate-100">
-                <tr>
-                  <th className="px-3 py-2 text-left">ID</th>
-                  <th className="px-3 py-2 text-left">中文名</th>
-                  <th className="px-3 py-2 text-left">持续时长</th>
-                  <th className="px-3 py-2 text-left">半径</th>
-                </tr>
-              </thead>
-              <tbody>
-                {effectItems.length === 0 ? (
+          {gadgetHasSearched && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm border border-outline rounded-xl overflow-hidden">
+                <thead className="bg-surface-variant">
                   <tr>
-                    <td className="px-3 py-3 text-slate-500" colSpan={4}>未找到数据</td>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      ID
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      中文名
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      X
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      Y
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      Z
+                    </th>
                   </tr>
-                ) : (
-                  effectItems.map((item) => (
-                    <tr key={item.id} className="border-t border-slate-200">
-                      <td className="px-3 py-2">{item.id}</td>
-                      <td className="px-3 py-2">{item.name}</td>
-                      <td className="px-3 py-2">{item.duration}</td>
-                      <td className="px-3 py-2">{item.radius}</td>
+                </thead>
+                <tbody className="bg-surface">
+                  {gadgetItems.length === 0 ? (
+                    <tr>
+                      <td
+                        className="px-3 py-3 text-on-surface-variant"
+                        colSpan={5}
+                      >
+                        未找到数据
+                      </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    gadgetItems.map((item) => (
+                      <tr
+                        key={item.list_id}
+                        className="border-t border-outline"
+                      >
+                        <td className="px-3 py-2">{item.list_id}</td>
+                        <td className="px-3 py-2">{item.name}</td>
+                        <td className="px-3 py-2">{item.size_x}</td>
+                        <td className="px-3 py-2">{item.size_y}</td>
+                        <td className="px-3 py-2">{item.size_z}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Surface>
+
+        {/* 特效信息查询 */}
+        <Surface>
+          <h3 className="text-base font-semibold text-on-surface mb-3">
+            特效信息查询
+          </h3>
+          <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] mb-3">
+            <Input
+              type="text"
+              value={effectId}
+              onChange={(e) => setEffectId(e.target.value)}
+              placeholder="输入特效 ID（整数）"
+            />
+            <Input
+              type="text"
+              value={effectName}
+              onChange={(e) => setEffectName(e.target.value)}
+              placeholder="输入特效中文名"
+            />
+            <Button onClick={queryEffects} disabled={effectLoading}>
+              {effectLoading ? '查询中...' : '查询'}
+            </Button>
           </div>
-        )}
-      </section>
+          <p className="text-xs text-on-surface-variant mb-2">
+            ID 和中文名二选一；同时填写时优先 ID。
+          </p>
+          {effectError && (
+            <p className="text-sm text-error mb-2">{effectError}</p>
+          )}
 
-      <section className="rounded-2xl border border-slate-200 bg-white/70 p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-slate-800 mb-3">音乐信息查询</h3>
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] mb-3">
-          <input
-            type="text"
-            value={bgmId}
-            onChange={(e) => setBgmId(e.target.value)}
-            placeholder="输入音乐 ID（整数）"
-            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
-          />
-          <input
-            type="text"
-            value={bgmName}
-            onChange={(e) => setBgmName(e.target.value)}
-            placeholder="输入音乐中文名"
-            className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
-          />
-          <button
-            onClick={queryBgm}
-            disabled={bgmLoading}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
-          >
-            {bgmLoading ? '查询中...' : '查询'}
-          </button>
-        </div>
-        <p className="text-xs text-slate-500 mb-2">ID 和中文名二选一；同时填写时优先 ID。</p>
-        {bgmError && <p className="text-sm text-red-600 mb-2">{bgmError}</p>}
-
-        {bgmHasSearched && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm border border-slate-200">
-              <thead className="bg-slate-100">
-                <tr>
-                  <th className="px-3 py-2 text-left">ID</th>
-                  <th className="px-3 py-2 text-left">中文名</th>
-                  <th className="px-3 py-2 text-left">持续时长（秒）</th>
-                  <th className="px-3 py-2 text-left">类别</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bgmItems.length === 0 ? (
+          {effectHasSearched && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm border border-outline rounded-xl overflow-hidden">
+                <thead className="bg-surface-variant">
                   <tr>
-                    <td className="px-3 py-3 text-slate-500" colSpan={4}>未找到数据</td>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      ID
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      中文名
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      持续时长
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      半径
+                    </th>
                   </tr>
-                ) : (
-                  bgmItems.map((item) => (
-                    <tr key={item.bgm_id} className="border-t border-slate-200">
-                      <td className="px-3 py-2">{item.bgm_id}</td>
-                      <td className="px-3 py-2">{item.name}</td>
-                      <td className="px-3 py-2">{item.duration_sec}</td>
-                      <td className="px-3 py-2">{item.category_name}</td>
+                </thead>
+                <tbody className="bg-surface">
+                  {effectItems.length === 0 ? (
+                    <tr>
+                      <td
+                        className="px-3 py-3 text-on-surface-variant"
+                        colSpan={4}
+                      >
+                        未找到数据
+                      </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    effectItems.map((item) => (
+                      <tr key={item.id} className="border-t border-outline">
+                        <td className="px-3 py-2">{item.id}</td>
+                        <td className="px-3 py-2">{item.name}</td>
+                        <td className="px-3 py-2">{item.duration}</td>
+                        <td className="px-3 py-2">{item.radius}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Surface>
+
+        {/* 音乐信息查询 */}
+        <Surface>
+          <h3 className="text-base font-semibold text-on-surface mb-3">
+            音乐信息查询
+          </h3>
+          <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] mb-3">
+            <Input
+              type="text"
+              value={bgmId}
+              onChange={(e) => setBgmId(e.target.value)}
+              placeholder="输入音乐 ID（整数）"
+            />
+            <Input
+              type="text"
+              value={bgmName}
+              onChange={(e) => setBgmName(e.target.value)}
+              placeholder="输入音乐中文名"
+            />
+            <Button onClick={queryBgm} disabled={bgmLoading}>
+              {bgmLoading ? '查询中...' : '查询'}
+            </Button>
           </div>
-        )}
-      </section>      </div>    </div>
+          <p className="text-xs text-on-surface-variant mb-2">
+            ID 和中文名二选一；同时填写时优先 ID。
+          </p>
+          {bgmError && <p className="text-sm text-error mb-2">{bgmError}</p>}
+
+          {bgmHasSearched && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm border border-outline rounded-xl overflow-hidden">
+                <thead className="bg-surface-variant">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      ID
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      中文名
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      持续时长（秒）
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-on-surface">
+                      类别
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-surface">
+                  {bgmItems.length === 0 ? (
+                    <tr>
+                      <td
+                        className="px-3 py-3 text-on-surface-variant"
+                        colSpan={4}
+                      >
+                        未找到数据
+                      </td>
+                    </tr>
+                  ) : (
+                    bgmItems.map((item) => (
+                      <tr key={item.bgm_id} className="border-t border-outline">
+                        <td className="px-3 py-2">{item.bgm_id}</td>
+                        <td className="px-3 py-2">{item.name}</td>
+                        <td className="px-3 py-2">{item.duration_sec}</td>
+                        <td className="px-3 py-2">{item.category_name}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Surface>
+      </div>
+    </div>
   )
 }

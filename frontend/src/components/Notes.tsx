@@ -1,5 +1,22 @@
 import { useState, useEffect } from 'react'
+
 import { Note } from '../types'
+import PageHeader from './ui/PageHeader'
+import Surface from './ui/Surface'
+import Button from './ui/Button'
+import Input from './ui/Input'
+import Textarea from './ui/Textarea'
+import Select from './ui/Select'
+import Modal from './ui/Modal'
+import {
+  PlusIcon,
+  SearchIcon,
+  PencilIcon,
+  HeartIcon,
+  HeartFilledIcon,
+  ImageIcon,
+  OpenExternalIcon,
+} from './ui/icons'
 
 export default function Notes() {
   const [notes, setNotes] = useState<Note[]>([])
@@ -12,17 +29,16 @@ export default function Notes() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [expandedNoteId, setExpandedNoteId] = useState<number | null>(null)
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null)
-  
+
   const limit = 50
 
   useEffect(() => {
     loadNotes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, sortBy, page])
 
-  // Debounce input: update `search` only when user stops typing or presses Enter / blurs
   useEffect(() => {
     const handler = setTimeout(() => {
-      // Only trigger if input changed
       setSearch((prevSearch) => {
         if (prevSearch !== searchInput) {
           setPage(1)
@@ -47,8 +63,11 @@ export default function Notes() {
       if (search) params.append('search', search)
 
       const response = await fetch(`/api/v1/notes?${params}`)
-      const data = await response.json()
-      
+      const data = (await response.json()) as {
+        success: boolean
+        data: { items: Note[]; total: number }
+      }
+
       if (data.success) {
         setNotes(data.data.items)
         setTotal(data.data.total)
@@ -61,9 +80,10 @@ export default function Notes() {
   }
 
   const handleLike = async (noteId: number) => {
-    // 检查本地存储是否已点赞
-    const likedNotes = JSON.parse(localStorage.getItem('likedNotes') || '[]')
-    
+    const likedNotes: number[] = JSON.parse(
+      localStorage.getItem('likedNotes') || '[]'
+    )
+
     if (likedNotes.includes(noteId)) {
       alert('您已经为该笔记点过赞了')
       return
@@ -73,14 +93,14 @@ export default function Notes() {
       const response = await fetch(`/api/v1/notes/${noteId}/like`, {
         method: 'POST',
       })
-      const data = await response.json()
-      
+      const data = (await response.json()) as {
+        success: boolean
+        error?: string
+      }
+
       if (data.success) {
-        // 记录到本地存储
         likedNotes.push(noteId)
         localStorage.setItem('likedNotes', JSON.stringify(likedNotes))
-        
-        // 更新列表
         loadNotes()
       } else {
         alert(data.error || '点赞失败')
@@ -92,7 +112,9 @@ export default function Notes() {
   }
 
   const hasLiked = (noteId: number) => {
-    const likedNotes = JSON.parse(localStorage.getItem('likedNotes') || '[]')
+    const likedNotes: number[] = JSON.parse(
+      localStorage.getItem('likedNotes') || '[]'
+    )
     return likedNotes.includes(noteId)
   }
 
@@ -100,75 +122,67 @@ export default function Notes() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="border-b border-slate-200 p-4 pl-16 lg:pl-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <h2 className="text-xl font-semibold text-slate-800">笔记</h2>
-          
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            {/* 搜索框 */}
-            <input
-              type="text"
-              placeholder="搜索笔记内容或作者..."
-              value={searchInput}
-              onChange={(e) => {
-                setSearchInput(e.target.value)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setSearch(searchInput)
-                  setPage(1)
-                }
-              }}
-              onBlur={() => {
-                setSearch(searchInput)
-                setPage(1)
-              }}
-              className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm bg-white/60"
-            />
-            
-            {/* 排序选择 */}
-            <select
-              value={sortBy}
-              onChange={(e) => {
-                setSortBy(e.target.value as 'likes' | 'created_at')
-                setPage(1)
-              }}
-              className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm bg-white/60"
-            >
-              <option value="likes">按点赞数排序</option>
-              <option value="created_at">按创建时间排序</option>
-            </select>
-            
-            {/* 新增按钮 */}
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors text-sm whitespace-nowrap"
-            >
-              ✏️ 新增笔记
-            </button>
-          </div>
-        </div>
-        
-        {/* 统计信息 */}
-        <div className="mt-3 text-sm text-slate-600">
-          共 {total} 条笔记
-          {search && ` · 搜索: "${search}"`}
-        </div>
-      </div>
+      <PageHeader title="笔记" />
 
-      {/* Notes Grid */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+        {/* Toolbar */}
+        <Surface className="mb-5 !p-4">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-1">
+              <div className="relative flex-1">
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
+                <Input
+                  type="text"
+                  placeholder="搜索笔记内容或作者..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setSearch(searchInput)
+                      setPage(1)
+                    }
+                  }}
+                  onBlur={() => {
+                    setSearch(searchInput)
+                    setPage(1)
+                  }}
+                  className="pl-9"
+                />
+              </div>
+              <Select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as 'likes' | 'created_at')
+                  setPage(1)
+                }}
+                className="sm:w-44"
+              >
+                <option value="likes">按点赞数排序</option>
+                <option value="created_at">按创建时间排序</option>
+              </Select>
+            </div>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <PlusIcon className="w-4 h-4" />
+              新增笔记
+            </Button>
+          </div>
+          <div className="mt-3 text-sm text-on-surface-variant">
+            共 {total} 条笔记
+            {search && ` · 搜索: "${search}"`}
+          </div>
+        </Surface>
+
+        {/* Notes Grid */}
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="text-slate-500">加载中...</div>
+            <div className="text-on-surface-variant">加载中...</div>
           </div>
         ) : notes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-slate-500">
-            <div className="text-4xl mb-2">📝</div>
+          <Surface className="flex flex-col items-center justify-center h-64 text-on-surface-variant">
+            <ImageIcon className="w-12 h-12 mb-2 opacity-50" />
             <div>暂无笔记</div>
             {search && <div className="text-sm mt-2">试试其他搜索词</div>}
-          </div>
+          </Surface>
         ) : (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -179,7 +193,11 @@ export default function Notes() {
                   isExpanded={expandedNoteId === note.id}
                   isEditing={editingNoteId === note.id}
                   hasLiked={hasLiked(note.id)}
-                  onToggleExpand={() => setExpandedNoteId(expandedNoteId === note.id ? null : note.id)}
+                  onToggleExpand={() =>
+                    setExpandedNoteId(
+                      expandedNoteId === note.id ? null : note.id
+                    )
+                  }
                   onLike={() => handleLike(note.id)}
                   onEdit={() => setEditingNoteId(note.id)}
                   onEditComplete={() => {
@@ -197,11 +215,11 @@ export default function Notes() {
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1}
-                  className="px-3 py-1.5 rounded-lg bg-white/50 text-sm font-medium text-slate-700 hover:bg-white/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1.5 rounded-full bg-surface border border-outline text-sm font-medium text-on-surface hover:bg-surface-variant disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 >
                   上一页
                 </button>
-                
+
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                     let pageNum
@@ -214,27 +232,28 @@ export default function Notes() {
                     } else {
                       pageNum = page - 2 + i
                     }
-                    
+
                     return (
                       <button
                         key={pageNum}
                         onClick={() => setPage(pageNum)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        className={[
+                          'px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200',
                           page === pageNum
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-white/50 text-slate-700 hover:bg-white/70'
-                        }`}
+                            ? 'bg-primary text-on-primary'
+                            : 'bg-surface border border-outline text-on-surface hover:bg-surface-variant',
+                        ].join(' ')}
                       >
                         {pageNum}
                       </button>
                     )
                   })}
                 </div>
-                
+
                 <button
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page === totalPages}
-                  className="px-3 py-1.5 rounded-lg bg-white/50 text-sm font-medium text-slate-700 hover:bg-white/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1.5 rounded-full bg-surface border border-outline text-sm font-medium text-on-surface hover:bg-surface-variant disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 >
                   下一页
                 </button>
@@ -244,7 +263,6 @@ export default function Notes() {
         )}
       </div>
 
-      {/* Create Modal */}
       {showCreateModal && (
         <CreateNoteModal
           onClose={() => setShowCreateModal(false)}
@@ -271,14 +289,23 @@ interface NoteCardProps {
   onEditCancel: () => void
 }
 
-function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLike, onEdit, onEditComplete, onEditCancel }: NoteCardProps) {
+function NoteCard({
+  note,
+  isExpanded,
+  isEditing,
+  hasLiked,
+  onToggleExpand,
+  onLike,
+  onEdit,
+  onEditComplete,
+  onEditCancel,
+}: NoteCardProps) {
   const [editContent, setEditContent] = useState(note.content)
   const [editAuthor, setEditAuthor] = useState(note.author || '')
   const [editImgUrl, setEditImgUrl] = useState(note.img_url || '')
   const [editVideoUrl, setEditVideoUrl] = useState(note.video_url || '')
   const [saving, setSaving] = useState(false)
   const [showImage, setShowImage] = useState(false)
-  // Removed overlay zoom - open images in a new tab instead
 
   const handleSave = async () => {
     if (!editContent.trim()) {
@@ -298,8 +325,11 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
           video_url: editVideoUrl || undefined,
         }),
       })
-      
-      const data = await response.json()
+
+      const data = (await response.json()) as {
+        success: boolean
+        error?: string
+      }
       if (data.success) {
         onEditComplete()
       } else {
@@ -315,12 +345,12 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleString('zh-CN', { 
+    return date.toLocaleString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     })
   }
 
@@ -332,18 +362,15 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
     return `https://${url}`
   }
 
-  // Open a minimal HTML viewer in a new window to force browsers to render image
   const openImageInViewer = (url: string) => {
     if (!url) return
     const ensured = ensureProtocol(url)
-    // Open a blank page. NOTE: We cannot use 'noopener' because we need to write to the document.
     const w = window.open('', '_blank')
     if (!w) {
-      // Popup blocked or failed, fallback to direct navigation
       window.open(ensured, '_blank', 'noopener,noreferrer')
       return
     }
-    
+
     const encodedUrl = ensured.replace(/"/g, '&quot;')
     const html = `<!doctype html>
       <html lang="zh-CN">
@@ -363,7 +390,7 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
           </div>
         </body>
       </html>`
-    
+
     try {
       w.document.open()
       w.document.write(html)
@@ -375,108 +402,96 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
   }
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all p-4 flex flex-col">
+    <Surface className="flex flex-col !p-4">
       {isEditing ? (
         <>
-          {/* 编辑模式 */}
           <div className="flex-1 space-y-3">
-            <input
+            <Input
               type="text"
               value={editAuthor}
               onChange={(e) => setEditAuthor(e.target.value)}
               placeholder="作者（可选）"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm"
             />
-            <textarea
+            <Textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               placeholder="笔记内容"
               rows={6}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm resize-none"
             />
-            <input
+            <Input
               type="text"
               value={editImgUrl}
               onChange={(e) => setEditImgUrl(e.target.value)}
               placeholder="图片链接（可选）"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm"
             />
-            <input
+            <Input
               type="text"
               value={editVideoUrl}
               onChange={(e) => setEditVideoUrl(e.target.value)}
               placeholder="视频链接（可选）"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 text-sm"
             />
           </div>
-          
+
           <div className="flex gap-2 mt-3">
-            <button
+            <Button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors text-sm"
+              className="flex-1"
             >
               {saving ? '保存中...' : '保存'}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outlined"
               onClick={onEditCancel}
               disabled={saving}
-              className="flex-1 px-4 py-2 rounded-lg bg-slate-300 text-slate-700 font-medium hover:bg-slate-400 disabled:opacity-50 transition-colors text-sm"
+              className="flex-1"
             >
               取消
-            </button>
+            </Button>
           </div>
         </>
       ) : (
         <>
-          {/* 显示模式 */}
           <div className="flex-1">
-            <div 
-              className={`text-slate-800 text-sm leading-relaxed whitespace-pre-wrap cursor-pointer ${
-                !isExpanded ? 'line-clamp-4' : ''
-              }`}
+            <div
+              className={[
+                'text-on-surface text-sm leading-relaxed whitespace-pre-wrap cursor-pointer',
+                !isExpanded ? 'line-clamp-4' : '',
+              ].join(' ')}
               onClick={onToggleExpand}
             >
               {note.content}
             </div>
-            
-            {/* 媒体内容指示器 */}
+
             {!isExpanded && (note.img_url || note.video_url) && (
               <div className="mt-2 flex gap-2">
                 {note.img_url && (
-                  <span
-                    role="button"
-                    tabIndex={0}
+                  <button
                     onClick={(e) => {
                       e.stopPropagation()
                       onToggleExpand()
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        onToggleExpand()
-                      }
-                    }}
-                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200 transition-colors"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-primary-container text-on-primary-container hover:bg-primary-container/80 transition-colors duration-200"
                   >
-                    🖼️ 有图片
-                  </span>
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    有图片
+                  </button>
                 )}
                 {note.video_url && (
                   <a
                     href={ensureProtocol(note.video_url)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80 transition-colors duration-200"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    🎥 观看视频
+                    <OpenExternalIcon className="w-3.5 h-3.5" />
+                    观看视频
                   </a>
                 )}
               </div>
             )}
 
-            {/* 展开后的媒体内容 */}
             {isExpanded && (
               <div className="mt-3 space-y-3">
                 {note.img_url && (
@@ -484,9 +499,9 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
                     {!showImage ? (
                       <button
                         onClick={() => setShowImage(true)}
-                        className="w-full py-8 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-colors flex flex-col items-center gap-2"
+                        className="w-full py-8 border-2 border-dashed border-outline rounded-2xl text-on-surface-variant hover:border-primary hover:text-primary transition-colors duration-200 flex flex-col items-center gap-2"
                       >
-                        <span className="text-2xl">🖼️</span>
+                        <ImageIcon className="w-8 h-8" />
                         <span className="text-sm">点击加载图片</span>
                       </button>
                     ) : (
@@ -494,21 +509,19 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
                         <img
                           src={note.img_url}
                           alt="笔记图片"
-                          className="w-full rounded-lg cursor-pointer hover:opacity-95 transition-opacity"
+                          className="w-full rounded-2xl cursor-pointer hover:opacity-95 transition-opacity duration-200"
                           onClick={(e) => {
-                            // Stop toggling the card expand when clicking the image
                             e.stopPropagation()
-                            // Open the image inside a minimal viewer page to avoid download
                             openImageInViewer(note.img_url || '')
                           }}
                         />
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           <button
                             onClick={() => setShowImage(false)}
-                            className="bg-black/50 text-white p-1 rounded-full hover:bg-black/70"
+                            className="bg-on-surface/60 text-surface p-1 rounded-full hover:bg-on-surface/80"
                             title="隐藏图片"
                           >
-                            ✕
+                            ×
                           </button>
                         </div>
                       </div>
@@ -521,76 +534,75 @@ function NoteCard({ note, isExpanded, isEditing, hasLiked, onToggleExpand, onLik
                     href={ensureProtocol(note.video_url)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 border border-purple-100 text-purple-700 hover:bg-purple-100 transition-colors"
+                    className="flex items-center gap-2 p-3 rounded-xl bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80 transition-colors duration-200"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <span className="text-lg">🎥</span>
+                    <OpenExternalIcon className="w-5 h-5" />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium">观看视频</div>
-                      <div className="text-xs text-purple-500 truncate mt-0.5">{note.video_url}</div>
+                      <div className="text-xs text-on-secondary-container/70 truncate mt-0.5">
+                        {note.video_url}
+                      </div>
                     </div>
-                    <span className="shrink-0 text-xs text-purple-400">↗</span>
                   </a>
                 )}
               </div>
             )}
-            
+
             {note.content.length > 100 && (
               <button
                 onClick={onToggleExpand}
-                className="mt-2 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                className="mt-2 text-xs text-primary hover:text-primary/80 font-medium transition-colors duration-200"
               >
                 {isExpanded ? '收起' : '展开全文'}
               </button>
             )}
           </div>
-          
-          {/* 作者和时间 */}
+
           {isExpanded && (
-            <div className="mt-3 pt-3 border-t border-slate-200 text-xs text-slate-500 space-y-1">
-              {note.author && <div>👤 作者: {note.author}</div>}
-              <div>📅 创建: {formatDate(note.created_at)}</div>
+            <div className="mt-3 pt-3 border-t border-outline text-xs text-on-surface-variant space-y-1">
+              {note.author && <div>作者: {note.author}</div>}
+              <div>创建: {formatDate(note.created_at)}</div>
               {note.version !== note.created_at && (
-                <div>🔄 更新: {formatDate(note.version)}</div>
+                <div>更新: {formatDate(note.version)}</div>
               )}
             </div>
           )}
-          
-          {/* 操作按钮 */}
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-200">
+
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-outline">
             <button
               onClick={onLike}
               disabled={hasLiked}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={[
+                'flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200',
                 hasLiked
-                  ? 'bg-red-100 text-red-600 cursor-not-allowed'
-                  : 'bg-white/80 text-slate-700 hover:bg-red-50 hover:text-red-600'
-              }`}
+                  ? 'bg-error-container text-error cursor-not-allowed'
+                  : 'bg-surface-variant text-on-surface-variant hover:bg-error-container hover:text-error',
+              ].join(' ')}
               title={hasLiked ? '已点赞' : '点赞'}
             >
-              <span className="text-base">{hasLiked ? '❤️' : '🤍'}</span>
+              {hasLiked ? (
+                <HeartFilledIcon className="w-4 h-4" />
+              ) : (
+                <HeartIcon className="w-4 h-4" />
+              )}
               <span>{note.likes}</span>
             </button>
-            
-            <button
-              onClick={onEdit}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/80 text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 text-sm font-medium transition-colors"
-            >
-              <span>✏️</span>
-              <span>修正</span>
-            </button>
-            
+
+            <Button variant="outlined" size="sm" onClick={onEdit}>
+              <PencilIcon className="w-3.5 h-3.5" />
+              修正
+            </Button>
+
             {!isExpanded && note.author && (
-              <div className="ml-auto text-xs text-slate-500">
-                👤 {note.author}
+              <div className="ml-auto text-xs text-on-surface-variant">
+                {note.author}
               </div>
             )}
           </div>
         </>
       )}
-
-      {/* Note: image overlay zoom removed; clicking image opens in new tab */}
-    </div>
+    </Surface>
   )
 }
 
@@ -614,7 +626,7 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
 
     setCreating(true)
     try {
-      const response = await fetch(`/api/v1/notes`, {
+      const response = await fetch('/api/v1/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -624,8 +636,11 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
           video_url: videoUrl || undefined,
         }),
       })
-      
-      const data = await response.json()
+
+      const data = (await response.json()) as {
+        success: boolean
+        error?: string
+      }
       if (data.success) {
         onSuccess()
       } else {
@@ -640,81 +655,79 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-xl font-bold text-slate-900 mb-4">新增笔记</h3>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              作者（可选）
-            </label>
-            <input
-              type="text"
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
-              placeholder="输入作者名称"
-              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              笔记内容 <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="输入笔记内容..."
-              rows={8}
-              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 resize-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              图片链接（可选）
-            </label>
-            <input
-              type="text"
-              value={imgUrl}
-              onChange={(e) => setImgUrl(e.target.value)}
-              placeholder="可通过图床功能上传图片"
-              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              视频链接（可选）
-            </label>
-            <input
-              type="text"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="输入千星奇域相关的B站视频链接"
-              className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
-            />
-          </div>
-        </div>
-        
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={handleCreate}
-            disabled={creating}
-            className="flex-1 px-6 py-3 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-          >
-            {creating ? '创建中...' : '创建'}
-          </button>
-          <button
+    <Modal
+      open
+      onClose={onClose}
+      title="新增笔记"
+      footer={
+        <>
+          <Button
+            variant="outlined"
             onClick={onClose}
             disabled={creating}
-            className="flex-1 px-6 py-3 rounded-xl bg-slate-300 text-slate-700 font-medium hover:bg-slate-400 disabled:opacity-50 transition-colors"
+            className="flex-1"
           >
             取消
-          </button>
+          </Button>
+          <Button
+            onClick={handleCreate}
+            disabled={creating}
+            className="flex-1"
+          >
+            {creating ? '创建中...' : '创建'}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-on-surface mb-2">
+            作者（可选）
+          </label>
+          <Input
+            type="text"
+            value={author}
+            onChange={(e) => setAuthor(e.target.value)}
+            placeholder="输入作者名称"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-on-surface mb-2">
+            笔记内容 <span className="text-error">*</span>
+          </label>
+          <Textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="输入笔记内容..."
+            rows={8}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-on-surface mb-2">
+            图片链接（可选）
+          </label>
+          <Input
+            type="text"
+            value={imgUrl}
+            onChange={(e) => setImgUrl(e.target.value)}
+            placeholder="可通过图床功能上传图片"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-on-surface mb-2">
+            视频链接（可选）
+          </label>
+          <Input
+            type="text"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="输入千星奇域相关的B站视频链接"
+          />
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }

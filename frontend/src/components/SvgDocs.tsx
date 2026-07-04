@@ -1,5 +1,16 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 
+import IconButton from './ui/IconButton'
+import Button from './ui/Button'
+import Input from './ui/Input'
+import {
+  MenuIcon,
+  ChevronDownIcon,
+  ZoomOutIcon,
+  ZoomInIcon,
+  OpenExternalIcon,
+} from './ui/icons'
+
 interface SvgItem {
   number: string
   title: string
@@ -51,7 +62,6 @@ export default function SvgDocs() {
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
   )
 
-  // slug present in the URL before index loads (e.g. /svg/31-技能 → "31-技能")
   const pendingDocId = useRef<string | null>(getDocIdFromPath())
 
   useEffect(() => {
@@ -65,7 +75,6 @@ export default function SvgDocs() {
         })
         setExpandedSections(expanded)
 
-        // Apply slug from URL if present
         if (pendingDocId.current) {
           const slug = pendingDocId.current
           const allItems = data.sections.flatMap((s) => s.items)
@@ -77,7 +86,6 @@ export default function SvgDocs() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Fetch SVG content and patch all <a> links to open in new tab
   useEffect(() => {
     if (!selectedFilename) {
       setSvgContent(null)
@@ -95,7 +103,6 @@ export default function SvgDocs() {
         const parser = new DOMParser()
         const doc = parser.parseFromString(text, 'image/svg+xml')
         const extracted: SvgLink[] = []
-        // Inject target="_blank" + rel="noreferrer" and extract link metadata
         doc.querySelectorAll('a').forEach((a) => {
           a.setAttribute('target', '_blank')
           a.setAttribute('rel', 'noreferrer')
@@ -112,7 +119,6 @@ export default function SvgDocs() {
       .finally(() => setSvgLoading(false))
   }, [selectedFilename])
 
-  // Sync selection when browser navigates back/forward within /svg/*
   useEffect(() => {
     const handlePop = () => {
       const slug = getDocIdFromPath()
@@ -120,7 +126,10 @@ export default function SvgDocs() {
         setSelectedFilename(null)
         return
       }
-      const match = findItemBySlug(sections.flatMap((s) => s.items), slug)
+      const match = findItemBySlug(
+        sections.flatMap((s) => s.items),
+        slug
+      )
       setSelectedFilename(match?.filename ?? null)
     }
     window.addEventListener('popstate', handlePop)
@@ -159,12 +168,10 @@ export default function SvgDocs() {
   const selectItem = (item: SvgItem) => {
     if (!item.filename) return
     setSelectedFilename(item.filename)
-    // Use number as slug: "31-技能.svg" → "/svg/31"（兼容旧的 /svg/31-技能 格式）
     const newPath = `/svg/${item.number}`
     if (window.location.pathname !== newPath) {
       window.history.pushState({}, '', newPath)
     }
-    // 移动端选中后自动关闭侧边栏
     if (window.innerWidth < 768) {
       setSidebarOpen(false)
     }
@@ -180,67 +187,70 @@ export default function SvgDocs() {
 
   return (
     <div className="flex h-full overflow-hidden relative">
-      {/* 移动端遮罩 */}
       {sidebarOpen && (
         <div
           className="md:hidden absolute inset-0 z-10 bg-black/40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-      {/* 左侧目录面板 */}
+
+      {/* Left catalog panel */}
       <div
-        className={`flex flex-col bg-emerald-50/60
-          transition-all duration-200 ease-in-out
-          absolute inset-y-0 left-0 z-20 w-72 shadow-2xl
-          md:relative md:z-auto md:flex-shrink-0 md:shadow-none md:translate-x-0
-          ${sidebarOpen
-            ? 'translate-x-0 border-r border-white/20 md:w-56'
-            : '-translate-x-full md:w-0 md:overflow-hidden md:border-r-0'}`}
+        className={[
+          'flex flex-col bg-surface/90 backdrop-blur-md',
+          'transition-all duration-200 ease-in-out',
+          'absolute inset-y-0 left-0 z-20 w-72 shadow-2xl border-r border-outline',
+          'md:relative md:z-auto md:flex-shrink-0 md:shadow-none md:translate-x-0',
+          sidebarOpen
+            ? 'translate-x-0 md:w-56'
+            : '-translate-x-full md:w-0 md:overflow-hidden md:border-r-0',
+        ].join(' ')}
       >
-        <div className="p-3 border-b border-emerald-100">
+        <div className="p-3 border-b border-outline">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
               一图流文档
             </h2>
-            <button
+            <IconButton
               onClick={() => setSidebarOpen(false)}
-              className="p-1 rounded-lg hover:bg-emerald-100 text-slate-400 hover:text-slate-600 transition-colors"
-              aria-label="收起目录"
-              title="收起目录"
+              label="收起目录"
+              className="md:hidden"
             >
-              <span className="text-sm leading-none select-none">←</span>
-            </button>
+              <ChevronDownIcon className="w-4 h-4 rotate-90" />
+            </IconButton>
           </div>
-          <input
+          <Input
             type="text"
             placeholder="搜索..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-2.5 py-1.5 text-sm bg-white/70 border border-emerald-200 rounded-lg outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-300 placeholder-slate-400"
+            className="py-1.5 text-xs"
           />
         </div>
 
         <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
           {loading ? (
-            <div className="text-xs text-slate-400 p-3 text-center">加载中...</div>
+            <div className="text-xs text-on-surface-variant p-3 text-center">
+              加载中...
+            </div>
           ) : filteredSections.length === 0 ? (
-            <div className="text-xs text-slate-400 p-3 text-center">无匹配结果</div>
+            <div className="text-xs text-on-surface-variant p-3 text-center">
+              无匹配结果
+            </div>
           ) : (
             filteredSections.map((section) =>
               section.level === 2 ? (
                 <div key={section.title}>
                   <button
                     onClick={() => toggleSection(section.title)}
-                    className="w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100/70 rounded-lg transition-colors"
+                    className="w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-variant rounded-lg transition-colors duration-200"
                   >
                     <span>{section.title}</span>
-                    <span
-                      className={`text-emerald-500 transition-transform duration-200 ${
+                    <ChevronDownIcon
+                      className={`w-3.5 h-3.5 text-on-surface-variant transition-transform duration-200 ${
                         expandedSections.has(section.title) ? 'rotate-180' : ''
                       }`}
-                    >
-                      ▾
-                    </span>
+                    />
                   </button>
                   {expandedSections.has(section.title) && (
                     <div className="ml-1 mt-0.5 space-y-0.5">
@@ -250,13 +260,14 @@ export default function SvgDocs() {
                           onClick={() => selectItem(item)}
                           disabled={!item.filename}
                           title={item.title}
-                          className={`w-full text-left px-2.5 py-1 text-xs rounded-lg transition-all truncate ${
+                          className={[
+                            'w-full text-left px-2.5 py-1 text-xs rounded-full transition-colors duration-200 truncate',
                             selectedFilename === item.filename
-                              ? 'bg-emerald-200/80 text-emerald-900 font-medium'
+                              ? 'bg-primary-container text-on-primary-container font-medium'
                               : item.filename
-                              ? 'text-slate-600 hover:bg-emerald-100/60 hover:text-slate-900'
-                              : 'text-slate-300 cursor-not-allowed'
-                          }`}
+                              ? 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+                              : 'text-on-surface-variant/40 cursor-not-allowed',
+                          ].join(' ')}
                         >
                           {item.title}
                         </button>
@@ -265,9 +276,8 @@ export default function SvgDocs() {
                   )}
                 </div>
               ) : (
-                /* H1 sections (版本更新等) */
                 <div key={section.title}>
-                  <div className="px-2 py-1.5 text-xs font-bold text-emerald-700 border-t border-emerald-200/60 mt-1 pt-2">
+                  <div className="px-2 py-1.5 text-xs font-bold text-on-surface border-t border-outline mt-1 pt-2">
                     {section.title}
                   </div>
                   <div className="ml-1 mt-0.5 space-y-0.5">
@@ -277,13 +287,14 @@ export default function SvgDocs() {
                         onClick={() => selectItem(item)}
                         disabled={!item.filename}
                         title={item.title}
-                        className={`w-full text-left px-2.5 py-1 text-xs rounded-lg transition-all truncate ${
+                        className={[
+                          'w-full text-left px-2.5 py-1 text-xs rounded-full transition-colors duration-200 truncate',
                           selectedFilename === item.filename
-                            ? 'bg-emerald-100 text-emerald-900 font-medium'
+                            ? 'bg-primary-container text-on-primary-container font-medium'
                             : item.filename
-                            ? 'text-slate-600 hover:bg-emerald-50 hover:text-slate-900'
-                            : 'text-slate-300 cursor-not-allowed'
-                        }`}
+                            ? 'text-on-surface-variant hover:bg-surface-variant hover:text-on-surface'
+                            : 'text-on-surface-variant/40 cursor-not-allowed',
+                        ].join(' ')}
                       >
                         {item.title}
                       </button>
@@ -296,58 +307,55 @@ export default function SvgDocs() {
         </div>
       </div>
 
-      {/* 右侧 SVG 查看器 */}
+      {/* Right SVG viewer */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* 顶部工具栏：始终显示 */}
-        <div className="flex items-center gap-2 pl-14 pr-3 py-2 lg:pl-3 border-b border-white/20 bg-white/20 flex-shrink-0">
-          <button
+        {/* Top toolbar */}
+        <div className="flex items-center gap-2 pl-12 pr-3 lg:pl-3 min-h-[3.5rem] border-b border-outline bg-surface/70 backdrop-blur-md flex-shrink-0">
+          <IconButton
             onClick={() => setSidebarOpen((s) => !s)}
-            className="p-1.5 rounded-lg hover:bg-white/50 text-slate-600 transition-colors flex-shrink-0"
-            aria-label="切换目录"
-            title="切换目录"
+            label="切换目录"
+            className="flex-shrink-0"
           >
-            <span className="text-base leading-none select-none">☰</span>
-          </button>
-          {selectedFilename && (
+            <MenuIcon className="w-5 h-5" />
+          </IconButton>
+          {selectedFilename ? (
             <>
-              <span className="flex-1 text-sm font-medium text-slate-700 truncate">
+              <span className="flex-1 text-sm font-medium text-on-surface truncate">
                 {selectedItem?.title ?? selectedFilename}
               </span>
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <button
+                <IconButton
                   onClick={() => setSvgScale((s) => Math.max(0.25, s - 0.25))}
-                  className="px-2 py-1 text-xs bg-white/50 hover:bg-white/80 rounded-lg border border-white/40 transition-colors"
+                  label="缩小"
                 >
-                  −
-                </button>
-                <span className="text-xs text-slate-500 w-12 text-center tabular-nums">
+                  <ZoomOutIcon className="w-4 h-4" />
+                </IconButton>
+                <span className="text-xs text-on-surface-variant w-12 text-center tabular-nums">
                   {Math.round(svgScale * 100)}%
                 </span>
-                <button
+                <IconButton
                   onClick={() => setSvgScale((s) => Math.min(4, s + 0.25))}
-                  className="px-2 py-1 text-xs bg-white/50 hover:bg-white/80 rounded-lg border border-white/40 transition-colors"
+                  label="放大"
                 >
-                  +
-                </button>
-                <button
+                  <ZoomInIcon className="w-4 h-4" />
+                </IconButton>
+                <Button
+                  variant="outlined"
+                  size="sm"
                   onClick={() => setSvgScale(1)}
-                  className="px-2 py-1 text-xs bg-white/50 hover:bg-white/80 rounded-lg border border-white/40 transition-colors"
                 >
                   重置
-                </button>
+                </Button>
                 <div className="relative">
-                  <button
+                  <Button
+                    variant={docsOpen ? 'tonal' : 'outlined'}
+                    size="sm"
                     onClick={() => setDocsOpen((v) => !v)}
-                    className={`px-2 py-1 text-xs rounded-lg border transition-colors ${
-                      docsOpen
-                        ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
-                        : 'bg-white/50 hover:bg-white/80 border-white/40'
-                    }`}
                   >
                     相关文档
-                  </button>
+                  </Button>
                   {docsOpen && (
-                    <div className="absolute right-0 top-full mt-1 z-30 min-w-max bg-white/95 backdrop-blur-sm border border-emerald-100 rounded-xl shadow-lg p-3 flex flex-col gap-1.5">
+                    <div className="absolute right-0 top-full mt-1 z-30 min-w-max bg-surface/95 backdrop-blur-lg border border-outline rounded-2xl shadow-lg p-3 flex flex-col gap-1.5">
                       {svgLinks.length > 0 ? (
                         svgLinks.map((link, i) => (
                           <a
@@ -355,7 +363,7 @@ export default function SvgDocs() {
                             href={link.href}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-xs text-emerald-600 hover:text-emerald-800 hover:underline whitespace-nowrap"
+                            className="text-xs text-primary hover:text-primary/80 hover:underline whitespace-nowrap"
                           >
                             {link.text}
                           </a>
@@ -365,7 +373,7 @@ export default function SvgDocs() {
                           href="https://act.mihoyo.com/ys/ugc/tutorial/detail/mhs2w008wf14"
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs text-emerald-600 hover:text-emerald-800 hover:underline whitespace-nowrap"
+                          className="text-xs text-primary hover:text-primary/80 hover:underline whitespace-nowrap"
                         >
                           奇匠学院
                         </a>
@@ -375,12 +383,17 @@ export default function SvgDocs() {
                 </div>
               </div>
             </>
+          ) : (
+            <span className="text-sm font-medium text-on-surface">
+              文档一图流
+            </span>
           )}
         </div>
+
         {selectedFilename ? (
           <div className="flex-1 overflow-auto p-4">
             {svgLoading ? (
-              <div className="flex h-full items-center justify-center text-slate-400 text-sm">
+              <div className="flex h-full items-center justify-center text-on-surface-variant text-sm">
                 加载中...
               </div>
             ) : svgContent ? (
@@ -395,17 +408,17 @@ export default function SvgDocs() {
             ) : null}
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-slate-400 select-none">
+          <div className="flex-1 flex items-center justify-center text-on-surface-variant select-none">
             <div className="text-center space-y-4">
-              <div className="text-5xl">📊</div>
+              <OpenExternalIcon className="w-16 h-16 mx-auto opacity-40" />
               <div className="text-sm">从左侧目录选择图表查看</div>
               <a
                 href="https://act.mihoyo.com/ys/ugc/tutorial/detail/mhs2w008wf14"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-500/80 hover:bg-emerald-500 text-white text-sm rounded-xl transition-colors shadow-sm"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary text-sm rounded-full transition-colors duration-200 hover:bg-primary/90 shadow-sm"
               >
-                🎓 打开奇匠学院
+                打开奇匠学院
               </a>
             </div>
           </div>

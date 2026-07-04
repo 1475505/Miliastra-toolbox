@@ -1,35 +1,35 @@
 import { useState, useRef, useEffect } from 'react'
-import { Message, Source, ToolTrace } from '../types'
-import { getConfig } from '../utils/config'
-import ConfigModal from './ConfigModal'
-import { 
-  createNewConversation, 
-  saveConversation, 
-  getConversation, 
-  generateConversationTitle,
-  downloadConversation 
-} from '../utils/conversations'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
-interface SourceMessage {
-  type: 'sources'
-  sources: Source[]
-  tokens?: number
-}
-
-interface ToolCallMessage {
-  type: 'tool_trace'
-  traces: ToolTrace[]
-  stats?: { tokens: number; tool_calls: number; retrieval_calls: number }
-}
-
-interface ExtendedMessage extends Message {
-  reasoning?: string
-  isReasoning?: boolean
-}
-
-type ChatMessage = ExtendedMessage | SourceMessage | ToolCallMessage
+import {
+  type ChatMessage,
+  type ExtendedMessage,
+  type Message,
+  type SourceMessage,
+  type ToolCallMessage,
+  type ToolTrace,
+} from '../types'
+import { getConfig } from '../utils/config'
+import ConfigModal from './ConfigModal'
+import {
+  createNewConversation,
+  saveConversation,
+  getConversation,
+  generateConversationTitle,
+  downloadConversation,
+} from '../utils/conversations'
+import PageHeader from './ui/PageHeader'
+import Button from './ui/Button'
+import Surface from './ui/Surface'
+import Textarea from './ui/Textarea'
+import {
+  DownloadIcon,
+  PlusIcon,
+  ImageIcon,
+  SettingsIcon,
+  SendIcon,
+} from './ui/icons'
 
 interface ConversationTurn {
   key: string
@@ -95,26 +95,34 @@ function buildConversationTurns(chatMessages: ChatMessage[]): ConversationTurn[]
     }
   })
 
-  return turns.filter((turn) => turn.user || turn.assistant || turn.toolTraces.length > 0 || turn.sources.length > 0)
+  return turns.filter(
+    (turn) =>
+      turn.user ||
+      turn.assistant ||
+      turn.toolTraces.length > 0 ||
+      turn.sources.length > 0
+  )
 }
 
-function getLatestToolStats(toolTraces: ToolCallMessage[]): ToolCallMessage['stats'] {
+function getLatestToolStats(
+  toolTraces: ToolCallMessage[]
+): ToolCallMessage['stats'] {
   for (let index = toolTraces.length - 1; index >= 0; index--) {
     if (toolTraces[index].stats) {
       return toolTraces[index].stats
     }
   }
-
   return undefined
 }
 
-function getLatestSourceTokens(sourceMessages: SourceMessage[]): number | undefined {
+function getLatestSourceTokens(
+  sourceMessages: SourceMessage[]
+): number | undefined {
   for (let index = sourceMessages.length - 1; index >= 0; index--) {
     if (sourceMessages[index].tokens) {
       return sourceMessages[index].tokens
     }
   }
-
   return undefined
 }
 
@@ -126,7 +134,13 @@ interface ChatProps {
   onConfigSaved?: () => void
 }
 
-export default function Chat({ configVersion, currentConversationId, onConversationChange, onRefreshConversations, onConfigSaved }: ChatProps) {
+export default function Chat({
+  configVersion,
+  currentConversationId,
+  onConversationChange,
+  onRefreshConversations,
+  onConfigSaved,
+}: ChatProps) {
   const [conversationId, setConversationId] = useState<string>('')
   const [messages, setMessages] = useState<ExtendedMessage[]>([])
   const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([])
@@ -145,7 +159,6 @@ export default function Chat({ configVersion, currentConversationId, onConversat
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const conversationTurns = buildConversationTurns(displayMessages)
 
-  // 输入框自动撑高
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = 'auto'
@@ -153,19 +166,18 @@ export default function Chat({ configVersion, currentConversationId, onConversat
     }
   }, [input])
 
-  // 初始化或加载对话
   useEffect(() => {
     if (currentConversationId) {
       const conv = getConversation(currentConversationId)
       if (conv) {
         setConversationId(conv.id)
-        // 分离 messages 和 displayMessages
-        const userAssistantMessages = conv.messages.filter((m: ChatMessage) => 'role' in m) as ExtendedMessage[]
+        const userAssistantMessages = conv.messages.filter(
+          (m: ChatMessage) => 'role' in m
+        ) as ExtendedMessage[]
         setMessages(userAssistantMessages)
         setDisplayMessages(conv.messages as ChatMessage[])
       }
     } else if (!conversationId) {
-      // 创建新对话
       const newConv = createNewConversation()
       setConversationId(newConv.id)
       setMessages([])
@@ -175,7 +187,6 @@ export default function Chat({ configVersion, currentConversationId, onConversat
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentConversationId])
 
-  // 保存对话到 localStorage
   useEffect(() => {
     if (conversationId && messages.length > 0) {
       const title = generateConversationTitle(messages)
@@ -184,14 +195,16 @@ export default function Chat({ configVersion, currentConversationId, onConversat
         title,
         messages: displayMessages,
         createdAt: parseInt(conversationId.split('_')[1]) || Date.now(),
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
       })
     }
   }, [messages, conversationId, displayMessages])
 
-  const MAX_IMAGE_SIZE = 1024 * 1024 // 1MB
+  const MAX_IMAGE_SIZE = 1024 * 1024
 
-  const compressImageToBase64 = (file: File): Promise<{ base64: string; info: string }> => {
+  const compressImageToBase64 = (
+    file: File
+  ): Promise<{ base64: string; info: string }> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = () => {
@@ -219,7 +232,6 @@ export default function Chat({ configVersion, currentConversationId, onConversat
           let quality = 0.9
           let base64 = canvas.toDataURL('image/jpeg', quality)
 
-          // 如仍然大于 1MB，逐步降低质量
           while (base64.length * 0.75 > MAX_IMAGE_SIZE && quality > 0.3) {
             quality -= 0.1
             base64 = canvas.toDataURL('image/jpeg', quality)
@@ -302,7 +314,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
         title,
         messages: displayMessages,
         createdAt: parseInt(conversationId.split('_')[1]) || Date.now(),
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
       })
     }
   }
@@ -321,12 +333,11 @@ export default function Chat({ configVersion, currentConversationId, onConversat
     setShowConfigHint(needConfig)
   }, [configVersion])
 
-  // 加载公告内容
   useEffect(() => {
     fetch('/NOTICE.md')
-      .then(response => response.text())
-      .then(text => setNoticeContent(text))
-      .catch(err => console.warn('Failed to load NOTICE.md:', err))
+      .then((response) => response.text())
+      .then((text) => setNoticeContent(text))
+      .catch((err) => console.warn('Failed to load NOTICE.md:', err))
   }, [])
 
   const handleSend = async () => {
@@ -341,8 +352,8 @@ export default function Chat({ configVersion, currentConversationId, onConversat
     setShowConfigHint(false)
     const imageBase64s = images.map((img) => img.base64)
     const messageText = input.trim() || (imageBase64s.length > 0 ? '[图片提问]' : '')
-    const userMessage: Message = { 
-      role: 'user', 
+    const userMessage: Message = {
+      role: 'user',
       content: messageText,
       imageBase64s: imageBase64s.length > 0 ? imageBase64s : undefined,
     }
@@ -359,11 +370,13 @@ export default function Chat({ configVersion, currentConversationId, onConversat
 
     try {
       const contextMessages = messages.slice(-(config.context_length * 2))
-      
+
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 20 * 60 * 1000) // 20分钟超时
-      
-      const apiUrl = agentMode ? '/api/v1/agent/chat/stream' : '/api/v1/rag/chat/stream'
+      const timeoutId = setTimeout(() => controller.abort(), 20 * 60 * 1000)
+
+      const apiUrl = agentMode
+        ? '/api/v1/agent/chat/stream'
+        : '/api/v1/rag/chat/stream'
       const requestBody = {
         message: messageText,
         conversation: contextMessages,
@@ -377,7 +390,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
         body: JSON.stringify(requestBody),
         signal: controller.signal,
       })
-      
+
       clearTimeout(timeoutId)
 
       if (!response.ok) {
@@ -394,20 +407,20 @@ export default function Chat({ configVersion, currentConversationId, onConversat
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
-      
+
       lastMessageTimeRef.current = Date.now()
       let hasShownWarning = false
-      
+
       const checkTimeout = setInterval(() => {
         const elapsedTime = Date.now() - lastMessageTimeRef.current
-        
-        // 5分钟无响应：显示警告
+
         if (elapsedTime > 5 * 60 * 1000 && !hasShownWarning) {
           hasShownWarning = true
-          setTimeoutWarning('已5分钟无响应，可能问题过于复杂。建议调小上下文轮次、使用非推理模型、或在新标签页开启新对话')
+          setTimeoutWarning(
+            '已5分钟无响应，可能问题过于复杂。建议调小上下文轮次、使用非推理模型、或在新标签页开启新对话'
+          )
         }
-        
-        // 20分钟无响应：报错并停止
+
         if (elapsedTime > 20 * 60 * 1000) {
           clearInterval(checkTimeout)
           reader?.cancel()
@@ -463,20 +476,28 @@ export default function Chat({ configVersion, currentConversationId, onConversat
               const data = JSON.parse(line.slice(6))
 
               if (data.type === 'sources') {
-                if (agentMode) {
-                  // Agent 模式下忽略 sources 事件（信息已在 tool_trace 中）
-                } else {
-                  setDisplayMessages((prev) => [...prev, { type: 'sources', sources: data.data }])
+                if (!agentMode) {
+                  setDisplayMessages((prev) => [
+                    ...prev,
+                    { type: 'sources', sources: data.data },
+                  ])
                 }
               } else if (data.type === 'tool_call') {
-                // Agent: 工具调用开始
-                const trace: ToolTrace = { tool: data.data.tool, args: data.data.args, status: 'success', summary: '调用中...' }
+                const trace: ToolTrace = {
+                  tool: data.data.tool,
+                  args: data.data.args,
+                  status: 'success',
+                  summary: '调用中...',
+                }
                 setDisplayMessages((prev) => {
-                  // 找到最后一个 tool_trace 消息并追加，否则新建
                   for (let i = prev.length - 1; i >= 0; i--) {
                     const m = prev[i]
                     if ('type' in m && m.type === 'tool_trace') {
-                      return [...prev.slice(0, i), { ...m, traces: [...m.traces, trace] }, ...prev.slice(i + 1)]
+                      return [
+                        ...prev.slice(0, i),
+                        { ...m, traces: [...m.traces, trace] },
+                        ...prev.slice(i + 1),
+                      ]
                     }
                     if ('role' in m && m.role === 'user') break
                   }
@@ -484,7 +505,6 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                 })
                 setStatusMessage(`正在调用工具: ${data.data.tool}...`)
               } else if (data.type === 'tool_result') {
-                // Agent: 工具调用结果
                 setDisplayMessages((prev) => {
                   for (let i = prev.length - 1; i >= 0; i--) {
                     const m = prev[i]
@@ -492,42 +512,51 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                       const traces = [...m.traces]
                       for (let j = traces.length - 1; j >= 0; j--) {
                         if (traces[j].tool === data.data.tool) {
-                          traces[j] = { ...traces[j], status: data.data.status, summary: data.data.summary, sources: data.data.sources }
+                          traces[j] = {
+                            ...traces[j],
+                            status: data.data.status,
+                            summary: data.data.summary,
+                            sources: data.data.sources,
+                          }
                           break
                         }
                       }
-                      return [...prev.slice(0, i), { ...m, traces }, ...prev.slice(i + 1)]
+                      return [
+                        ...prev.slice(0, i),
+                        { ...m, traces },
+                        ...prev.slice(i + 1),
+                      ]
                     }
                   }
                   return prev
                 })
                 setStatusMessage('')
               } else if (data.type === 'status') {
-                // Agent: 状态更新
                 setStatusMessage(data.data.message || data.data)
               } else if (data.type === 'reasoning') {
-                // 处理推理内容
                 if (!hasCreatedAssistantMessage) {
                   hasCreatedAssistantMessage = true
-                  const assistantMessage: ExtendedMessage = { 
-                    role: 'assistant', 
-                    content: '', 
+                  const assistantMessage: ExtendedMessage = {
+                    role: 'assistant',
+                    content: '',
                     reasoning: data.data,
-                    isReasoning: true 
+                    isReasoning: true,
                   }
                   setMessages((prev) => [...prev, assistantMessage])
                   setDisplayMessages((prev) => [...prev, assistantMessage])
                 } else {
-                  // 追加推理内容
                   const updateMsg = (prev: ExtendedMessage[]) => {
                     const newMessages = [...prev]
                     const lastMsg = newMessages[newMessages.length - 1]
                     if (lastMsg && lastMsg.role === 'assistant') {
-                      return [...prev.slice(0, -1), { 
-                        ...lastMsg, 
-                        reasoning: (lastMsg.reasoning || '') + data.data,
-                        isReasoning: true
-                      }]
+                      return [
+                        ...prev.slice(0, -1),
+                        {
+                          ...lastMsg,
+                          reasoning: (lastMsg.reasoning || '') + data.data,
+                          isReasoning: true,
+                        },
+                      ]
                     }
                     return newMessages
                   }
@@ -538,12 +567,12 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                       if ('role' in msg && msg.role === 'assistant') {
                         return [
                           ...prev.slice(0, i),
-                          { 
-                            ...msg, 
+                          {
+                            ...msg,
                             reasoning: (msg.reasoning || '') + data.data,
-                            isReasoning: true
+                            isReasoning: true,
                           },
-                          ...prev.slice(i + 1)
+                          ...prev.slice(i + 1),
                         ]
                       }
                     }
@@ -551,23 +580,27 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                   })
                 }
               } else if (data.type === 'token') {
-                // 第一个 token 时创建 assistant 消息
                 if (!hasCreatedAssistantMessage) {
                   hasCreatedAssistantMessage = true
-                  const assistantMessage: ExtendedMessage = { role: 'assistant', content: data.data }
+                  const assistantMessage: ExtendedMessage = {
+                    role: 'assistant',
+                    content: data.data,
+                  }
                   setMessages((prev) => [...prev, assistantMessage])
                   setDisplayMessages((prev) => [...prev, assistantMessage])
                 } else {
-                  // 后续 token 追加内容
                   setMessages((prev) => {
                     const newMessages = [...prev]
                     const lastMsg = newMessages[newMessages.length - 1]
                     if (lastMsg && lastMsg.role === 'assistant') {
-                      return [...prev.slice(0, -1), { 
-                        ...lastMsg, 
-                        content: lastMsg.content + data.data,
-                        isReasoning: false 
-                      }]
+                      return [
+                        ...prev.slice(0, -1),
+                        {
+                          ...lastMsg,
+                          content: lastMsg.content + data.data,
+                          isReasoning: false,
+                        },
+                      ]
                     }
                     return newMessages
                   })
@@ -577,12 +610,12 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                       if ('role' in msg && msg.role === 'assistant') {
                         return [
                           ...prev.slice(0, i),
-                          { 
-                            ...msg, 
+                          {
+                            ...msg,
                             content: msg.content + data.data,
-                            isReasoning: false 
+                            isReasoning: false,
                           },
-                          ...prev.slice(i + 1)
+                          ...prev.slice(i + 1),
                         ]
                       }
                     }
@@ -591,17 +624,17 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                 }
               } else if (data.type === 'done') {
                 setStatusMessage('')
-                // 添加统计信息到最后一个 sources 或 tool_trace 消息
                 setDisplayMessages((prev) => {
                   const newMessages = [...prev]
                   for (let i = newMessages.length - 1; i >= 0; i--) {
                     const msg = newMessages[i]
                     if ('type' in msg && msg.type === 'tool_trace') {
-                      (msg as ToolCallMessage).stats = data.data.stats || data.data
+                      ;(msg as ToolCallMessage).stats =
+                        data.data.stats || data.data
                       break
                     }
                     if ('type' in msg && msg.type === 'sources') {
-                      (msg as SourceMessage).tokens = data.data.tokens
+                      ;(msg as SourceMessage).tokens = data.data.tokens
                       break
                     }
                   }
@@ -610,7 +643,7 @@ export default function Chat({ configVersion, currentConversationId, onConversat
               } else if (data.type === 'error') {
                 setError(data.data)
               }
-            } catch (e) {
+            } catch {
               console.warn('解析 SSE 失败:', line)
             }
           }
@@ -618,8 +651,13 @@ export default function Chat({ configVersion, currentConversationId, onConversat
       }
     } catch (err) {
       console.error('对话流异常:', err)
-      const detail = err instanceof Error ? (err.message || '网络错误') : '网络错误'
-      setError(`连接异常：${detail}。若反复出现，可能是模型已达限额或配置有误，请检查 LLM 配置`)
+      const detail =
+        err instanceof Error
+          ? err.message || '网络错误'
+          : '网络错误'
+      setError(
+        `连接异常：${detail}。若反复出现，可能是模型已达限额或配置有误，请检查 LLM 配置`
+      )
     } finally {
       setLoading(false)
       setStatusMessage('')
@@ -628,41 +666,44 @@ export default function Chat({ configVersion, currentConversationId, onConversat
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b border-slate-200 p-4 pl-16 lg:pl-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-800">知识库问答</h2>
-        <div className="flex gap-2">
-          {messages.length > 0 && (
-            <button
-              onClick={handleDownload}
-              className="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors text-slate-600 font-medium"
-              title="下载对话为纯文本"
-            >
-              💾 下载对话
-            </button>
-          )}
-          <button
-            onClick={handleNewConversation}
-            className="px-3 py-1.5 text-sm bg-emerald-100/80 hover:bg-emerald-200/80 rounded-lg transition-colors font-medium text-emerald-800"
+      <PageHeader title="知识库问答">
+        {messages.length > 0 && (
+          <Button
+            variant="outlined"
+            size="sm"
+            onClick={handleDownload}
+            title="下载对话为纯文本"
           >
-            ✨ 新对话
-          </button>
-        </div>
-      </div>
+            <DownloadIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">下载</span>
+          </Button>
+        )}
+        <Button variant="tonal" size="sm" onClick={handleNewConversation}>
+          <PlusIcon className="w-4 h-4" />
+          新对话
+        </Button>
+      </PageHeader>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
         {displayMessages.length === 0 && (
-          <div className="text-center text-slate-700 mt-20">
-            <div className="text-lg font-medium">你好！我是千星知识库助手，请问有什么可以帮你的？</div>
-            <div className="text-sm mt-2 text-slate-500">对话将自动保存到浏览器本地，建议及时删除</div>
-            <div className="text-sm mt-2 text-slate-500">在菜单左下角按需减少上下文轮次可加快生成速度</div>
+          <div className="text-center text-on-surface mt-16 lg:mt-20">
+            <div className="text-lg font-medium">
+              你好！我是千星知识库助手，请问有什么可以帮你的？
+            </div>
+            <div className="text-sm mt-2 text-on-surface-variant">
+              对话将自动保存到浏览器本地，建议及时删除
+            </div>
+            <div className="text-sm mt-1 text-on-surface-variant">
+              在菜单左下角按需减少上下文轮次可加快生成速度
+            </div>
             {noticeContent.trim() && (
-              <div className="mt-8 max-w-2xl mx-auto bg-green-50 border border-green-200 rounded-xl p-6 text-left">
+              <Surface className="mt-8 max-w-2xl mx-auto text-left">
                 <div className="prose prose-sm max-w-none prose-slate">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {noticeContent}
                   </ReactMarkdown>
                 </div>
-              </div>
+              </Surface>
             )}
           </div>
         )}
@@ -670,9 +711,11 @@ export default function Chat({ configVersion, currentConversationId, onConversat
         {showConfigHint && (
           <div className="text-center px-4">
             <div className="inline-block bg-emerald-50 border border-emerald-200 rounded-xl px-6 py-4 text-sm max-w-md">
-              <div className="text-emerald-800 mb-2 font-medium">⚠️ 请先配置 API Key</div>
+              <div className="text-emerald-800 mb-2 font-medium">
+                请先配置 API Key
+              </div>
               <div className="text-emerald-600">
-                请点击下方「⚙️ LLM 配置」按钮进行配置（或勾选免费模型）
+                请点击下方「LLM 配置」按钮进行配置（或勾选免费模型）
               </div>
             </div>
           </div>
@@ -686,19 +729,19 @@ export default function Chat({ configVersion, currentConversationId, onConversat
             <div key={turn.key} className="space-y-3">
               {turn.user && (
                 <div className="flex justify-end">
-                  <div className="max-w-2xl px-4 py-3 rounded-2xl bg-emerald-50 text-slate-900 border border-emerald-100">
+                  <div className="max-w-3xl px-4 py-3 rounded-2xl bg-emerald-50 text-slate-900 border border-emerald-100">
                     <div className="whitespace-pre-wrap">
                       {(turn.user.imageBase64s && turn.user.imageBase64s.length > 0
                         ? turn.user.imageBase64s
                         : turn.user.imageBase64
-                          ? [turn.user.imageBase64]
-                          : []
+                        ? [turn.user.imageBase64]
+                        : []
                       ).map((src, idx) => (
                         <div key={`${src.slice(0, 32)}_${idx}`} className="mb-2">
                           <img
                             src={src}
                             alt="用户上传的图片"
-                            className="max-w-full h-auto rounded-lg border border-white/20"
+                            className="max-w-full h-auto rounded-xl border border-white/20"
                             style={{ maxHeight: '300px' }}
                           />
                         </div>
@@ -711,53 +754,82 @@ export default function Chat({ configVersion, currentConversationId, onConversat
 
               {turn.toolTraces.length > 0 && (
                 <div className="flex justify-start">
-                  <div className="max-w-2xl px-4 py-3 rounded-2xl bg-violet-50 text-gray-900">
+                  <div className="max-w-4xl px-4 py-3 rounded-2xl bg-violet-50 text-gray-900">
                     <details open className="group">
                       <summary className="flex cursor-pointer items-center justify-between gap-3 select-none list-none">
-                        <div className="font-semibold text-sm">🔧 工具调用</div>
+                        <div className="font-semibold text-sm text-violet-800">工具调用</div>
                         {turnStats && (
                           <div className="flex gap-3 text-gray-500 text-xs">
-                            <span>💬 {turnStats.tokens}</span>
-                            <span>🔧 {turnStats.tool_calls}次</span>
-                            <span>🔍 {turnStats.retrieval_calls}次</span>
+                            <span>{turnStats.tokens} tokens</span>
+                            <span>{turnStats.tool_calls} 次工具</span>
+                            <span>{turnStats.retrieval_calls} 次检索</span>
                           </div>
                         )}
                       </summary>
                       <div className="mt-2 space-y-1.5">
-                        {turn.toolTraces.flatMap((toolMessage) => toolMessage.traces).map((trace, index) => (
-                          <div key={`${trace.tool}_${index}`} className="pb-1.5 border-b border-violet-100 last:border-0">
-                            <div className="flex items-center gap-2">
-                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${
-                                trace.status === 'success' ? 'bg-green-500' : trace.status === 'error' ? 'bg-red-500' : 'bg-emerald-400'
-                              }`} />
-                              <span className="font-medium text-sm text-violet-800">{trace.tool}</span>
-                              <span className={`text-xs ${trace.status === 'success' ? 'text-green-600' : trace.status === 'error' ? 'text-red-600' : 'text-emerald-600'}`}>
-                                {trace.status === 'success' ? '✓' : trace.status === 'error' ? '✗' : '⏳'}
-                              </span>
+                        {turn.toolTraces
+                          .flatMap((toolMessage) => toolMessage.traces)
+                          .map((trace, index) => (
+                            <div
+                              key={`${trace.tool}_${index}`}
+                              className="pb-1.5 border-b border-violet-100 last:border-0"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`inline-block w-1.5 h-1.5 rounded-full ${
+                                    trace.status === 'success'
+                                      ? 'bg-green-500'
+                                      : trace.status === 'error'
+                                      ? 'bg-red-500'
+                                      : 'bg-emerald-400'
+                                  }`}
+                                />
+                                <span className="font-medium text-sm text-violet-800">
+                                  {trace.tool}
+                                </span>
+                                <span
+                                  className={`text-xs ${
+                                    trace.status === 'success'
+                                      ? 'text-green-600'
+                                      : trace.status === 'error'
+                                      ? 'text-red-600'
+                                      : 'text-emerald-600'
+                                  }`}
+                                >
+                                  {trace.status === 'success'
+                                    ? '成功'
+                                    : trace.status === 'error'
+                                    ? '失败'
+                                    : '进行中'}
+                                </span>
+                              </div>
+                              {trace.args && Object.keys(trace.args).length > 0 && (
+                                <div className="text-gray-500 text-xs mt-1 font-mono bg-violet-100/50 rounded-lg px-2 py-1">
+                                  {Object.entries(trace.args)
+                                    .map(([k, v]) => `${k}: ${v}`)
+                                    .join(', ')}
+                                </div>
+                              )}
+                              <div className="text-gray-600 text-xs mt-1">
+                                {trace.summary}
+                              </div>
+                              {trace.sources && trace.sources.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                  {trace.sources.map((src, si) => (
+                                    <a
+                                      key={`${src.url}_${si}`}
+                                      href={src.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 hover:underline bg-violet-100/60 rounded-lg px-1.5 py-0.5"
+                                    >
+                                      {src.title}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            {trace.args && Object.keys(trace.args).length > 0 && (
-                              <div className="text-gray-500 text-xs mt-1 font-mono bg-violet-100/50 rounded px-2 py-1">
-                                {Object.entries(trace.args).map(([k, v]) => `${k}: ${v}`).join(', ')}
-                              </div>
-                            )}
-                            <div className="text-gray-600 text-xs mt-1">{trace.summary}</div>
-                            {trace.sources && trace.sources.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                {trace.sources.map((src, si) => (
-                                  <a
-                                    key={`${src.url}_${si}`}
-                                    href={src.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 hover:underline bg-violet-100/60 rounded px-1.5 py-0.5"
-                                  >
-                                    📄 {src.title}
-                                  </a>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     </details>
                   </div>
@@ -766,15 +838,15 @@ export default function Chat({ configVersion, currentConversationId, onConversat
 
               {turn.assistant && (
                 <div className="flex justify-start">
-                  <div className="max-w-2xl px-4 py-3 rounded-2xl bg-slate-100 text-slate-900">
+                  <div className="max-w-4xl px-4 py-3 rounded-2xl bg-slate-100 text-slate-900">
                     <div className="prose prose-sm max-w-none prose-slate">
                       {turn.assistant.reasoning && (
-                        <details 
+                        <details
                           className="mb-4 border border-gray-200 rounded-lg bg-white overflow-hidden"
                           open={turn.assistant.isReasoning}
                         >
                           <summary className="px-4 py-2 bg-gray-50 cursor-pointer text-xs font-medium text-gray-500 hover:bg-gray-100 select-none flex items-center">
-                            <span>💭 思考过程</span>
+                            <span>思考过程</span>
                           </summary>
                           <div className="px-4 py-3 text-gray-600 text-sm bg-gray-50/50 whitespace-pre-wrap border-t border-gray-100">
                             {turn.assistant.reasoning}
@@ -791,28 +863,37 @@ export default function Chat({ configVersion, currentConversationId, onConversat
 
               {turn.sources.length > 0 && (
                 <div className="flex justify-start">
-                  <div className="max-w-2xl px-4 py-3 rounded-2xl bg-blue-50 text-gray-900">
-                    <div className="font-semibold mb-2 text-sm">📚 引用来源</div>
-                    {turn.sources.flatMap((sourceMessage) => sourceMessage.sources).map((src, index) => (
-                      <div key={`${src.url}_${index}`} className="mb-2 pb-2 border-b border-blue-100 last:border-0">
-                        <a
-                          href={src.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline font-medium text-sm"
+                  <div className="max-w-4xl px-4 py-3 rounded-2xl bg-blue-50 text-gray-900">
+                    <div className="font-semibold mb-2 text-sm">引用来源</div>
+                    {turn.sources
+                      .flatMap((sourceMessage) => sourceMessage.sources)
+                      .map((src, index) => (
+                        <div
+                          key={`${src.url}_${index}`}
+                          className="mb-2 pb-2 border-b border-blue-100 last:border-0"
                         >
-                          {src.title}
-                        </a>
-                        <span className="text-gray-500 ml-2 text-xs">({Math.round(src.similarity * 100)}%)</span>
-                        {src.text_snippet && (
-                          <div className="text-gray-600 text-xs mt-1">
-                            {src.text_snippet.substring(0, 100)}...
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                          <a
+                            href={src.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline font-medium text-sm"
+                          >
+                            {src.title}
+                          </a>
+                          <span className="text-gray-500 ml-2 text-xs">
+                            ({Math.round(src.similarity * 100)}%)
+                          </span>
+                          {src.text_snippet && (
+                            <div className="text-gray-600 text-xs mt-1">
+                              {src.text_snippet.substring(0, 100)}...
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     {sourceTokens && sourceTokens > 0 && (
-                      <div className="text-gray-500 text-xs mt-2">💬 消耗 tokens: {sourceTokens}</div>
+                      <div className="text-gray-500 text-xs mt-2">
+                        消耗 tokens: {sourceTokens}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -832,51 +913,61 @@ export default function Chat({ configVersion, currentConversationId, onConversat
         {timeoutWarning && (
           <div className="text-center px-4">
             <div className="inline-block bg-emerald-50 border border-emerald-200 rounded-xl px-6 py-4 text-sm max-w-2xl">
-              <div className="text-emerald-800 mb-2 font-medium">⏱️ 响应较慢</div>
+              <div className="text-emerald-800 mb-2 font-medium">响应较慢</div>
               <div className="text-emerald-600">{timeoutWarning}</div>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="text-center text-red-500 text-sm">{error}</div>
+          <div className="flex justify-start px-4">
+            <div className="max-w-4xl px-4 py-3 rounded-2xl bg-red-50 text-red-700 border border-red-100 text-sm">
+              {error}
+            </div>
+          </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t border-slate-200 p-4">
+      <div className="border-t border-outline bg-surface/70 backdrop-blur-md p-4">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <label
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm cursor-pointer select-none rounded-xl border transition-colors ${
+              className={[
+                'flex items-center gap-2 px-3 py-2 text-sm cursor-pointer select-none rounded-full border transition-colors duration-200',
                 agentMode
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                  : 'border-slate-200 bg-white/60 text-slate-500 hover:border-emerald-300'
-              }`}
+                  ? 'border-primary bg-primary-container text-on-primary-container'
+                  : 'border-outline bg-surface text-on-surface-variant hover:border-primary',
+              ].join(' ')}
               title="启用高智商模式，使用工具调用进行深度问答"
             >
-              <span className={agentMode ? 'font-medium' : ''}>🧠 高智商</span>
+              <span className={agentMode ? 'font-medium' : ''}>高智商</span>
               <button
                 type="button"
                 role="switch"
                 aria-checked={agentMode}
                 onClick={() => setAgentMode(!agentMode)}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                  agentMode ? 'bg-emerald-500' : 'bg-slate-300'
-                }`}
+                className={[
+                  'relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200',
+                  agentMode ? 'bg-primary' : 'bg-outline',
+                ].join(' ')}
               >
-                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
-                  agentMode ? 'translate-x-[1.125rem]' : 'translate-x-0.5'
-                }`} />
+                <span
+                  className={`inline-block h-3.5 w-3.5 rounded-full bg-on-primary transition-transform duration-200 ${
+                    agentMode ? 'translate-x-[1.125rem]' : 'translate-x-0.5'
+                  }`}
+                />
               </button>
             </label>
+
             <div className="relative group">
               <label
-                className="px-3 py-2 border border-dashed border-slate-200 rounded-xl bg-white/60 text-sm text-slate-500 cursor-pointer hover:border-emerald-400 hover:bg-white transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 border border-outline rounded-full bg-surface text-sm text-on-surface-variant cursor-pointer hover:border-primary hover:text-primary transition-colors duration-200"
                 aria-label="仅部分支持多模态的模型支持图片输入"
               >
-                <span>📷 图片</span>
+                <ImageIcon className="w-4 h-4" />
+                <span>图片</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -886,21 +977,24 @@ export default function Chat({ configVersion, currentConversationId, onConversat
                   disabled={loading}
                 />
               </label>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-none whitespace-nowrap pointer-events-none z-50">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-on-surface text-surface text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap pointer-events-none z-50">
                 仅部分支持多模态的模型支持图片输入
               </div>
             </div>
-            <button
-              type="button"
+
+            <Button
+              variant="outlined"
+              size="sm"
               onClick={() => setShowConfig(true)}
-              className="px-3 py-2 border border-slate-200 rounded-xl bg-white/60 text-sm text-slate-500 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
               title="LLM 配置"
             >
-              ⚙️ LLM 配置
-            </button>
+              <SettingsIcon className="w-4 h-4" />
+              LLM 配置
+            </Button>
           </div>
+
           <div className="flex items-end gap-2">
-            <textarea
+            <Textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -914,32 +1008,40 @@ export default function Chat({ configVersion, currentConversationId, onConversat
               placeholder="输入问题 / 粘贴图片；AI 回答仅供参考，以官方文档为准"
               disabled={loading}
               rows={1}
-              className="flex-1 min-w-0 px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm resize-none overflow-y-auto"
+              className="flex-1 min-w-0 py-2.5"
               style={{ minHeight: '40px', maxHeight: '160px' }}
             />
-            <button
+            <Button
               onClick={handleSend}
               disabled={loading || (!input.trim() && images.length === 0)}
-              className="shrink-0 px-5 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm text-sm"
+              size="md"
+              className="shrink-0"
             >
-              {loading ? '…' : '发送'}
-            </button>
+              {loading ? '…' : <SendIcon className="w-4 h-4" />}
+              <span className="hidden sm:inline">
+                {loading ? '发送中' : '发送'}
+              </span>
+            </Button>
           </div>
+
           {images.length > 0 && (
             <div className="flex flex-wrap items-center gap-3">
               {images.map((img, idx) => (
-                <div key={`${img.base64.slice(0, 32)}_${idx}`} className="flex items-center gap-2 bg-white/60 border border-slate-100 rounded-lg px-2 py-1">
+                <div
+                  key={`${img.base64.slice(0, 32)}_${idx}`}
+                  className="flex items-center gap-2 bg-surface border border-outline rounded-xl px-2 py-1"
+                >
                   <img
                     src={img.base64}
                     alt={`已选择的图片 ${idx + 1}`}
-                    className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                    className="w-16 h-16 object-cover rounded-lg border border-outline"
                   />
-                  <div className="text-xs text-gray-600">
+                  <div className="text-xs text-on-surface-variant">
                     <div>{img.info || '大小信息计算中...'}</div>
                     <button
                       type="button"
                       onClick={() => removeImage(idx)}
-                      className="mt-1 text-xs text-red-500 hover:underline"
+                      className="mt-1 text-xs text-error hover:underline"
                       disabled={loading}
                     >
                       移除
@@ -950,11 +1052,16 @@ export default function Chat({ configVersion, currentConversationId, onConversat
             </div>
           )}
         </div>
-        <div className="text-center text-xs text-slate-400 mt-2">
+        <div className="text-center text-xs text-on-surface-variant mt-2">
           千星奇域官方文档和相关信息版权归米哈游所有，本网站为个人兴趣，与米哈游无关
         </div>
       </div>
-      {showConfig && <ConfigModal onClose={() => setShowConfig(false)} onConfigSaved={onConfigSaved} />}
+      {showConfig && (
+        <ConfigModal
+          onClose={() => setShowConfig(false)}
+          onConfigSaved={onConfigSaved}
+        />
+      )}
     </div>
   )
 }

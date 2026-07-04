@@ -40,10 +40,29 @@ export interface Note {
   video_url?: string
 }
 
+export interface SourceMessage {
+  type: 'sources'
+  sources: Source[]
+  tokens?: number
+}
+
+export interface ToolCallMessage {
+  type: 'tool_trace'
+  traces: ToolTrace[]
+  stats?: { tokens: number; tool_calls: number; retrieval_calls: number }
+}
+
+export interface ExtendedMessage extends Message {
+  reasoning?: string
+  isReasoning?: boolean
+}
+
+export type ChatMessage = ExtendedMessage | SourceMessage | ToolCallMessage
+
 export interface Conversation {
   id: string
   title: string
-  messages: any[] // ChatMessage[] - includes both ExtendedMessage and SourceMessage
+  messages: ChatMessage[]
   createdAt: number
   updatedAt: number
 }
