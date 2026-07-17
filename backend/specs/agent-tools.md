@@ -41,12 +41,15 @@
 {
   "title": "碰撞触发器",
   "main_title": "二、触发器",
+  "side": "server",
   "source_doc_title": "事件节点",
   "local_path": "official/guide/事件节点.md",
   "output_file": "derived/node/事件节点.md",
   "content": "..."
 }
 ```
+
+`side` 表示节点归属端：`server`（服务端/实体节点图）、`client`（客户端/角色技能·造物技能·造物状态·造物状态决策·过滤器节点图）、`both`（双端通用）。FAQ 类条目该字段为空字符串。端归属映射维护在 `mcp/node_side_map.json`，由 `mcp/process_docs.py` 在派生时合并（同一节点出现在多个节点图文档中时取并集）。
 
 ## 5. Tool: get_node_info
 
@@ -72,10 +75,11 @@
       {
         "title": "碰撞触发器",
         "main_title": "二、触发器",
+        "side": "server",
         "source_doc_title": "事件节点",
         "local_path": "official/guide/事件节点.md",
         "output_file": "derived/node/事件节点.md",
-        "content": "## 碰撞触发器\n..."
+        "content": "**归属端**：服务端\n\n## 碰撞触发器\n..."
       }
     ]
   }

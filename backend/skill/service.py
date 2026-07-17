@@ -26,6 +26,7 @@ SKILL_VERSION = "1.0.0"
 class NodeMatch(TypedDict):
     title: str
     main_title: str
+    side: str
     source_doc_title: str
     local_path: str
     output_file: str
@@ -190,6 +191,7 @@ def _lookup_node_matches(name: str) -> list[NodeMatch]:
         matched.append({
             "title": title,
             "main_title": entry.get("main_title", ""),
+            "side": entry.get("side", ""),
             "source_doc_title": entry.get("source_doc_title", ""),
             "local_path": entry.get("local_path", ""),
             "output_file": output_file,

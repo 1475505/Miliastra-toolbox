@@ -70,6 +70,7 @@ const result = payload.data.result
       {
         "title": "定点位移",
         "main_title": "一、角色技能",
+        "side": "client",
         "source_doc_title": "执行节点",
         "local_path": "official/guide/mh277t9fl4tm_执行节点.md",
         "output_file": "derived/node/执行节点.md",
@@ -79,6 +80,8 @@ const result = payload.data.result
   }
 ]
 ```
+
+`side` 为节点归属端：`server`（服务端/实体节点图）、`client`（客户端/角色技能·造物技能·造物状态·造物状态决策·过滤器节点图）、`both`（双端通用）。映射源 `mcp/node_side_map.json`，由 `mcp/process_docs.py` 派生时合并。
 
 ### 节点分类关键词表
 

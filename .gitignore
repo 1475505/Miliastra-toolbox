@@ -52,6 +52,9 @@ design-tokens/
 # Generated term DB
 *.db
 
+# TermTable source CSV (large, regenerated wholesale on each update; provision out-of-band at deploy)
+TermTable_15Lang.csv
+
 .kilocode/
 
 CLAUDE.md
