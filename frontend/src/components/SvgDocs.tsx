@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import IconButton from './ui/IconButton'
 import Button from './ui/Button'
@@ -48,6 +49,7 @@ function findItemBySlug(items: SvgItem[], slug: string): SvgItem | undefined {
 }
 
 export default function SvgDocs() {
+  const { t } = useTranslation()
   const [sections, setSections] = useState<SvgSection[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -209,11 +211,11 @@ export default function SvgDocs() {
         <div className="p-3 border-b border-outline">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
-              一图流文档
+              {t('svg.title')}
             </h2>
             <IconButton
               onClick={() => setSidebarOpen(false)}
-              label="收起目录"
+              label={t('svg.collapseToc')}
               className="md:hidden"
             >
               <ChevronDownIcon className="w-4 h-4 rotate-90" />
@@ -221,7 +223,7 @@ export default function SvgDocs() {
           </div>
           <Input
             type="text"
-            placeholder="搜索..."
+            placeholder={t('svg.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="py-1.5 text-xs"
@@ -231,11 +233,11 @@ export default function SvgDocs() {
         <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
           {loading ? (
             <div className="text-xs text-on-surface-variant p-3 text-center">
-              加载中...
+              {t('common.loading')}
             </div>
           ) : filteredSections.length === 0 ? (
             <div className="text-xs text-on-surface-variant p-3 text-center">
-              无匹配结果
+              {t('svg.noMatch')}
             </div>
           ) : (
             filteredSections.map((section) =>
@@ -310,10 +312,10 @@ export default function SvgDocs() {
       {/* Right SVG viewer */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top toolbar */}
-        <div className="flex items-center gap-2 pl-12 pr-3 lg:pl-3 min-h-[3.5rem] border-b border-outline bg-surface/70 backdrop-blur-md flex-shrink-0">
+        <div className="flex items-center gap-2 pl-12 pr-4 lg:px-6 min-h-[3.5rem] border-b border-outline bg-surface/70 backdrop-blur-md flex-shrink-0">
           <IconButton
             onClick={() => setSidebarOpen((s) => !s)}
-            label="切换目录"
+            label={t('svg.toggleToc')}
             className="flex-shrink-0"
           >
             <MenuIcon className="w-5 h-5" />
@@ -326,7 +328,7 @@ export default function SvgDocs() {
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <IconButton
                   onClick={() => setSvgScale((s) => Math.max(0.25, s - 0.25))}
-                  label="缩小"
+                  label={t('svg.zoomOut')}
                 >
                   <ZoomOutIcon className="w-4 h-4" />
                 </IconButton>
@@ -335,7 +337,7 @@ export default function SvgDocs() {
                 </span>
                 <IconButton
                   onClick={() => setSvgScale((s) => Math.min(4, s + 0.25))}
-                  label="放大"
+                  label={t('svg.zoomIn')}
                 >
                   <ZoomInIcon className="w-4 h-4" />
                 </IconButton>
@@ -344,7 +346,7 @@ export default function SvgDocs() {
                   size="sm"
                   onClick={() => setSvgScale(1)}
                 >
-                  重置
+                  {t('common.reset')}
                 </Button>
                 <div className="relative">
                   <Button
@@ -352,7 +354,7 @@ export default function SvgDocs() {
                     size="sm"
                     onClick={() => setDocsOpen((v) => !v)}
                   >
-                    相关文档
+                    {t('svg.relatedDocs')}
                   </Button>
                   {docsOpen && (
                     <div className="absolute right-0 top-full mt-1 z-30 min-w-max bg-surface/95 backdrop-blur-lg border border-outline rounded-2xl shadow-lg p-3 flex flex-col gap-1.5">
@@ -375,7 +377,7 @@ export default function SvgDocs() {
                           rel="noreferrer"
                           className="text-xs text-primary hover:text-primary/80 hover:underline whitespace-nowrap"
                         >
-                          奇匠学院
+                          {t('svg.academy')}
                         </a>
                       )}
                     </div>
@@ -385,7 +387,7 @@ export default function SvgDocs() {
             </>
           ) : (
             <span className="text-sm font-medium text-on-surface">
-              文档一图流
+              {t('svg.docTitle')}
             </span>
           )}
         </div>
@@ -394,7 +396,7 @@ export default function SvgDocs() {
           <div className="flex-1 overflow-auto p-4">
             {svgLoading ? (
               <div className="flex h-full items-center justify-center text-on-surface-variant text-sm">
-                加载中...
+                {t('common.loading')}
               </div>
             ) : svgContent ? (
               <div className="space-y-6 pb-6">
@@ -411,14 +413,14 @@ export default function SvgDocs() {
           <div className="flex-1 flex items-center justify-center text-on-surface-variant select-none">
             <div className="text-center space-y-4">
               <OpenExternalIcon className="w-16 h-16 mx-auto opacity-40" />
-              <div className="text-sm">从左侧目录选择图表查看</div>
+              <div className="text-sm">{t('svg.selectFromToc')}</div>
               <a
                 href="https://act.mihoyo.com/ys/ugc/tutorial/detail/mhs2w008wf14"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary text-sm rounded-full transition-colors duration-200 hover:bg-primary/90 shadow-sm"
               >
-                打开奇匠学院
+                {t('svg.openAcademy')}
               </a>
             </div>
           </div>

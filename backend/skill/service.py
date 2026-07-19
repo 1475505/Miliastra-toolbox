@@ -355,3 +355,11 @@ def rag_search_data(queries: list[str], top_k: int = 5) -> list[RagSearchQueryRe
 
 def rag_search_json(queries: list[str], top_k: int = 5) -> str:
     return json.dumps(rag_search_data(queries, top_k=top_k), ensure_ascii=False, indent=2)
+
+
+# ── 术语翻译（委托 translate 模块）──────────────────────────────
+# 重导出以便 Skill API / MCP 与其他工具统一从 skill.service 引入。
+from translate.service import (  # noqa: E402
+    translate_terms_data as translate_terms_data,
+    translate_terms_json as translate_terms_json,
+)

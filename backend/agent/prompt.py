@@ -426,3 +426,13 @@ NON_STREAM_OUTPUT_INSTRUCTION = (
   "\n## 非流式输出要求\n"
   "- 请直接使用纯文本作答，避免使用 Markdown 标题、列表、表格、代码块或其他格式化语法。\n"
 )
+
+# ── 多语言支持 ───────────────────────────────────────────────
+# 语言工具函数统一定义在 common/i18n.py，此处重导出以便 agent 模块统一引用。
+from common.i18n import (  # noqa: E402
+    LANGUAGE_NAMES,
+    DEFAULT_ANSWER_LANGUAGE,
+    VALID_ANSWER_LANGUAGES,
+    normalize_answer_language,
+    build_non_chinese_instruction,
+)

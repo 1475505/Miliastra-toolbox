@@ -1,0 +1,42 @@
+{
+  "_说明": "节点源文档 -> 端归属映射表（mcp/process_docs.py 读取）。key 为 frontmatter 中的 id（mh 前缀）。side: server=服务端(实体节点图) / client=客户端(角色技能/造物技能/造物状态/造物状态决策/过滤器节点图) / both=通用双端。新增无法靠章节判定的节点文档时在此补一行即可；可自动判定的无需登记。",
+  "_判定依据": "server=仅含实体节点图类目(实体相关/关卡相关/碰撞/战斗/铭牌/商店/小地图标识组件/造物巡逻/排行榜/段位/寻路阻挡/关卡任务等) 或运算节点中枚举是否相等/数值大于/位运算/时间运算; client=含角色技能/造物技能/战术/预瞄准/操控运动器/光标/扫描/挂接点/射线/触发器/过滤器/技能节点图/造物状态节点图/造物状态决策节点图, 或运算节点中枚举匹配/是否大于/屏幕坐标; both=流程控制通用节点(双分支/多分支, 通用且无法区分来源)。",
+  "mh277t9fl4tm": { "side": "server", "graph_type": "实体节点图", "group": "执行节点", "basis": "通用(执行节点通用参考)" },
+  "mh6obvipqv1g": { "side": "client", "graph_type": "角色技能节点图", "group": "执行节点", "basis": "含角色技能/预瞄准/操控运动器" },
+  "mhb09x012qu8": { "side": "client", "graph_type": "造物状态节点图", "group": "执行节点", "basis": "含战术" },
+  "mhf9gq9ssw9e": { "side": "client", "graph_type": "角色技能节点图", "group": "执行节点", "basis": "含角色技能/预瞄准/操控运动器" },
+  "mhw66orrrfkm": { "side": "server", "graph_type": "实体节点图", "group": "执行节点", "basis": "52个实体节点图类目" },
+  "mhz064iplia4": { "side": "client", "graph_type": "造物技能节点图", "group": "执行节点", "basis": "技能段+造物技能执行" },
+
+  "mhn7ko01v3yw": { "side": "server", "graph_type": "实体节点图", "group": "事件节点", "basis": "27个实体节点图类目" },
+
+  "mh21nw9b6f8i": { "side": "both", "graph_type": "通用", "group": "流程控制节点", "basis": "双分支/多分支, 通用双端, 6文件内容重复无法区分" },
+  "mhe8yn9bysd6": { "side": "both", "graph_type": "通用", "group": "流程控制节点", "basis": "同上" },
+  "mhk9zrrzshm6": { "side": "both", "graph_type": "通用", "group": "流程控制节点", "basis": "同上" },
+  "mhq1k3rzp6oe": { "side": "both", "graph_type": "通用", "group": "流程控制节点", "basis": "同上" },
+  "mhxc8ord091y": { "side": "both", "graph_type": "通用", "group": "流程控制节点", "basis": "同上" },
+  "mhxppurzujfq": { "side": "both", "graph_type": "通用", "group": "流程控制节点", "basis": "同上" },
+
+  "mh1w3z96rpne": { "side": "server", "graph_type": "实体节点图", "group": "查询节点", "basis": "通用/阵营/列表/字典 小集" },
+  "mh2crq9jzueq": { "side": "client", "graph_type": "角色技能节点图", "group": "查询节点", "basis": "含挂接点/射线/扫描/触发器" },
+  "mh65asiyhv2k": { "side": "client", "graph_type": "角色操控技能节点图", "group": "查询节点", "basis": "含预瞄准/操控运动器" },
+  "mhk4furvds12": { "side": "server", "graph_type": "实体节点图", "group": "查询节点", "basis": "通用/阵营/列表/字典 小集" },
+  "mholjx05ji8w": { "side": "client", "graph_type": "角色技能节点图", "group": "查询节点", "basis": "含标签/射线/扫描/触发器" },
+  "mhpw06rvah3a": { "side": "client", "graph_type": "角色技能节点图", "group": "查询节点", "basis": "含光标/标签/射线/触发器" },
+  "mhwbqlrw655q": { "side": "server", "graph_type": "实体节点图", "group": "查询节点", "basis": "38个实体节点图类目" },
+
+  "mhnd4l069tk0": { "side": "server", "graph_type": "实体节点图", "group": "运算节点", "basis": "枚举是否相等/数值大于/位运算/时间运算, 最全54节点" },
+  "mh7ys59fhtvu": { "side": "client", "graph_type": "角色技能节点图", "group": "运算节点", "basis": "枚举匹配/是否大于" },
+  "mhb5tu05hgfc": { "side": "client", "graph_type": "角色技能节点图", "group": "运算节点", "basis": "枚举匹配/是否大于" },
+  "mhfmxw9fn6n6": { "side": "client", "graph_type": "角色技能节点图", "group": "运算节点", "basis": "枚举匹配/是否大于" },
+  "mhjyvxrqz2fy": { "side": "client", "graph_type": "角色技能节点图", "group": "运算节点", "basis": "枚举匹配/是否大于" },
+  "mho82r0ip7v4": { "side": "client", "graph_type": "角色技能节点图", "group": "运算节点", "basis": "枚举匹配/是否大于/屏幕坐标转换" },
+  "mhte5piu3it0": { "side": "client", "graph_type": "角色技能节点图", "group": "运算节点", "basis": "枚举匹配/是否大于" },
+
+  "mh84c29jwjgy": { "side": "client", "graph_type": "技能节点图", "group": "其它节点", "basis": "内容:技能节点图的开始事件" },
+  "mhbbdr09w60g": { "side": "client", "graph_type": "造物状态决策节点图", "group": "其它节点", "basis": "内容:造物状态决策节点图的开始事件" },
+  "mhbgxo0eavlk": { "side": "client", "graph_type": "过滤器节点图", "group": "其它节点", "basis": "内容:本地过滤器的结束节点" },
+  "mhodmo0n3xg8": { "side": "client", "graph_type": "技能节点图", "group": "其它节点", "basis": "内容:技能节点图的开始事件" },
+  "mhor3u09y7u0": { "side": "client", "graph_type": "技能节点图", "group": "其它节点", "basis": "内容:技能节点图的开始事件" },
+  "mht31vila3ms": { "side": "client", "graph_type": "造物状态节点图", "group": "其它节点", "basis": "内容:造物状态节点图的开始事件" }
+}

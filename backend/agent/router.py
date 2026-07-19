@@ -24,6 +24,7 @@ class LLMConfig(BaseModel):
     model: str = ""
     use_default_model: int = Field(default=0)
     context_length: int = Field(default=3, ge=0, le=20)
+    answer_language: str = Field(default="chs", description="回答目标语言码（chs/cht/en/jp/kr/de/es/fr/id/it/pt/ru/th/tr/vi），默认中文")
 
 
 class AgentChatRequest(BaseModel):
@@ -109,7 +110,7 @@ async def agent_chat_stream(req: Request, body: AgentChatRequest):
 async def agent_capabilities():
     return {"success": True, "data": {
         "mode": "agent", "streaming": True, "image_input": False,
-        "tools": ["get_node_info", "list_documents", "get_document", "search_knowledge", "generate_diagram"]}}
+        "tools": ["get_node_info", "list_documents", "get_document", "search_knowledge", "generate_diagram", "translate_terms"]}}
 
 
 @router.get("/agent/diagram/{diagram_id}")

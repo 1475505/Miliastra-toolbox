@@ -145,3 +145,7 @@ export const OpenExternalIcon = createIcon(
 export const LoadingSpinnerIcon = createIcon(
   <path d="M21 12a9 9 0 1 1-6.219-8.56" />
 )
+
+export const GlobeIcon = createIcon(
+  <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0v-2.5M12 3v2.5m9 5.5h-2.5M5.5 11H3m15.364 4.364-1.768-1.768M8.404 8.404l-1.768-1.768m11.728 0-1.768 1.768M8.404 15.596l-1.768 1.768" />
+)

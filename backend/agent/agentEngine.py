@@ -27,8 +27,9 @@ from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.agent.workflow.workflow_events import AgentStream, ToolCall, ToolCallResult
 
 from common.llm_config import resolve_llm_config, format_llm_error
-from agent.prompt import DEFAULT_SYSTEM_PROMPT, NON_STREAM_OUTPUT_INSTRUCTION
+from agent.prompt import DEFAULT_SYSTEM_PROMPT, NON_STREAM_OUTPUT_INSTRUCTION, build_non_chinese_instruction, normalize_answer_language
 from skill.service import get_document_json, get_node_info_json, list_documents_json, rag_search_json
+from translate.service import translate_terms_json
 from agent.diagram import generate_diagram, diagram_store
 
 TOOLBOX_DIR = Path(__file__).resolve().parent.parent.parent
@@ -128,14 +129,15 @@ def _build_doc_list_text() -> str:
     return ", ".join(d["title"] for d in result.get("documents", []))
 
 
-@lru_cache(maxsize=2)
-def _build_default_system_prompt(plain_text_output: bool = False) -> str:
+@lru_cache(maxsize=64)
+def _build_default_system_prompt(plain_text_output: bool = False, answer_language: str = "chs") -> str:
     """用默认模板 + 文档列表构建 system prompt（缓存）"""
     prompt = DEFAULT_SYSTEM_PROMPT.format(
         doc_list=_build_doc_list_text(),
     )
     if plain_text_output:
         prompt += NON_STREAM_OUTPUT_INSTRUCTION
+    prompt += build_non_chinese_instruction(answer_language)
     return prompt
 
 
@@ -155,6 +157,14 @@ AGENT_TOOLS = [
             "输入 svg_content: str（完整 SVG XML），title: str（图表标题，选填）。"
             "图表文本只允许使用中文、英文、数字和基础标点；不要使用 emoji或其他装饰性 Unicode 字符。"
             "调用成功后，必须将返回 JSON 中的 markdown 字段内容原样嵌入回答正文。"
+        )),
+    FunctionTool.from_defaults(fn=translate_terms_json, name="translate_terms",
+        description=(
+            "用任意语言的术语查询其在目标语言的官方译法，用于多语言回答时的术语校准。"
+            "输入 terms: list[str]（术语列表），source_lang: str（术语所属语言码，如 en/jp/chs），"
+            "target_lang: str（目标语言码，如 en/jp/chs）。"
+            "返回每条术语的官方译法；无精确匹配时 translation 为 None，需自行翻译。"
+            "仅用于术语确认，禁止用来翻译整句。"
         )),
 ]
 
@@ -226,6 +236,8 @@ class AgentEngine:
             "基于已有工具结果摘要和对话上下文直接作答。"
             "不要输出思考过程或过程话术，直接给最终答案；信息不足时明确说明。"
         )
+        answer_language = normalize_answer_language(config.get("answer_language"))
+        system += build_non_chinese_instruction(answer_language)
         fallback_text = (
             f"用户问题:\n{message}\n\n"
             f"已收集的工具结果:\n{tool_ctx}\n\n"
@@ -267,8 +279,9 @@ class AgentEngine:
         limited = [] if ctx_len == 0 else conversation[-(ctx_len * 2):]
         chat_history = [ChatMessage(role=MessageRole(m["role"]), content=m["content"]) for m in limited]
 
+        answer_language = normalize_answer_language(config.get("answer_language"))
         agent = FunctionAgent(name="MiliastraAgent",
-                      system_prompt=_build_default_system_prompt(plain_text_output=plain_text_output),
+                      system_prompt=_build_default_system_prompt(plain_text_output=plain_text_output, answer_language=answer_language),
                               tools=AGENT_TOOLS, llm=llm, verbose=True,
                               timeout=AGENT_TIMEOUT)
         return agent, chat_history
@@ -376,6 +389,14 @@ class AgentEngine:
                         sources.append({"title": title, "url": png_url})
                 elif isinstance(data, dict) and "error" in data:
                     summary = f"图表生成失败: {data['error']}"
+
+            elif ev.tool_name == "translate_terms":
+                if isinstance(data, list):
+                    total = len(data)
+                    matched = [item for item in data if isinstance(item, dict) and item.get("matched")]
+                    summary = f"查询 {total} 条术语，{len(matched)} 条命中官方译法"
+                elif isinstance(data, dict) and "error" in data:
+                    summary = f"术语翻译失败: {data['error']}"
 
         except (json.JSONDecodeError, TypeError, AttributeError):
             pass

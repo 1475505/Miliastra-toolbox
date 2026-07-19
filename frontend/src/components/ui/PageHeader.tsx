@@ -16,8 +16,8 @@ export default function PageHeader({ title, children, className = '' }: PageHead
         className,
       ].join(' ')}
     >
-      <h2 className="text-lg font-semibold text-on-surface pl-8 lg:pl-0">{title}</h2>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      <h2 className="text-lg font-semibold text-on-surface pl-8 lg:pl-0 truncate min-w-0">{title}</h2>
+      {children && <div className="flex items-center gap-2 shrink-0">{children}</div>}
     </div>
   )
 }

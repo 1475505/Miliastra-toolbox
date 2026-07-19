@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { useTranslation } from 'react-i18next'
 
 import {
   type ChatMessage,
@@ -141,6 +142,7 @@ export default function Chat({
   onRefreshConversations,
   onConfigSaved,
 }: ChatProps) {
+  const { t } = useTranslation()
   const [conversationId, setConversationId] = useState<string>('')
   const [messages, setMessages] = useState<ExtendedMessage[]>([])
   const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([])
@@ -213,7 +215,7 @@ export default function Chat({
           const canvas = document.createElement('canvas')
           const ctx = canvas.getContext('2d')
           if (!ctx) {
-            reject(new Error('Canvas 不支持'))
+            reject(new Error(t('chat.canvasUnsupported')))
             return
           }
 
@@ -239,22 +241,22 @@ export default function Chat({
 
           const sizeKB = Math.round((base64.length * 0.75) / 1024)
           if (base64.length * 0.75 > MAX_IMAGE_SIZE) {
-            reject(new Error('图片压缩后仍大于 1MB，请选择更小的图片'))
+            reject(new Error(t('chat.imageTooLarge')))
           } else {
-            resolve({ base64, info: `已压缩至约 ${sizeKB} KB` })
+            resolve({ base64, info: t('chat.imageCompressed', { size: sizeKB }) })
           }
         }
-        img.onerror = () => reject(new Error('图片加载失败'))
+        img.onerror = () => reject(new Error(t('chat.imageLoadFailed')))
         img.src = reader.result as string
       }
-      reader.onerror = () => reject(new Error('读取图片失败'))
+      reader.onerror = () => reject(new Error(t('chat.imageReadFailed')))
       reader.readAsDataURL(file)
     })
   }
 
   const addImage = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      setError('请选择图片文件')
+      setError(t('chat.selectImageFile'))
       return
     }
 
@@ -263,7 +265,7 @@ export default function Chat({
       const { base64, info } = await compressImageToBase64(file)
       setImages((prev) => [...prev, { base64, info }])
     } catch (e) {
-      setError(e instanceof Error ? e.message : '图片处理失败')
+      setError(e instanceof Error ? e.message : t('chat.imageProcessFailed'))
     }
   }
 
@@ -351,7 +353,7 @@ export default function Chat({
 
     setShowConfigHint(false)
     const imageBase64s = images.map((img) => img.base64)
-    const messageText = input.trim() || (imageBase64s.length > 0 ? '[图片提问]' : '')
+    const messageText = input.trim() || (imageBase64s.length > 0 ? t('chat.imageQuestion') : '')
     const userMessage: Message = {
       role: 'user',
       content: messageText,
@@ -394,7 +396,7 @@ export default function Chat({
       clearTimeout(timeoutId)
 
       if (!response.ok) {
-        let errorDetail = `请求失败（HTTP ${response.status}）`
+        let errorDetail = t('chat.requestFailed', { status: response.status })
         try {
           const errorText = await response.text()
           if (errorText) errorDetail = `${errorDetail}: ${errorText}`
@@ -416,15 +418,13 @@ export default function Chat({
 
         if (elapsedTime > 5 * 60 * 1000 && !hasShownWarning) {
           hasShownWarning = true
-          setTimeoutWarning(
-            '已5分钟无响应，可能问题过于复杂。建议调小上下文轮次、使用非推理模型、或在新标签页开启新对话'
-          )
+          setTimeoutWarning(t('chat.timeoutWarning'))
         }
 
         if (elapsedTime > 20 * 60 * 1000) {
           clearInterval(checkTimeout)
           reader?.cancel()
-          setError('连接超时（20分钟无响应）')
+          setError(t('chat.connectionTimeout'))
           setTimeoutWarning('')
           setLoading(false)
         }
@@ -447,22 +447,22 @@ export default function Chat({
             const status = line.slice(1).trim()
             switch (status) {
               case 'connected':
-                setStatusMessage('已连接，准备中...')
+                setStatusMessage(t('chat.statusConnected'))
                 break
               case 'chat_engine_created':
-                setStatusMessage('对话引擎已就绪，正在检索知识库...')
+                setStatusMessage(t('chat.statusEngineReady'))
                 break
               case 'retrieval_done':
-                setStatusMessage('检索完成，正在生成回答...')
+                setStatusMessage(t('chat.statusRetrievalDone'))
                 break
               case 'sources_sent':
-                setStatusMessage('已获取引用来源...')
+                setStatusMessage(t('chat.statusSourcesSent'))
                 break
               case 'generating':
-                setStatusMessage('正在生成回答...')
+                setStatusMessage(t('chat.statusGenerating'))
                 break
               case 'heartbeat':
-                setStatusMessage('正在深入思考中，请耐心等待...')
+                setStatusMessage(t('chat.statusThinking'))
                 break
               case 'completed':
                 setStatusMessage('')
@@ -487,7 +487,7 @@ export default function Chat({
                   tool: data.data.tool,
                   args: data.data.args,
                   status: 'success',
-                  summary: '调用中...',
+                  summary: t('chat.callingTool'),
                 }
                 setDisplayMessages((prev) => {
                   for (let i = prev.length - 1; i >= 0; i--) {
@@ -503,7 +503,7 @@ export default function Chat({
                   }
                   return [...prev, { type: 'tool_trace', traces: [trace] }]
                 })
-                setStatusMessage(`正在调用工具: ${data.data.tool}...`)
+                setStatusMessage(t('chat.statusToolCalling', { tool: data.data.tool }))
               } else if (data.type === 'tool_result') {
                 setDisplayMessages((prev) => {
                   for (let i = prev.length - 1; i >= 0; i--) {
@@ -655,9 +655,7 @@ export default function Chat({
         err instanceof Error
           ? err.message || '网络错误'
           : '网络错误'
-      setError(
-        `连接异常：${detail}。若反复出现，可能是模型已达限额或配置有误，请检查 LLM 配置`
-      )
+      setError(t('chat.connectionError', { detail }))
     } finally {
       setLoading(false)
       setStatusMessage('')
@@ -666,21 +664,21 @@ export default function Chat({
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="知识库问答">
+      <PageHeader title={t('chat.title')}>
         {messages.length > 0 && (
           <Button
             variant="outlined"
             size="sm"
             onClick={handleDownload}
-            title="下载对话为纯文本"
+            title={t('chat.downloadTitle')}
           >
             <DownloadIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">下载</span>
+            <span className="hidden sm:inline">{t('chat.download')}</span>
           </Button>
         )}
         <Button variant="tonal" size="sm" onClick={handleNewConversation}>
           <PlusIcon className="w-4 h-4" />
-          新对话
+          {t('chat.newConversation')}
         </Button>
       </PageHeader>
 
@@ -688,13 +686,13 @@ export default function Chat({
         {displayMessages.length === 0 && (
           <div className="text-center text-on-surface mt-16 lg:mt-20">
             <div className="text-lg font-medium">
-              你好！我是千星知识库助手，请问有什么可以帮你的？
+              {t('chat.greeting')}
             </div>
             <div className="text-sm mt-2 text-on-surface-variant">
-              对话将自动保存到浏览器本地，建议及时删除
+              {t('chat.autoSaveHint')}
             </div>
             <div className="text-sm mt-1 text-on-surface-variant">
-              在菜单左下角按需减少上下文轮次可加快生成速度
+              {t('chat.contextHint')}
             </div>
             {noticeContent.trim() && (
               <Surface className="mt-8 max-w-2xl mx-auto text-left">
@@ -710,12 +708,12 @@ export default function Chat({
 
         {showConfigHint && (
           <div className="text-center px-4">
-            <div className="inline-block bg-emerald-50 border border-emerald-200 rounded-xl px-6 py-4 text-sm max-w-md">
-              <div className="text-emerald-800 mb-2 font-medium">
-                请先配置 API Key
+            <div className="inline-block bg-primary-container border border-primary/20 rounded-xl px-6 py-4 text-sm max-w-md">
+              <div className="text-on-primary-container mb-2 font-medium">
+                {t('chat.configRequired')}
               </div>
-              <div className="text-emerald-600">
-                请点击下方「LLM 配置」按钮进行配置（或勾选免费模型）
+              <div className="text-on-primary-container/80">
+                {t('chat.configRequiredHint')}
               </div>
             </div>
           </div>
@@ -729,7 +727,7 @@ export default function Chat({
             <div key={turn.key} className="space-y-3">
               {turn.user && (
                 <div className="flex justify-end">
-                  <div className="max-w-3xl px-4 py-3 rounded-2xl bg-emerald-50 text-slate-900 border border-emerald-100">
+                  <div className="max-w-3xl px-4 py-3 rounded-2xl bg-primary-container text-on-surface border border-primary/10">
                     <div className="whitespace-pre-wrap">
                       {(turn.user.imageBase64s && turn.user.imageBase64s.length > 0
                         ? turn.user.imageBase64s
@@ -740,7 +738,7 @@ export default function Chat({
                         <div key={`${src.slice(0, 32)}_${idx}`} className="mb-2">
                           <img
                             src={src}
-                            alt="用户上传的图片"
+                            alt={t('chat.userImageAlt')}
                             className="max-w-full h-auto rounded-xl border border-white/20"
                             style={{ maxHeight: '300px' }}
                           />
@@ -757,12 +755,12 @@ export default function Chat({
                   <div className="max-w-4xl px-4 py-3 rounded-2xl bg-violet-50 text-gray-900">
                     <details open className="group">
                       <summary className="flex cursor-pointer items-center justify-between gap-3 select-none list-none">
-                        <div className="font-semibold text-sm text-violet-800">工具调用</div>
+                        <div className="font-semibold text-sm text-violet-800">{t('chat.toolCalls')}</div>
                         {turnStats && (
                           <div className="flex gap-3 text-gray-500 text-xs">
-                            <span>{turnStats.tokens} tokens</span>
-                            <span>{turnStats.tool_calls} 次工具</span>
-                            <span>{turnStats.retrieval_calls} 次检索</span>
+                            <span>{t('chat.tokens', { count: turnStats.tokens })}</span>
+                            <span>{t('chat.toolCount', { count: turnStats.tool_calls })}</span>
+                            <span>{t('chat.retrievalCount', { count: turnStats.retrieval_calls })}</span>
                           </div>
                         )}
                       </summary>
@@ -797,10 +795,10 @@ export default function Chat({
                                   }`}
                                 >
                                   {trace.status === 'success'
-                                    ? '成功'
+                                    ? t('chat.traceSuccess')
                                     : trace.status === 'error'
-                                    ? '失败'
-                                    : '进行中'}
+                                    ? t('chat.traceError')
+                                    : t('chat.traceRunning')}
                                 </span>
                               </div>
                               {trace.args && Object.keys(trace.args).length > 0 && (
@@ -838,7 +836,7 @@ export default function Chat({
 
               {turn.assistant && (
                 <div className="flex justify-start">
-                  <div className="max-w-4xl px-4 py-3 rounded-2xl bg-slate-100 text-slate-900">
+                  <div className="max-w-4xl px-4 py-3 rounded-2xl bg-surface text-on-surface border border-outline/60 shadow-surface">
                     <div className="prose prose-sm max-w-none prose-slate">
                       {turn.assistant.reasoning && (
                         <details
@@ -846,7 +844,7 @@ export default function Chat({
                           open={turn.assistant.isReasoning}
                         >
                           <summary className="px-4 py-2 bg-gray-50 cursor-pointer text-xs font-medium text-gray-500 hover:bg-gray-100 select-none flex items-center">
-                            <span>思考过程</span>
+                            <span>{t('chat.reasoning')}</span>
                           </summary>
                           <div className="px-4 py-3 text-gray-600 text-sm bg-gray-50/50 whitespace-pre-wrap border-t border-gray-100">
                             {turn.assistant.reasoning}
@@ -864,7 +862,7 @@ export default function Chat({
               {turn.sources.length > 0 && (
                 <div className="flex justify-start">
                   <div className="max-w-4xl px-4 py-3 rounded-2xl bg-blue-50 text-gray-900">
-                    <div className="font-semibold mb-2 text-sm">引用来源</div>
+                    <div className="font-semibold mb-2 text-sm">{t('chat.sources')}</div>
                     {turn.sources
                       .flatMap((sourceMessage) => sourceMessage.sources)
                       .map((src, index) => (
@@ -892,7 +890,7 @@ export default function Chat({
                       ))}
                     {sourceTokens && sourceTokens > 0 && (
                       <div className="text-gray-500 text-xs mt-2">
-                        消耗 tokens: {sourceTokens}
+                        {t('chat.consumedTokens', { count: sourceTokens })}
                       </div>
                     )}
                   </div>
@@ -912,16 +910,16 @@ export default function Chat({
 
         {timeoutWarning && (
           <div className="text-center px-4">
-            <div className="inline-block bg-emerald-50 border border-emerald-200 rounded-xl px-6 py-4 text-sm max-w-2xl">
-              <div className="text-emerald-800 mb-2 font-medium">响应较慢</div>
-              <div className="text-emerald-600">{timeoutWarning}</div>
+            <div className="inline-block bg-primary-container border border-primary/20 rounded-xl px-6 py-4 text-sm max-w-2xl">
+              <div className="text-on-primary-container mb-2 font-medium">{t('chat.slowResponse')}</div>
+              <div className="text-on-primary-container/80">{timeoutWarning}</div>
             </div>
           </div>
         )}
 
         {error && (
           <div className="flex justify-start px-4">
-            <div className="max-w-4xl px-4 py-3 rounded-2xl bg-red-50 text-red-700 border border-red-100 text-sm">
+            <div className="max-w-4xl px-4 py-3 rounded-2xl bg-error-container text-error border border-error/20 text-sm">
               {error}
             </div>
           </div>
@@ -940,9 +938,9 @@ export default function Chat({
                   ? 'border-primary bg-primary-container text-on-primary-container'
                   : 'border-outline bg-surface text-on-surface-variant hover:border-primary',
               ].join(' ')}
-              title="启用高智商模式，使用工具调用进行深度问答"
+              title={t('chat.agentModeTitle')}
             >
-              <span className={agentMode ? 'font-medium' : ''}>高智商</span>
+              <span className={agentMode ? 'font-medium' : ''}>{t('chat.agentMode')}</span>
               <button
                 type="button"
                 role="switch"
@@ -964,10 +962,10 @@ export default function Chat({
             <div className="relative group">
               <label
                 className="flex items-center gap-1.5 px-3 py-2 border border-outline rounded-full bg-surface text-sm text-on-surface-variant cursor-pointer hover:border-primary hover:text-primary transition-colors duration-200"
-                aria-label="仅部分支持多模态的模型支持图片输入"
+                aria-label={t('chat.imageTooltip')}
               >
                 <ImageIcon className="w-4 h-4" />
-                <span>图片</span>
+                <span>{t('chat.image')}</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -978,7 +976,7 @@ export default function Chat({
                 />
               </label>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-on-surface text-surface text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap pointer-events-none z-50">
-                仅部分支持多模态的模型支持图片输入
+                {t('chat.imageTooltip')}
               </div>
             </div>
 
@@ -986,10 +984,10 @@ export default function Chat({
               variant="outlined"
               size="sm"
               onClick={() => setShowConfig(true)}
-              title="LLM 配置"
+              title={t('chat.configButton')}
             >
               <SettingsIcon className="w-4 h-4" />
-              LLM 配置
+              {t('chat.configButton')}
             </Button>
           </div>
 
@@ -1005,7 +1003,7 @@ export default function Chat({
                 }
               }}
               onPaste={handlePaste}
-              placeholder="输入问题 / 粘贴图片；AI 回答仅供参考，以官方文档为准"
+              placeholder={t('chat.inputPlaceholder')}
               disabled={loading}
               rows={1}
               className="flex-1 min-w-0 py-2.5"
@@ -1019,7 +1017,7 @@ export default function Chat({
             >
               {loading ? '…' : <SendIcon className="w-4 h-4" />}
               <span className="hidden sm:inline">
-                {loading ? '发送中' : '发送'}
+                {loading ? t('common.sending') : t('common.send')}
               </span>
             </Button>
           </div>
@@ -1033,18 +1031,18 @@ export default function Chat({
                 >
                   <img
                     src={img.base64}
-                    alt={`已选择的图片 ${idx + 1}`}
+                    alt={t('chat.selectedImageAlt', { index: idx + 1 })}
                     className="w-16 h-16 object-cover rounded-lg border border-outline"
                   />
                   <div className="text-xs text-on-surface-variant">
-                    <div>{img.info || '大小信息计算中...'}</div>
+                    <div>{img.info || t('chat.sizeCalculating')}</div>
                     <button
                       type="button"
                       onClick={() => removeImage(idx)}
                       className="mt-1 text-xs text-error hover:underline"
                       disabled={loading}
                     >
-                      移除
+                      {t('common.remove')}
                     </button>
                   </div>
                 </div>
@@ -1053,7 +1051,7 @@ export default function Chat({
           )}
         </div>
         <div className="text-center text-xs text-on-surface-variant mt-2">
-          千星奇域官方文档和相关信息版权归米哈游所有，本网站为个人兴趣，与米哈游无关
+          {t('chat.footer')}
         </div>
       </div>
       {showConfig && (

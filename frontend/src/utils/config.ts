@@ -1,4 +1,5 @@
 import { LLMConfig } from '../types'
+import { DEFAULT_LANGUAGE, SupportedLanguage } from '../i18n'
 
 const CONFIG_KEY = 'llm_config'
 
@@ -26,13 +27,15 @@ const defaultConfig: LLMConfig = {
   model: 'deepseek-v4-flash',
   use_default_model: getRandomChannel(),
   context_length: 1,
+  answer_language: DEFAULT_LANGUAGE,
 }
 
 export const getConfig = (): LLMConfig => {
   const stored = localStorage.getItem(CONFIG_KEY)
   if (stored) {
     try {
-      return { ...defaultConfig, ...JSON.parse(stored) }
+      const parsed = JSON.parse(stored) as Partial<LLMConfig>
+      return { ...defaultConfig, ...parsed }
     } catch {
       return defaultConfig
     }
@@ -42,4 +45,13 @@ export const getConfig = (): LLMConfig => {
 
 export const saveConfig = (config: LLMConfig): void => {
   localStorage.setItem(CONFIG_KEY, JSON.stringify(config))
+}
+
+/** 将回答语言同步到 LLMConfig（随 UI 语言切换联动）。 */
+export const syncAnswerLanguage = (lang: SupportedLanguage): void => {
+  const config = getConfig()
+  if (config.answer_language !== lang) {
+    config.answer_language = lang
+    saveConfig(config)
+  }
 }

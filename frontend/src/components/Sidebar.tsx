@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Tab, Conversation } from '../types'
 import {
   getAllConversations,
@@ -8,6 +9,7 @@ import {
 } from '../utils/conversations'
 import IconButton from './ui/IconButton'
 import Input from './ui/Input'
+import LanguageSwitcher from './ui/LanguageSwitcher'
 import {
   CloseIcon,
   ChevronDownIcon,
@@ -42,6 +44,7 @@ export default function Sidebar({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(true)
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (activeTab === 'chat') {
@@ -64,7 +67,7 @@ export default function Sidebar({
 
   const handleDeleteConversation = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (confirm('确定删除此对话？')) {
+    if (confirm(t('sidebar.confirmDelete'))) {
       deleteConversation(id)
       loadConversations()
       if (currentConversationId === id) {
@@ -75,7 +78,7 @@ export default function Sidebar({
 
   const handleClearAll = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (confirm('确定要清空所有历史对话吗？此操作不可恢复。')) {
+    if (confirm(t('sidebar.confirmClearAll'))) {
       deleteAllConversations()
       loadConversations()
       onConversationDeleted?.()
@@ -96,11 +99,11 @@ export default function Sidebar({
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'chat', label: '知识库问答' },
-    { id: 'svg', label: '文档一图流' },
-    { id: 'tools', label: '工具调用' },
-    { id: 'data', label: '数据查询' },
-    { id: 'notes', label: '笔记' },
+    { id: 'chat', label: t('sidebar.tabs.chat') },
+    { id: 'svg', label: t('sidebar.tabs.svg') },
+    { id: 'tools', label: t('sidebar.tabs.tools') },
+    { id: 'data', label: t('sidebar.tabs.data') },
+    { id: 'notes', label: t('sidebar.tabs.notes') },
   ]
 
   return (
@@ -123,9 +126,9 @@ export default function Sidebar({
         ].join(' ')}
       >
         {/* Header */}
-        <div className="flex items-center justify-between min-h-[3.5rem] px-4 border-b border-outline">
-          <h1 className="text-lg font-semibold text-on-surface">千星奇域工具箱</h1>
-          <IconButton onClick={onToggle} label="Close menu" className="lg:hidden">
+        <div className="flex min-h-[3.5rem] items-center justify-between gap-2 border-b border-outline px-4">
+          <h1 className="text-lg font-semibold text-on-surface truncate min-w-0">{t('sidebar.title')}</h1>
+          <IconButton onClick={onToggle} label="Close menu" className="lg:hidden shrink-0">
             <CloseIcon className="w-5 h-5" />
           </IconButton>
         </div>
@@ -152,7 +155,7 @@ export default function Sidebar({
                   {showClearHint && (
                     <div className="mb-3 p-3 rounded-2xl bg-primary-container/60 border border-outline text-xs text-on-primary-container">
                       <div className="flex items-start justify-between gap-2">
-                        <span>提示：请及时清理不需要的对话</span>
+                        <span>{t('sidebar.clearHint')}</span>
                         <button
                           onClick={() => setShowClearHint(false)}
                           className="text-on-primary-container/70 hover:text-on-primary-container"
@@ -168,7 +171,7 @@ export default function Sidebar({
                     onClick={() => setIsHistoryCollapsed(!isHistoryCollapsed)}
                   >
                     <div className="flex items-center gap-2">
-                      <span>对话历史</span>
+                      <span>{t('sidebar.history')}</span>
                       <ChevronDownIcon
                         className={`w-3.5 h-3.5 transition-transform duration-200 ${
                           isHistoryCollapsed ? '-rotate-90' : 'rotate-0'
@@ -179,9 +182,9 @@ export default function Sidebar({
                       <button
                         onClick={handleClearAll}
                         className="opacity-0 group-hover/header:opacity-100 transition-opacity text-error hover:text-error/80 px-1.5 py-0.5 rounded-lg hover:bg-error-container text-xs"
-                        title="清空所有历史"
+                        title={t('sidebar.clearAllTitle')}
                       >
-                        清空
+                        {t('sidebar.clearAll')}
                       </button>
                     )}
                   </div>
@@ -189,7 +192,7 @@ export default function Sidebar({
                   {!isHistoryCollapsed &&
                     (conversations.length === 0 ? (
                       <div className="text-xs text-on-surface-variant px-2 py-2">
-                        暂无对话
+                        {t('sidebar.noConversations')}
                       </div>
                     ) : (
                       <div className="space-y-1">
@@ -240,7 +243,7 @@ export default function Sidebar({
                                     startEditing(conv)
                                   }}
                                   className="p-1 rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary-container/50 mr-0.5"
-                                  title="重命名"
+                                  title={t('common.rename')}
                                 >
                                   <PencilIcon className="w-3.5 h-3.5" />
                                 </button>
@@ -248,7 +251,7 @@ export default function Sidebar({
                               <button
                                 onClick={(e) => handleDeleteConversation(conv.id, e)}
                                 className="p-1 rounded-lg text-error/70 hover:text-error hover:bg-error-container"
-                                title="删除"
+                                title={t('common.delete')}
                               >
                                 <TrashIcon className="w-3.5 h-3.5" />
                               </button>
@@ -274,9 +277,9 @@ export default function Sidebar({
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="font-semibold text-on-surface">嘟嘟可工具集</div>
+                <div className="font-semibold text-on-surface">{t('sidebar.toolkitTitle')}</div>
                 <div className="mt-1 text-xs text-on-surface-variant">
-                  查看所有工具入口与使用教程
+                  {t('sidebar.toolkitDesc')}
                 </div>
               </div>
               <OpenExternalIcon className="w-4 h-4 shrink-0 text-on-surface-variant" />
@@ -286,6 +289,7 @@ export default function Sidebar({
 
         {/* Footer */}
         <div className="border-t border-outline p-3 space-y-1">
+          <LanguageSwitcher compact />
           <a
             href="https://github.com/1475505/Miliastra-toolbox"
             target="_blank"
@@ -300,9 +304,9 @@ export default function Sidebar({
                   clipRule="evenodd"
                 />
               </svg>
-              <span>GitHub 仓库</span>
+              <span>{t('sidebar.github')}</span>
             </div>
-            <div className="text-xs text-on-surface-variant mt-1 ml-7">欢迎 Star</div>
+            <div className="text-xs text-on-surface-variant mt-1 ml-7">{t('sidebar.githubStar')}</div>
           </a>
           <a
             href="https://qm.qq.com/q/M1mCoQN8ki"
@@ -314,9 +318,9 @@ export default function Sidebar({
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M21.395 15.035a39.548 39.548 0 0 0-.803-2.264l-1.079-2.695c.001-.032.014-.562.014-.836C19.526 4.632 17.351 0 12 0S4.474 4.632 4.474 9.241c0 .274.013.804.014.836l-1.08 2.695a38.97 38.97 0 0 0-.802 2.264c-1.021 3.283-.69 4.643-.438 4.673.54.065 2.103-2.472 2.103-2.472 0 1.469.756 3.387 2.394 4.771-.612.188-1.363.479-1.845.835-.434.32-.379.646-.301.778.343.578 5.883.369 7.482.189 1.6.18 7.14.389 7.483-.189.078-.132.132-.458-.301-.778-.483-.356-1.233-.646-1.846-.836 1.637-1.384 2.393-3.302 2.393-4.771 0 0 1.563 2.537 2.103 2.472.251-.03.581-1.39-.438-4.673z" />
               </svg>
-              <span>用户 QQ 群：1007538100</span>
+              <span>{t('sidebar.qqGroup')}</span>
             </div>
-            <div className="text-xs text-on-surface-variant mt-1 ml-7">已接入机器人</div>
+            <div className="text-xs text-on-surface-variant mt-1 ml-7">{t('sidebar.qqGroupBot')}</div>
           </a>
           <div className="block w-full rounded-xl px-4 py-2.5 text-sm text-on-surface-variant">
             <div className="flex items-center gap-2">
@@ -324,7 +328,7 @@ export default function Sidebar({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20 21a8 8 0 1 0-16 0" />
                 <circle cx="12" cy="7" r="4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span>作者 QQ：725230880</span>
+              <span>{t('sidebar.authorQq')}</span>
             </div>
           </div>
         </div>

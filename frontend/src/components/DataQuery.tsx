@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import PageHeader from './ui/PageHeader'
 import Surface from './ui/Surface'
@@ -49,24 +50,6 @@ interface TranslationItem {
 
 type LangKey = keyof Omit<TranslationItem, 'rowid'>
 
-const LANGUAGES = [
-  { key: 'chs' as LangKey, label: '简中' },
-  { key: 'cht' as LangKey, label: '繁中' },
-  { key: 'en' as LangKey, label: '英语' },
-  { key: 'jp' as LangKey, label: '日语' },
-  { key: 'kr' as LangKey, label: '韩语' },
-  { key: 'de' as LangKey, label: '德语' },
-  { key: 'fr' as LangKey, label: '法语' },
-  { key: 'es' as LangKey, label: '西语' },
-  { key: 'it' as LangKey, label: '意语' },
-  { key: 'pt' as LangKey, label: '葡语' },
-  { key: 'ru' as LangKey, label: '俄语' },
-  { key: 'th' as LangKey, label: '泰语' },
-  { key: 'tr' as LangKey, label: '土语' },
-  { key: 'vi' as LangKey, label: '越语' },
-  { key: 'id' as LangKey, label: '印尼语' },
-]
-
 interface DataResponse<T> {
   success: boolean
   data: {
@@ -109,6 +92,26 @@ function isValidInteger(value: string): boolean {
 }
 
 export default function DataQuery() {
+  const { t } = useTranslation()
+
+  const LANGUAGES = [
+    { key: 'chs' as LangKey, label: t('data.langChs') },
+    { key: 'cht' as LangKey, label: t('data.langCht') },
+    { key: 'en' as LangKey, label: t('data.langEn') },
+    { key: 'jp' as LangKey, label: t('data.langJp') },
+    { key: 'kr' as LangKey, label: t('data.langKr') },
+    { key: 'de' as LangKey, label: t('data.langDe') },
+    { key: 'fr' as LangKey, label: t('data.langFr') },
+    { key: 'es' as LangKey, label: t('data.langEs') },
+    { key: 'it' as LangKey, label: t('data.langIt') },
+    { key: 'pt' as LangKey, label: t('data.langPt') },
+    { key: 'ru' as LangKey, label: t('data.langRu') },
+    { key: 'th' as LangKey, label: t('data.langTh') },
+    { key: 'tr' as LangKey, label: t('data.langTr') },
+    { key: 'vi' as LangKey, label: t('data.langVi') },
+    { key: 'id' as LangKey, label: t('data.langId') },
+  ]
+
   const [translateQuery, setTranslateQuery] = useState('')
   const [translateLoading, setTranslateLoading] = useState(false)
   const [translateError, setTranslateError] = useState('')
@@ -161,11 +164,11 @@ export default function DataQuery() {
     const name = gadgetName.trim()
 
     if (!id && !name) {
-      setGadgetError('请输入 ID 或中文名')
+      setGadgetError(t('data.enterIdOrName'))
       return
     }
     if (id && !isValidInteger(id)) {
-      setGadgetError('ID 必须为整数')
+      setGadgetError(t('data.idMustBeInteger'))
       return
     }
 
@@ -177,11 +180,11 @@ export default function DataQuery() {
       const response = await fetch(`/api/v1/data/gadgets?${buildQuery(id, name)}`)
       const payload = (await response.json()) as DataResponse<GadgetItem>
       if (!response.ok || !payload.success) {
-        throw new Error(payload.detail || '查询失败')
+        throw new Error(payload.detail || t('data.queryFailed'))
       }
       setGadgetItems(payload.data.items)
     } catch (error) {
-      const message = error instanceof Error ? error.message : '查询失败'
+      const message = error instanceof Error ? error.message : t('data.queryFailed')
       setGadgetError(message)
       setGadgetItems([])
     } finally {
@@ -193,7 +196,7 @@ export default function DataQuery() {
     const query = translateQuery.trim()
 
     if (!query) {
-      setTranslateError('请输入中文术语关键词')
+      setTranslateError(t('data.enterKeyword'))
       return
     }
 
@@ -207,7 +210,7 @@ export default function DataQuery() {
       )
       const payload = (await response.json()) as TranslationResponse
       const detail =
-        typeof payload.detail === 'string' ? payload.detail : '查询失败'
+        typeof payload.detail === 'string' ? payload.detail : t('data.queryFailed')
 
       if (!response.ok || !payload.success) {
         throw new Error(detail)
@@ -217,7 +220,7 @@ export default function DataQuery() {
       setTranslateMessage(payload.data.message || '')
       setTranslateItems(payload.data.results)
     } catch (error) {
-      const message = error instanceof Error ? error.message : '查询失败'
+      const message = error instanceof Error ? error.message : t('data.queryFailed')
       setTranslateError(message)
       setTranslateExactMatch(false)
       setTranslateMessage('')
@@ -232,11 +235,11 @@ export default function DataQuery() {
     const name = effectName.trim()
 
     if (!id && !name) {
-      setEffectError('请输入 ID 或中文名')
+      setEffectError(t('data.enterIdOrName'))
       return
     }
     if (id && !isValidInteger(id)) {
-      setEffectError('ID 必须为整数')
+      setEffectError(t('data.idMustBeInteger'))
       return
     }
 
@@ -248,11 +251,11 @@ export default function DataQuery() {
       const response = await fetch(`/api/v1/data/effects?${buildQuery(id, name)}`)
       const payload = (await response.json()) as DataResponse<EffectItem>
       if (!response.ok || !payload.success) {
-        throw new Error(payload.detail || '查询失败')
+        throw new Error(payload.detail || t('data.queryFailed'))
       }
       setEffectItems(payload.data.items)
     } catch (error) {
-      const message = error instanceof Error ? error.message : '查询失败'
+      const message = error instanceof Error ? error.message : t('data.queryFailed')
       setEffectError(message)
       setEffectItems([])
     } finally {
@@ -265,11 +268,11 @@ export default function DataQuery() {
     const name = bgmName.trim()
 
     if (!id && !name) {
-      setBgmError('请输入 ID 或中文名')
+      setBgmError(t('data.enterIdOrName'))
       return
     }
     if (id && !isValidInteger(id)) {
-      setBgmError('ID 必须为整数')
+      setBgmError(t('data.idMustBeInteger'))
       return
     }
 
@@ -281,11 +284,11 @@ export default function DataQuery() {
       const response = await fetch(`/api/v1/data/bgm?${buildQuery(id, name)}`)
       const payload = (await response.json()) as DataResponse<BgmItem>
       if (!response.ok || !payload.success) {
-        throw new Error(payload.detail || '查询失败')
+        throw new Error(payload.detail || t('data.queryFailed'))
       }
       setBgmItems(payload.data.items)
     } catch (error) {
-      const message = error instanceof Error ? error.message : '查询失败'
+      const message = error instanceof Error ? error.message : t('data.queryFailed')
       setBgmError(message)
       setBgmItems([])
     } finally {
@@ -295,7 +298,7 @@ export default function DataQuery() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="数据查询" />
+      <PageHeader title={t('data.title')} />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
         {/* 术语翻译查询 */}
@@ -304,15 +307,15 @@ export default function DataQuery() {
             <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
               <div>
                 <h3 className="text-base font-semibold text-on-surface">
-                  术语翻译查询
+                  {t('data.translateQuery')}
                 </h3>
                 <p className="text-xs text-on-surface-variant mt-1">
-                  按中文术语查询 15 语言翻译，候选顺序为精确匹配优先，整体最多返回 10 条。
+                  {t('data.translateDesc')}
                 </p>
               </div>
               {translateHasSearched && !translateError && (
                 <Chip variant={translateExactMatch ? 'primary' : 'default'}>
-                  {translateExactMatch ? '含精确匹配' : '仅模糊候选'}
+                  {translateExactMatch ? t('data.hasExactMatch') : t('data.fuzzyOnly')}
                 </Chip>
               )}
             </div>
@@ -326,7 +329,7 @@ export default function DataQuery() {
                     void queryTranslations()
                   }
                 }}
-                placeholder="输入中文术语，例如：黑名单"
+                placeholder={t('data.translatePlaceholder')}
               />
               <Button
                 onClick={() => {
@@ -334,7 +337,7 @@ export default function DataQuery() {
                 }}
                 disabled={translateLoading}
               >
-                {translateLoading ? '查询中...' : '查询'}
+                {translateLoading ? t('common.querying') : t('common.query')}
               </Button>
             </div>
             {translateError && (
@@ -351,7 +354,7 @@ export default function DataQuery() {
             <div className="px-5 pb-5">
               {translateItems.length === 0 ? (
                 <p className="text-sm text-on-surface-variant py-3">
-                  未找到结果
+                  {t('common.noResults')}
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -374,7 +377,7 @@ export default function DataQuery() {
                     </div>
                   </div>
 
-                  <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur border-y border-outline px-4 py-2 -mx-5">
+                  <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur border-y border-outline px-5 py-2 -mx-5">
                     <div className="flex gap-1.5 flex-nowrap">
                       {LANGUAGES.map(({ key, label }) => (
                         <button
@@ -436,27 +439,27 @@ export default function DataQuery() {
         {/* 实体信息查询 */}
         <Surface>
           <h3 className="text-base font-semibold text-on-surface mb-3">
-            实体信息查询
+            {t('data.gadgetQuery')}
           </h3>
           <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] mb-3">
             <Input
               type="text"
               value={gadgetId}
               onChange={(e) => setGadgetId(e.target.value)}
-              placeholder="输入实体 ID（整数）"
+              placeholder={t('data.gadgetIdPlaceholder')}
             />
             <Input
               type="text"
               value={gadgetName}
               onChange={(e) => setGadgetName(e.target.value)}
-              placeholder="输入实体中文名"
+              placeholder={t('data.gadgetNamePlaceholder')}
             />
             <Button onClick={queryGadgets} disabled={gadgetLoading}>
-              {gadgetLoading ? '查询中...' : '查询'}
+              {gadgetLoading ? t('common.querying') : t('common.query')}
             </Button>
           </div>
           <p className="text-xs text-on-surface-variant mb-2">
-            ID 和中文名二选一；同时填写时优先 ID。
+            {t('data.idOrNameHint')}
           </p>
           {gadgetError && (
             <p className="text-sm text-error mb-2">{gadgetError}</p>
@@ -464,14 +467,14 @@ export default function DataQuery() {
 
           {gadgetHasSearched && (
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm border border-outline rounded-xl overflow-hidden">
+              <table className="min-w-full text-sm border border-outline rounded-xl overflow-hidden border-separate border-spacing-0">
                 <thead className="bg-surface-variant">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-on-surface">
                       ID
                     </th>
                     <th className="px-3 py-2 text-left font-medium text-on-surface">
-                      中文名
+                      {t('data.colName')}
                     </th>
                     <th className="px-3 py-2 text-left font-medium text-on-surface">
                       X
@@ -491,7 +494,7 @@ export default function DataQuery() {
                         className="px-3 py-3 text-on-surface-variant"
                         colSpan={5}
                       >
-                        未找到数据
+                        {t('common.noData')}
                       </td>
                     </tr>
                   ) : (
@@ -517,27 +520,27 @@ export default function DataQuery() {
         {/* 特效信息查询 */}
         <Surface>
           <h3 className="text-base font-semibold text-on-surface mb-3">
-            特效信息查询
+            {t('data.effectQuery')}
           </h3>
           <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] mb-3">
             <Input
               type="text"
               value={effectId}
               onChange={(e) => setEffectId(e.target.value)}
-              placeholder="输入特效 ID（整数）"
+              placeholder={t('data.effectIdPlaceholder')}
             />
             <Input
               type="text"
               value={effectName}
               onChange={(e) => setEffectName(e.target.value)}
-              placeholder="输入特效中文名"
+              placeholder={t('data.effectNamePlaceholder')}
             />
             <Button onClick={queryEffects} disabled={effectLoading}>
-              {effectLoading ? '查询中...' : '查询'}
+              {effectLoading ? t('common.querying') : t('common.query')}
             </Button>
           </div>
           <p className="text-xs text-on-surface-variant mb-2">
-            ID 和中文名二选一；同时填写时优先 ID。
+            {t('data.idOrNameHint')}
           </p>
           {effectError && (
             <p className="text-sm text-error mb-2">{effectError}</p>
@@ -545,20 +548,20 @@ export default function DataQuery() {
 
           {effectHasSearched && (
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm border border-outline rounded-xl overflow-hidden">
+              <table className="min-w-full text-sm border border-outline rounded-xl overflow-hidden border-separate border-spacing-0">
                 <thead className="bg-surface-variant">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-on-surface">
                       ID
                     </th>
                     <th className="px-3 py-2 text-left font-medium text-on-surface">
-                      中文名
+                      {t('data.colName')}
                     </th>
                     <th className="px-3 py-2 text-left font-medium text-on-surface">
-                      持续时长
+                      {t('data.colDuration')}
                     </th>
                     <th className="px-3 py-2 text-left font-medium text-on-surface">
-                      半径
+                      {t('data.colRadius')}
                     </th>
                   </tr>
                 </thead>
@@ -569,7 +572,7 @@ export default function DataQuery() {
                         className="px-3 py-3 text-on-surface-variant"
                         colSpan={4}
                       >
-                        未找到数据
+                        {t('common.noData')}
                       </td>
                     </tr>
                   ) : (
@@ -591,46 +594,46 @@ export default function DataQuery() {
         {/* 音乐信息查询 */}
         <Surface>
           <h3 className="text-base font-semibold text-on-surface mb-3">
-            音乐信息查询
+            {t('data.bgmQuery')}
           </h3>
           <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] mb-3">
             <Input
               type="text"
               value={bgmId}
               onChange={(e) => setBgmId(e.target.value)}
-              placeholder="输入音乐 ID（整数）"
+              placeholder={t('data.bgmIdPlaceholder')}
             />
             <Input
               type="text"
               value={bgmName}
               onChange={(e) => setBgmName(e.target.value)}
-              placeholder="输入音乐中文名"
+              placeholder={t('data.bgmNamePlaceholder')}
             />
             <Button onClick={queryBgm} disabled={bgmLoading}>
-              {bgmLoading ? '查询中...' : '查询'}
+              {bgmLoading ? t('common.querying') : t('common.query')}
             </Button>
           </div>
           <p className="text-xs text-on-surface-variant mb-2">
-            ID 和中文名二选一；同时填写时优先 ID。
+            {t('data.idOrNameHint')}
           </p>
           {bgmError && <p className="text-sm text-error mb-2">{bgmError}</p>}
 
           {bgmHasSearched && (
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm border border-outline rounded-xl overflow-hidden">
+              <table className="min-w-full text-sm border border-outline rounded-xl overflow-hidden border-separate border-spacing-0">
                 <thead className="bg-surface-variant">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-on-surface">
                       ID
                     </th>
                     <th className="px-3 py-2 text-left font-medium text-on-surface">
-                      中文名
+                      {t('data.colName')}
                     </th>
                     <th className="px-3 py-2 text-left font-medium text-on-surface">
-                      持续时长（秒）
+                      {t('data.colDurationSec')}
                     </th>
                     <th className="px-3 py-2 text-left font-medium text-on-surface">
-                      类别
+                      {t('data.colCategory')}
                     </th>
                   </tr>
                 </thead>
@@ -641,7 +644,7 @@ export default function DataQuery() {
                         className="px-3 py-3 text-on-surface-variant"
                         colSpan={4}
                       >
-                        未找到数据
+                        {t('common.noData')}
                       </td>
                     </tr>
                   ) : (

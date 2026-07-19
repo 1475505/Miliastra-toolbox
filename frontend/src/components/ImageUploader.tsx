@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { getCOSConfig, saveCOSConfig } from '../utils/cosConfig'
 import { generateDefaultFileName } from '../utils/file'
@@ -10,6 +11,7 @@ import Input from './ui/Input'
 import { ImageIcon } from './ui/icons'
 
 export default function ImageUploader() {
+  const { t } = useTranslation()
   const [config, setConfig] = useState<COSConfig>(getCOSConfig())
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -73,12 +75,12 @@ export default function ImageUploader() {
 
   const handleUpload = async () => {
     if (!config.useDefault) {
-      setError('请勾选默认配置，或配置自己的腾讯云COS服务来继续(后续支持自定义)')
+      setError(t('uploader.configRequired'))
       return
     }
 
     if (!file) {
-      setError('请选择文件')
+      setError(t('uploader.selectFile'))
       return
     }
 
@@ -99,14 +101,14 @@ export default function ImageUploader() {
         const errorData = (await response.json().catch(() => ({}))) as {
           detail?: string
         }
-        throw new Error(errorData.detail || '上传失败')
+        throw new Error(errorData.detail || t('uploader.uploadFailed'))
       }
 
       const data = (await response.json()) as { url: string; markdown: string }
       setResult(data)
     } catch (err: unknown) {
       console.error(err)
-      setError(err instanceof Error ? err.message : '上传失败')
+      setError(err instanceof Error ? err.message : t('uploader.uploadFailed'))
     } finally {
       setUploading(false)
     }
@@ -114,7 +116,7 @@ export default function ImageUploader() {
 
   return (
     <div className="h-full flex flex-col p-4 lg:p-6 overflow-y-auto">
-      <PageHeader title="图床上传">
+      <PageHeader title={t('uploader.title')}>
         <label className="flex items-center gap-2 cursor-pointer text-sm text-on-surface-variant bg-surface-variant px-3 py-1.5 rounded-full hover:bg-outline-variant transition-colors duration-200">
           <input
             type="checkbox"
@@ -126,7 +128,7 @@ export default function ImageUploader() {
             }}
             className="rounded border-outline text-primary focus:ring-primary"
           />
-          <span>使用默认配置（请按需使用）</span>
+          <span>{t('uploader.useDefault')}</span>
         </label>
       </PageHeader>
 
@@ -165,10 +167,10 @@ export default function ImageUploader() {
             <div className="text-center">
               <ImageIcon className="w-16 h-16 mx-auto mb-4 text-on-surface-variant" />
               <p className="text-xl text-on-surface-variant mb-2">
-                点击选择或拖拽图片到这里
+                {t('uploader.dropHere')}
               </p>
               <p className="text-sm text-on-surface-variant/70">
-                支持 Ctrl+V 粘贴
+                {t('uploader.pasteSupported')}
               </p>
               <input
                 type="file"
@@ -189,7 +191,7 @@ export default function ImageUploader() {
             <div className="flex gap-4 items-end">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-on-surface mb-1">
-                  文件名
+                  {t('uploader.fileName')}
                 </label>
                 <Input
                   type="text"
@@ -197,12 +199,12 @@ export default function ImageUploader() {
                   onChange={(e) => setFileName(e.target.value)}
                 />
                 <p className="mt-1 text-xs text-on-surface-variant">
-                  默认生成格式: [源文件名]_
-                  <span className="font-mono">yyyyMMdd_hhmmss</span>.[原格式]
+                  {t('uploader.defaultFormat')}
+                  <span className="font-mono">yyyyMMdd_hhmmss</span>.{t('uploader.originalFormat')}
                 </p>
               </div>
               <Button onClick={handleUpload} disabled={uploading}>
-                {uploading ? '上传中...' : '开始上传'}
+                {uploading ? t('uploader.uploading') : t('uploader.startUpload')}
               </Button>
             </div>
             {error && <p className="mt-2 text-error text-sm">{error}</p>}
@@ -212,12 +214,12 @@ export default function ImageUploader() {
         {result && (
           <Surface className="!bg-primary-container/30 !border-primary/20">
             <h3 className="text-lg font-semibold text-on-primary-container mb-4">
-              上传成功！
+              {t('uploader.uploadSuccess')}
             </h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-on-primary-container mb-1">
-                  图片链接
+                  {t('uploader.imageLink')}
                 </label>
                 <div className="flex gap-2">
                   <Input
@@ -231,7 +233,7 @@ export default function ImageUploader() {
                     size="sm"
                     onClick={() => navigator.clipboard.writeText(result.url)}
                   >
-                    复制
+                    {t('common.copy')}
                   </Button>
                 </div>
               </div>
@@ -253,7 +255,7 @@ export default function ImageUploader() {
                       navigator.clipboard.writeText(result.markdown)
                     }
                   >
-                    复制
+                    {t('common.copy')}
                   </Button>
                 </div>
               </div>
@@ -268,7 +270,7 @@ export default function ImageUploader() {
               }}
               className="mt-6 w-full"
             >
-              上传下一张
+              {t('uploader.uploadNext')}
             </Button>
           </Surface>
         )}

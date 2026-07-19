@@ -19,7 +19,7 @@ def main() -> None:
     try:
         svc.initialise(args.csv, db_path=args.db)
         if svc.is_available():
-            print(f"Build succeeded: {svc._db_path} ({len(svc._chs_list)} rows)")
+            print(f"Build succeeded: {svc._db_path} ({len(svc._rowid_list)} rows)")
         else:
             print("Build failed (see logs)", file=sys.stderr)
             sys.exit(1)

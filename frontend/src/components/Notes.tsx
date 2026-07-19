@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { Note } from '../types'
 import PageHeader from './ui/PageHeader'
@@ -19,6 +20,7 @@ import {
 } from './ui/icons'
 
 export default function Notes() {
+  const { t } = useTranslation()
   const [notes, setNotes] = useState<Note[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -85,7 +87,7 @@ export default function Notes() {
     )
 
     if (likedNotes.includes(noteId)) {
-      alert('您已经为该笔记点过赞了')
+      alert(t('notes.alreadyLiked'))
       return
     }
 
@@ -103,11 +105,11 @@ export default function Notes() {
         localStorage.setItem('likedNotes', JSON.stringify(likedNotes))
         loadNotes()
       } else {
-        alert(data.error || '点赞失败')
+        alert(data.error || t('notes.likeFailed'))
       }
     } catch (error) {
       console.error('点赞失败:', error)
-      alert('点赞失败')
+      alert(t('notes.likeFailed'))
     }
   }
 
@@ -122,7 +124,7 @@ export default function Notes() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="笔记" />
+      <PageHeader title={t('notes.title')} />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6">
         {/* Toolbar */}
@@ -133,7 +135,7 @@ export default function Notes() {
                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
                 <Input
                   type="text"
-                  placeholder="搜索笔记内容或作者..."
+                  placeholder={t('notes.searchPlaceholder')}
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -157,31 +159,31 @@ export default function Notes() {
                 }}
                 className="sm:w-44"
               >
-                <option value="likes">按点赞数排序</option>
-                <option value="created_at">按创建时间排序</option>
+                <option value="likes">{t('notes.sortByLikes')}</option>
+                <option value="created_at">{t('notes.sortByCreated')}</option>
               </Select>
             </div>
             <Button onClick={() => setShowCreateModal(true)}>
               <PlusIcon className="w-4 h-4" />
-              新增笔记
+              {t('notes.createNote')}
             </Button>
           </div>
           <div className="mt-3 text-sm text-on-surface-variant">
-            共 {total} 条笔记
-            {search && ` · 搜索: "${search}"`}
+            {t('notes.totalNotes', { count: total })}
+            {search && ` · ${t('notes.searchLabel', { search })}`}
           </div>
         </Surface>
 
         {/* Notes Grid */}
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="text-on-surface-variant">加载中...</div>
+            <div className="text-on-surface-variant">{t('common.loading')}</div>
           </div>
         ) : notes.length === 0 ? (
           <Surface className="flex flex-col items-center justify-center h-64 text-on-surface-variant">
             <ImageIcon className="w-12 h-12 mb-2 opacity-50" />
-            <div>暂无笔记</div>
-            {search && <div className="text-sm mt-2">试试其他搜索词</div>}
+            <div>{t('notes.empty')}</div>
+            {search && <div className="text-sm mt-2">{t('notes.tryOtherSearch')}</div>}
           </Surface>
         ) : (
           <>
@@ -217,7 +219,7 @@ export default function Notes() {
                   disabled={page === 1}
                   className="px-3 py-1.5 rounded-full bg-surface border border-outline text-sm font-medium text-on-surface hover:bg-surface-variant disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 >
-                  上一页
+                  {t('notes.prevPage')}
                 </button>
 
                 <div className="flex items-center gap-1">
@@ -255,7 +257,7 @@ export default function Notes() {
                   disabled={page === totalPages}
                   className="px-3 py-1.5 rounded-full bg-surface border border-outline text-sm font-medium text-on-surface hover:bg-surface-variant disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 >
-                  下一页
+                  {t('notes.nextPage')}
                 </button>
               </div>
             )}
@@ -300,6 +302,7 @@ function NoteCard({
   onEditComplete,
   onEditCancel,
 }: NoteCardProps) {
+  const { t } = useTranslation()
   const [editContent, setEditContent] = useState(note.content)
   const [editAuthor, setEditAuthor] = useState(note.author || '')
   const [editImgUrl, setEditImgUrl] = useState(note.img_url || '')
@@ -309,7 +312,7 @@ function NoteCard({
 
   const handleSave = async () => {
     if (!editContent.trim()) {
-      alert('笔记内容不能为空')
+      alert(t('notes.contentRequired'))
       return
     }
 
@@ -333,11 +336,11 @@ function NoteCard({
       if (data.success) {
         onEditComplete()
       } else {
-        alert(data.error || '修改失败')
+        alert(data.error || t('notes.editFailed'))
       }
     } catch (error) {
       console.error('修改失败:', error)
-      alert('修改失败')
+      alert(t('notes.editFailed'))
     } finally {
       setSaving(false)
     }
@@ -372,12 +375,13 @@ function NoteCard({
     }
 
     const encodedUrl = ensured.replace(/"/g, '&quot;')
+    const imagePreviewTitle = t('notes.imagePreview')
     const html = `<!doctype html>
       <html lang="zh-CN">
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>图片预览</title>
+          <title>${imagePreviewTitle}</title>
           <style>
             html,body{height:100%;margin:0;background:#111;color:#fff;display:flex;align-items:center;justify-content:center}
             img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 0 20px rgba(0,0,0,0.5)}
@@ -386,7 +390,7 @@ function NoteCard({
         </head>
         <body>
           <div class="wrap">
-          <img src="${encodedUrl}" alt="图片预览"/>
+          <img src="${encodedUrl}" alt="${imagePreviewTitle}"/>
           </div>
         </body>
       </html>`
@@ -410,25 +414,25 @@ function NoteCard({
               type="text"
               value={editAuthor}
               onChange={(e) => setEditAuthor(e.target.value)}
-              placeholder="作者（可选）"
+              placeholder={t('notes.authorOptional')}
             />
             <Textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              placeholder="笔记内容"
+              placeholder={t('notes.contentLabel')}
               rows={6}
             />
             <Input
               type="text"
               value={editImgUrl}
               onChange={(e) => setEditImgUrl(e.target.value)}
-              placeholder="图片链接（可选）"
+              placeholder={t('notes.imageLinkOptional')}
             />
             <Input
               type="text"
               value={editVideoUrl}
               onChange={(e) => setEditVideoUrl(e.target.value)}
-              placeholder="视频链接（可选）"
+              placeholder={t('notes.videoLinkOptional')}
             />
           </div>
 
@@ -438,7 +442,7 @@ function NoteCard({
               disabled={saving}
               className="flex-1"
             >
-              {saving ? '保存中...' : '保存'}
+              {saving ? t('notes.saving') : t('common.save')}
             </Button>
             <Button
               variant="outlined"
@@ -446,7 +450,7 @@ function NoteCard({
               disabled={saving}
               className="flex-1"
             >
-              取消
+              {t('common.cancel')}
             </Button>
           </div>
         </>
@@ -474,7 +478,7 @@ function NoteCard({
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-primary-container text-on-primary-container hover:bg-primary-container/80 transition-colors duration-200"
                   >
                     <ImageIcon className="w-3.5 h-3.5" />
-                    有图片
+                    {t('notes.hasImage')}
                   </button>
                 )}
                 {note.video_url && (
@@ -486,7 +490,7 @@ function NoteCard({
                     onClick={(e) => e.stopPropagation()}
                   >
                     <OpenExternalIcon className="w-3.5 h-3.5" />
-                    观看视频
+                    {t('notes.watchVideo')}
                   </a>
                 )}
               </div>
@@ -502,13 +506,13 @@ function NoteCard({
                         className="w-full py-8 border-2 border-dashed border-outline rounded-2xl text-on-surface-variant hover:border-primary hover:text-primary transition-colors duration-200 flex flex-col items-center gap-2"
                       >
                         <ImageIcon className="w-8 h-8" />
-                        <span className="text-sm">点击加载图片</span>
+                        <span className="text-sm">{t('notes.clickToLoadImage')}</span>
                       </button>
                     ) : (
                       <div className="relative group">
                         <img
                           src={note.img_url}
-                          alt="笔记图片"
+                          alt={t('notes.noteImageAlt')}
                           className="w-full rounded-2xl cursor-pointer hover:opacity-95 transition-opacity duration-200"
                           onClick={(e) => {
                             e.stopPropagation()
@@ -519,7 +523,7 @@ function NoteCard({
                           <button
                             onClick={() => setShowImage(false)}
                             className="bg-on-surface/60 text-surface p-1 rounded-full hover:bg-on-surface/80"
-                            title="隐藏图片"
+                            title={t('notes.hideImage')}
                           >
                             ×
                           </button>
@@ -539,7 +543,7 @@ function NoteCard({
                   >
                     <OpenExternalIcon className="w-5 h-5" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">观看视频</div>
+                      <div className="text-sm font-medium">{t('notes.watchVideo')}</div>
                       <div className="text-xs text-on-secondary-container/70 truncate mt-0.5">
                         {note.video_url}
                       </div>
@@ -554,17 +558,17 @@ function NoteCard({
                 onClick={onToggleExpand}
                 className="mt-2 text-xs text-primary hover:text-primary/80 font-medium transition-colors duration-200"
               >
-                {isExpanded ? '收起' : '展开全文'}
+                {isExpanded ? t('notes.collapse') : t('notes.expandFull')}
               </button>
             )}
           </div>
 
           {isExpanded && (
             <div className="mt-3 pt-3 border-t border-outline text-xs text-on-surface-variant space-y-1">
-              {note.author && <div>作者: {note.author}</div>}
-              <div>创建: {formatDate(note.created_at)}</div>
+              {note.author && <div>{t('notes.authorLabel', { author: note.author })}</div>}
+              <div>{t('notes.createdLabel', { date: formatDate(note.created_at) })}</div>
               {note.version !== note.created_at && (
-                <div>更新: {formatDate(note.version)}</div>
+                <div>{t('notes.updatedLabel', { date: formatDate(note.version) })}</div>
               )}
             </div>
           )}
@@ -579,7 +583,7 @@ function NoteCard({
                   ? 'bg-error-container text-error cursor-not-allowed'
                   : 'bg-surface-variant text-on-surface-variant hover:bg-error-container hover:text-error',
               ].join(' ')}
-              title={hasLiked ? '已点赞' : '点赞'}
+              title={hasLiked ? t('notes.liked') : t('notes.like')}
             >
               {hasLiked ? (
                 <HeartFilledIcon className="w-4 h-4" />
@@ -591,7 +595,7 @@ function NoteCard({
 
             <Button variant="outlined" size="sm" onClick={onEdit}>
               <PencilIcon className="w-3.5 h-3.5" />
-              修正
+              {t('notes.edit')}
             </Button>
 
             {!isExpanded && note.author && (
@@ -612,6 +616,7 @@ interface CreateNoteModalProps {
 }
 
 function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
+  const { t } = useTranslation()
   const [author, setAuthor] = useState('')
   const [content, setContent] = useState('')
   const [imgUrl, setImgUrl] = useState('')
@@ -620,7 +625,7 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
 
   const handleCreate = async () => {
     if (!content.trim()) {
-      alert('笔记内容不能为空')
+      alert(t('notes.contentRequired'))
       return
     }
 
@@ -644,11 +649,11 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
       if (data.success) {
         onSuccess()
       } else {
-        alert(data.error || '创建失败')
+        alert(data.error || t('notes.createFailed'))
       }
     } catch (error) {
       console.error('创建失败:', error)
-      alert('创建失败')
+      alert(t('notes.createFailed'))
     } finally {
       setCreating(false)
     }
@@ -658,7 +663,7 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
     <Modal
       open
       onClose={onClose}
-      title="新增笔记"
+      title={t('notes.createNote')}
       footer={
         <>
           <Button
@@ -667,14 +672,14 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
             disabled={creating}
             className="flex-1"
           >
-            取消
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleCreate}
             disabled={creating}
             className="flex-1"
           >
-            {creating ? '创建中...' : '创建'}
+            {creating ? t('notes.creating') : t('notes.create')}
           </Button>
         </>
       }
@@ -682,49 +687,49 @@ function CreateNoteModal({ onClose, onSuccess }: CreateNoteModalProps) {
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-on-surface mb-2">
-            作者（可选）
+            {t('notes.authorOptional')}
           </label>
           <Input
             type="text"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
-            placeholder="输入作者名称"
+            placeholder={t('notes.authorPlaceholder')}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-on-surface mb-2">
-            笔记内容 <span className="text-error">*</span>
+            {t('notes.contentLabel')} <span className="text-error">*</span>
           </label>
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="输入笔记内容..."
+            placeholder={t('notes.contentPlaceholder')}
             rows={8}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-on-surface mb-2">
-            图片链接（可选）
+            {t('notes.imageLinkOptional')}
           </label>
           <Input
             type="text"
             value={imgUrl}
             onChange={(e) => setImgUrl(e.target.value)}
-            placeholder="可通过图床功能上传图片"
+            placeholder={t('notes.imagePlaceholder')}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-on-surface mb-2">
-            视频链接（可选）
+            {t('notes.videoLinkOptional')}
           </label>
           <Input
             type="text"
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="输入千星奇域相关的B站视频链接"
+            placeholder={t('notes.videoPlaceholder')}
           />
         </div>
       </div>

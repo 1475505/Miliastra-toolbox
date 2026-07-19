@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -73,10 +74,11 @@ function ResultShell({
   hasResult: boolean
   children: React.ReactNode
 }) {
+  const { t } = useTranslation()
   if (loading) {
     return (
       <Surface className="text-sm text-on-surface-variant">
-        正在调用工具...
+        {t('tools.callingTool')}
       </Surface>
     )
   }
@@ -99,6 +101,7 @@ function ResultShell({
 }
 
 function NodeMatchCard({ match }: { match: NodeMatch }) {
+  const { t } = useTranslation()
   return (
     <Surface className="!p-4">
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
@@ -116,17 +119,17 @@ function NodeMatchCard({ match }: { match: NodeMatch }) {
       </div>
       <div className="mt-3 grid gap-2 text-xs text-on-surface-variant md:grid-cols-2">
         <div>
-          <span className="font-medium text-on-surface">文档路径：</span>
+          <span className="font-medium text-on-surface">{t('tools.docPath')}</span>
           {match.local_path}
         </div>
         <div>
-          <span className="font-medium text-on-surface">派生文件：</span>
+          <span className="font-medium text-on-surface">{t('tools.derivedFile')}</span>
           {match.output_file}
         </div>
       </div>
       <div className="prose prose-sm mt-4 max-w-none rounded-xl border border-outline bg-surface-variant px-4 py-3 prose-headings:text-on-surface prose-p:text-on-surface prose-strong:text-on-surface">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {match.content || '暂无节点正文内容。'}
+          {match.content || t('tools.noNodeContent')}
         </ReactMarkdown>
       </div>
     </Surface>
@@ -134,6 +137,7 @@ function NodeMatchCard({ match }: { match: NodeMatch }) {
 }
 
 function DocumentCard({ document }: { document: DocumentMatch }) {
+  const { t } = useTranslation()
   return (
     <Surface className="!p-4">
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
@@ -144,7 +148,7 @@ function DocumentCard({ document }: { document: DocumentMatch }) {
           <p className="mt-1 text-sm text-on-surface-variant">{document.file}</p>
         </div>
         <span className="rounded-lg bg-surface-variant px-2 py-1 text-xs text-on-surface-variant shrink-0">
-          相关节点 {document.related_nodes.length}
+          {t('tools.relatedNodes', { count: document.related_nodes.length })}
         </span>
       </div>
       <details
@@ -152,7 +156,7 @@ function DocumentCard({ document }: { document: DocumentMatch }) {
         open
       >
         <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-on-surface">
-          查看文档内容
+          {t('tools.viewDocument')}
         </summary>
         <div className="prose prose-sm max-w-none border-t border-outline px-4 py-4 prose-headings:text-on-surface prose-p:text-on-surface prose-pre:bg-on-surface prose-pre:text-surface">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -165,6 +169,7 @@ function DocumentCard({ document }: { document: DocumentMatch }) {
 }
 
 export default function ToolCall() {
+  const { t } = useTranslation()
   const [nodeInput, setNodeInput] = useState('')
   const [nodeLoading, setNodeLoading] = useState(false)
   const [nodeError, setNodeError] = useState('')
@@ -183,7 +188,7 @@ export default function ToolCall() {
   const handleNodeSearch = async () => {
     const names = parseBatchInput(nodeInput)
     if (names.length === 0) {
-      setNodeError('请输入至少一个节点名称')
+      setNodeError(t('tools.enterNodeName'))
       setNodeResults([])
       return
     }
@@ -194,7 +199,7 @@ export default function ToolCall() {
       const result = await fetchNodeInfo(names)
       setNodeResults(result)
     } catch (error) {
-      setNodeError(error instanceof Error ? error.message : '节点查询失败')
+      setNodeError(error instanceof Error ? error.message : t('tools.nodeQueryFailed'))
       setNodeResults([])
     } finally {
       setNodeLoading(false)
@@ -204,7 +209,7 @@ export default function ToolCall() {
   const handleDocumentSearch = async () => {
     const titles = parseBatchInput(documentInput)
     if (titles.length === 0) {
-      setDocumentError('请输入至少一个文档标题或关键词')
+      setDocumentError(t('tools.enterDocumentTitle'))
       setDocumentResults([])
       return
     }
@@ -216,7 +221,7 @@ export default function ToolCall() {
       setDocumentResults(result)
     } catch (error) {
       setDocumentError(
-        error instanceof Error ? error.message : '文档内容获取失败'
+        error instanceof Error ? error.message : t('tools.documentFetchFailed')
       )
       setDocumentResults([])
     } finally {
@@ -227,7 +232,7 @@ export default function ToolCall() {
   const handleTitleSearch = async () => {
     const keywords = parseBatchInput(titleInput)
     if (keywords.length === 0) {
-      setTitleError('请输入至少一个文档关键词')
+      setTitleError(t('tools.enterDocumentKeyword'))
       setTitleResults([])
       return
     }
@@ -239,7 +244,7 @@ export default function ToolCall() {
       setTitleResults(result)
     } catch (error) {
       setTitleError(
-        error instanceof Error ? error.message : '文档标题检索失败'
+        error instanceof Error ? error.message : t('tools.titleSearchFailed')
       )
       setTitleResults([])
     } finally {
@@ -249,19 +254,19 @@ export default function ToolCall() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="工具调用" />
+      <PageHeader title={t('tools.title')} />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
         <Surface>
           <p className="text-sm leading-6 text-on-surface-variant">
-            这里直接调用千星知识 skill API，用于结构化查询节点、获取文档内容和检索文档标题。输入支持逗号、中文逗号、分号或换行批量调用。
+            {t('tools.intro')}
           </p>
         </Surface>
 
         <Surface>
           <SectionHeader
-            title="节点"
-            subtitle="适合已经知道节点名，或想用模糊关键词一次查多个节点。"
+            title={t('tools.nodeSection')}
+            subtitle={t('tools.nodeSubtitle')}
             badge="get_node_info"
           />
           <div className="grid gap-4 xl:grid-cols-[minmax(0,360px)_1fr]">
@@ -272,13 +277,13 @@ export default function ToolCall() {
                 placeholder="例如：随机卡牌选择器选择列表\n查询经典模式角色编号"
               />
               <div className="flex flex-col gap-3 text-xs text-on-surface-variant sm:flex-row sm:items-center sm:justify-between">
-                <span>支持逗号、中文逗号、分号或换行批量输入</span>
+                <span>{t('tools.batchInputHint')}</span>
                 <Button
                   onClick={handleNodeSearch}
                   disabled={nodeLoading}
                   className="whitespace-nowrap"
                 >
-                  {nodeLoading ? '查询中...' : '查询节点'}
+                  {nodeLoading ? t('common.querying') : t('tools.queryNode')}
                 </Button>
               </div>
             </div>
@@ -286,7 +291,7 @@ export default function ToolCall() {
               <ResultShell
                 loading={nodeLoading}
                 error={nodeError}
-                emptyText="节点结果会显示在这里。"
+                emptyText={t('tools.nodeResultEmpty')}
                 hasResult={nodeResults.length > 0}
               >
                 <div className="space-y-4">
@@ -297,15 +302,15 @@ export default function ToolCall() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <h4 className="text-sm font-semibold text-on-surface">
-                          查询词：{item.query}
+                          {t('tools.queryWord', { query: item.query })}
                         </h4>
                         <span className="rounded-lg bg-surface px-2 py-1 text-xs text-on-surface-variant">
-                          命中 {item.matches.length}
+                          {t('tools.hitCount', { count: item.matches.length })}
                         </span>
                       </div>
                       {item.matches.length === 0 ? (
                         <p className="text-sm text-on-surface-variant mt-2">
-                          {item.message || '未找到结果'}
+                          {item.message || t('common.noResults')}
                         </p>
                       ) : (
                         <div className="space-y-3 mt-3">
@@ -327,8 +332,8 @@ export default function ToolCall() {
 
         <Surface>
           <SectionHeader
-            title="获取文档内容"
-            subtitle="输入文档标题或系统关键词，直接查看命中文档全文和相关节点。"
+            title={t('tools.documentSection')}
+            subtitle={t('tools.documentSubtitle')}
             badge="get_document"
           />
           <div className="grid gap-4 xl:grid-cols-[minmax(0,360px)_1fr]">
@@ -339,13 +344,13 @@ export default function ToolCall() {
                 placeholder="例如：编辑项范围限制\n经典模式角色编号一览"
               />
               <div className="flex flex-col gap-3 text-xs text-on-surface-variant sm:flex-row sm:items-center sm:justify-between">
-                <span>建议一次输入 1 到 3 个主题，便于阅读返回内容</span>
+                <span>{t('tools.documentCountHint')}</span>
                 <Button
                   onClick={handleDocumentSearch}
                   disabled={documentLoading}
                   className="whitespace-nowrap"
                 >
-                  {documentLoading ? '获取中...' : '获取文档'}
+                  {documentLoading ? t('tools.fetching') : t('tools.fetchDocument')}
                 </Button>
               </div>
             </div>
@@ -353,7 +358,7 @@ export default function ToolCall() {
               <ResultShell
                 loading={documentLoading}
                 error={documentError}
-                emptyText="文档内容结果会显示在这里。"
+                emptyText={t('tools.documentResultEmpty')}
                 hasResult={documentResults.length > 0}
               >
                 <div className="space-y-4">
@@ -364,7 +369,7 @@ export default function ToolCall() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <h4 className="text-sm font-semibold text-on-surface">
-                          查询词：{item.query}
+                          {t('tools.queryWord', { query: item.query })}
                         </h4>
                         <span className="rounded-lg bg-surface px-2 py-1 text-xs text-on-surface-variant">
                           {item.status}
@@ -434,8 +439,8 @@ export default function ToolCall() {
 
         <Surface>
           <SectionHeader
-            title="文档标题检索"
-            subtitle="先看有哪些文档，再决定下一步拿全文还是回到聊天里问。"
+            title={t('tools.titleSection')}
+            subtitle={t('tools.titleSubtitle')}
             badge="list_documents"
           />
           <div className="grid gap-4 xl:grid-cols-[minmax(0,360px)_1fr]">
@@ -446,13 +451,13 @@ export default function ToolCall() {
                 placeholder="例如：随机卡牌选择, 编辑项范围限制, 经典模式角色编号"
               />
               <div className="flex flex-col gap-3 text-xs text-on-surface-variant sm:flex-row sm:items-center sm:justify-between">
-                <span>适合不知道精确文档名时先做筛选</span>
+                <span>{t('tools.titleSearchHint')}</span>
                 <Button
                   onClick={handleTitleSearch}
                   disabled={titleLoading}
                   className="whitespace-nowrap"
                 >
-                  {titleLoading ? '检索中...' : '检索标题'}
+                  {titleLoading ? t('tools.searching') : t('tools.searchTitle')}
                 </Button>
               </div>
             </div>
@@ -460,7 +465,7 @@ export default function ToolCall() {
               <ResultShell
                 loading={titleLoading}
                 error={titleError}
-                emptyText="文档标题检索结果会显示在这里。"
+                emptyText={t('tools.titleResultEmpty')}
                 hasResult={titleResults.length > 0}
               >
                 <div className="space-y-4">
@@ -471,15 +476,15 @@ export default function ToolCall() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <h4 className="text-sm font-semibold text-on-surface">
-                          关键词：{group.keyword}
+                          {t('tools.keyword', { keyword: group.keyword })}
                         </h4>
                         <span className="rounded-lg bg-surface px-2 py-1 text-xs text-on-surface-variant">
-                          命中 {group.total}
+                          {t('tools.hitCount', { count: group.total })}
                         </span>
                       </div>
                       {group.documents.length === 0 ? (
                         <p className="mt-3 text-sm text-on-surface-variant">
-                          没有找到相关文档标题。
+                          {t('tools.noDocTitleFound')}
                         </p>
                       ) : (
                         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">

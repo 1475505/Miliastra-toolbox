@@ -4,6 +4,7 @@ export interface LLMConfig {
   model: string
   use_default_model: number
   context_length: number
+  answer_language: string
 }
 
 export interface Message {

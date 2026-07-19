@@ -30,6 +30,7 @@ class LLMConfig(BaseModel):
     model: str = Field(default="")
     use_default_model: int = Field(default=0, description="0:不使用, 1/2/3/4:免费模型渠道")
     context_length: int = Field(default=3, ge=0, le=20)
+    answer_language: str = Field(default="chs", description="回答目标语言码，默认中文")
 
 
 class ChatRequest(BaseModel):

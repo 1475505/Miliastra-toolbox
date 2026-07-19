@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { LLMConfig } from '../types'
 import { getConfig, saveConfig, getRandomChannel } from '../utils/config'
@@ -13,6 +14,7 @@ interface ConfigModalProps {
 }
 
 export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps) {
+  const { t } = useTranslation()
   const [config, setConfig] = useState<LLMConfig>(getConfig())
 
   const handleSave = () => {
@@ -25,14 +27,14 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
     <Modal
       open
       onClose={onClose}
-      title="LLM 配置（仅浏览器存储，后端不保存，放心填写）"
+      title={t('config.title')}
       footer={
         <>
           <Button variant="outlined" onClick={onClose} className="flex-1">
-            取消
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} className="flex-1">
-            保存
+            {t('common.save')}
           </Button>
         </>
       }
@@ -51,7 +53,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
             className="mt-1 rounded border-outline text-primary focus:ring-primary"
           />
           <span className="text-sm text-on-surface-variant">
-            使用免费模型（限量，且可能效果不佳/对话用于提供商训练，建议自带LLM服务）
+            {t('config.useDefaultModel')}
           </span>
         </label>
 
@@ -59,7 +61,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
           <div className="ml-7 space-y-3">
             <div>
               <label className="block text-sm text-on-surface-variant mb-2">
-                渠道（仅保证渠道 1 支持图片，但资源紧张，按需使用）
+                {t('config.channelLabel')}
               </label>
               <Select
                 value={config.use_default_model}
@@ -70,11 +72,11 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
                   })
                 }
               >
-                <option value={1}>1.火山方舟渠道</option>
-                <option value={2}>2.QQ机器人专用渠道</option>
-                <option value={3}>3.openrouter免费模型</option>
-                <option value={4}>4.国产新模型体验渠道</option>
-                <option value={5}>5.临时渠道</option>
+                <option value={1}>{t('config.channel1')}</option>
+                <option value={2}>{t('config.channel2')}</option>
+                <option value={3}>{t('config.channel3')}</option>
+                <option value={4}>{t('config.channel4')}</option>
+                <option value={5}>{t('config.channel5')}</option>
               </Select>
             </div>
           </div>
@@ -84,16 +86,16 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
           <>
             <div>
               <label className="block text-sm text-on-surface-variant mb-2">
-                API Key（使用Deepseek模型可
+                {t('config.apiKeyLabel')}
                 <a
                   href="https://platform.deepseek.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:text-primary/80 underline"
                 >
-                  点此平台获取
+                  {t('config.apiKeyLink')}
                 </a>
-                ）
+                {t('config.apiKeySuffix')}
               </label>
               <Input
                 type="password"
@@ -107,7 +109,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
 
             <div>
               <label className="block text-sm text-on-surface-variant mb-2">
-                API Base URL
+                {t('config.apiBaseUrl')}
               </label>
               <Input
                 type="text"
@@ -120,7 +122,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
 
             <div>
               <label className="block text-sm text-on-surface-variant mb-2">
-                Model
+                {t('config.model')}
               </label>
               <Input
                 type="text"
@@ -135,7 +137,7 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
 
         <div>
           <label className="block text-sm text-on-surface-variant mb-2">
-            上下文轮数（0表示不使用历史对话）
+            {t('config.contextLength')}
           </label>
           <Input
             type="number"

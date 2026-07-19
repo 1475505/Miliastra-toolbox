@@ -11,6 +11,7 @@ from skill.service import (
     list_documents_data,
     rag_search_data,
     read_skill_markdown,
+    translate_terms_data,
 )
 
 router = APIRouter()
@@ -73,6 +74,12 @@ class RagSearchRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20)
 
 
+class TranslateTermsRequest(BaseModel):
+    terms: list[str] = Field(..., min_length=1, description="待翻译术语列表")
+    source_lang: str = Field(default="chs", description="术语所属语言码")
+    target_lang: str = Field(..., description="目标语言码")
+
+
 def _build_tools() -> list[SkillToolDefinition]:
     base_path = f"/api/v1/skills/{SKILL_ID}/tools"
     return [
@@ -107,6 +114,16 @@ def _build_tools() -> list[SkillToolDefinition]:
             parameters=[
                 SkillParameter(name="queries", type="string[]", required=True, description="自然语言查询列表"),
                 SkillParameter(name="top_k", type="integer", required=False, description="每个查询返回的结果数", default_value=5),
+            ],
+        ),
+        SkillToolDefinition(
+            name="translate_terms",
+            description="用任意语言术语查询其在目标语言的官方译法，用于多语言术语校准。",
+            http_path=f"{base_path}/translate_terms",
+            parameters=[
+                SkillParameter(name="terms", type="string[]", required=True, description="术语列表"),
+                SkillParameter(name="source_lang", type="string", required=False, description="术语所属语言码", default_value="chs"),
+                SkillParameter(name="target_lang", type="string", required=True, description="目标语言码"),
             ],
         ),
     ]
@@ -166,3 +183,9 @@ async def run_get_document(skill_id: str, request: GetDocumentRequest):
 async def run_rag_search(skill_id: str, request: RagSearchRequest):
     _assert_skill(skill_id)
     return {"success": True, "data": {"skill": skill_id, "tool": "rag_search", "result": rag_search_data(request.queries, top_k=request.top_k)}, "error": None}
+
+
+@router.post("/skills/{skill_id}/tools/translate_terms")
+async def run_translate_terms(skill_id: str, request: TranslateTermsRequest):
+    _assert_skill(skill_id)
+    return {"success": True, "data": {"skill": skill_id, "tool": "translate_terms", "result": translate_terms_data(request.terms, request.source_lang, request.target_lang)}, "error": None}
