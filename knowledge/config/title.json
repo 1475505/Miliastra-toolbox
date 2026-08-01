@@ -597,6 +597,10 @@
       "localPath": "Miliastra-knowledge/official/guide/mhnapxrumtzy_界面控件.md"
     },
     {
+      "title": "界面控件——手柄适配引导",
+      "localPath": "Miliastra-knowledge/official/tutorial/mhjobxrdykym_界面控件——手柄适配引导.md"
+    },
+    {
       "title": "界面控件组",
       "localPath": "Miliastra-knowledge/official/guide/mhg1700h8bug_界面控件组.md"
     },
@@ -735,6 +739,10 @@
     {
       "title": "奇匠订阅",
       "localPath": "Miliastra-knowledge/official/guide/mhzdzjixq98k_奇匠订阅.md"
+    },
+    {
+      "title": "奇匠订阅",
+      "localPath": "Miliastra-knowledge/official/tutorial/mh7jw0r0a106_奇匠订阅.md"
     },
     {
       "title": "奇域礼盒",
@@ -1198,7 +1206,7 @@
     }
   ],
   "metadata": {
-    "generatedAt": "2026-07-01T08:22:21.328Z",
-    "totalCount": 299
+    "generatedAt": "2026-07-31T00:13:38.668Z",
+    "totalCount": 301
   }
 }

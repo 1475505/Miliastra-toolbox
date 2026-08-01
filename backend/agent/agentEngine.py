@@ -501,6 +501,11 @@ class AgentEngine:
                     partial_answer += ev.delta
                     yield f"data: {json.dumps({'type': 'token', 'data': ev.delta}, ensure_ascii=False)}\n\n"
 
+            # 步骤异常（如上游 429/超时）时，stream_events 只会收到一个空的
+            # 哨兵 StopEvent 而静默结束，真正的异常挂在 handler future 上。
+            # 必须显式 await 以重新抛出，进入下方 except 分支发送 error 事件。
+            await handler
+
             if sources:
                 yield f"data: {json.dumps({'type': 'sources', 'data': sources}, ensure_ascii=False)}\n\n"
             yield f"data: {json.dumps({'type': 'done', 'data': {'stats': {'tokens': 0, 'tool_calls': tool_calls_count, 'retrieval_calls': retrieval_calls_count}}}, ensure_ascii=False)}\n\n"
