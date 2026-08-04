@@ -16,6 +16,7 @@ router = APIRouter()
 class Message(BaseModel):
     role: str = Field(..., pattern="^(user|assistant)$")
     content: str = Field(..., min_length=1)
+    reasoning: Optional[str] = Field(default=None, description="assistant 消息的推理内容，思考模式模型需原样回传")
 
 
 class LLMConfig(BaseModel):

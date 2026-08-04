@@ -21,6 +21,7 @@ class Message(BaseModel):
     """对话消息"""
     role: str = Field(..., pattern="^(user|assistant)$")
     content: str = Field(..., min_length=1)
+    reasoning: Optional[str] = Field(default=None, description="assistant 消息的推理内容，思考模式模型需原样回传")
 
 
 class LLMConfig(BaseModel):
@@ -61,6 +62,7 @@ class ChatData(BaseModel):
     answer: str
     sources: List[SourceNode]
     stats: Dict[str, Any]
+    reasoning: Optional[str] = Field(default=None, description="推理内容（思考模式模型返回）")
 
 
 class ChatResponse(BaseModel):
@@ -121,7 +123,8 @@ async def chat(request: ChatRequest):
                 question=request.message,
                 answer=result["answer"],
                 sources=[SourceNode(**src) for src in result["sources"]],
-                stats={"tokens": result["tokens"]}
+                stats={"tokens": result["tokens"]},
+                reasoning=result.get("reasoning")
             )
         )
     

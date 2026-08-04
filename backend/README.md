@@ -15,6 +15,7 @@
 - 支持流式响应 (SSE) 以及一键式整合 Web 前端 (自动托管 `static/` 目录)。
 - **Agent 模式**：基于 LlamaIndex FunctionAgent，提供 tool-calling 的问答模式，支持结构化知识查询（节点信息、文档内容）与 RAG 语义检索。支持最大工具调用轮次和超时保护（环境变量 `AGENT_MAX_TOOL_ROUNDS` / `AGENT_TIMEOUT`）。
 - **Skill API**：同一套知识查询能力同时以 MCP 和 HTTP API 暴露，支持 skill 发现、skill 详情查询和 4 个知识工具的直接调用。
+- **思考模式模型支持**：兼容 DeepSeek R1 等带 `reasoning_content` 的思考模型。多轮对话与 Agent 工具循环中自动将推理内容原样回传上游（避免 400 `reasoning_content must be passed back`），流式接口通过 SSE `reasoning` 事件推送推理增量，非流式接口返回 `reasoning` 字段。
 
 ## 快速开始
 

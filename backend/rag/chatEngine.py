@@ -45,6 +45,7 @@ import tiktoken
 
 from src.rag_engine import create_rag_engine
 from common.llm_config import resolve_llm_config, format_llm_error
+from common.openai_like_reasoning import to_chat_messages, extract_reasoning, reasoning_delta_from_chunk
 from common.i18n import (
     normalize_answer_language,
     build_rag_non_chinese_instruction,
@@ -316,11 +317,8 @@ class ChatEngine:
         )
         print(f"[ChatEngine] 使用 LLM 模型: {resolved_config['model']}")
         
-        # 4. 转换对话历史为 ChatMessage 格式
-        chat_history = [
-            ChatMessage(role=msg["role"], content=msg["content"])
-            for msg in limited_conversation
-        ]
+        # 4. 转换对话历史为 ChatMessage 格式（保留 reasoning_content 以便思考模型回传）
+        chat_history = to_chat_messages(limited_conversation)
         
         # 5. 重置 token 计数器
         self.token_counter.reset_counts()
@@ -375,12 +373,9 @@ class ChatEngine:
                 "tokens": completion_tokens
             }
 
-            # TODO 暂时不支持reasoning_content
-            reasoning = None
-            # 尝试从 additional_kwargs 获取
-            if hasattr(response.message, "additional_kwargs"):
-                reasoning = response.message.additional_kwargs.get("reasoning_content")
-            
+            # 提取推理内容（ThinkingBlock 或 additional_kwargs.reasoning_content）
+            reasoning = extract_reasoning(response.message)
+
             if reasoning:
                 result["reasoning"] = reasoning
             
@@ -416,11 +411,8 @@ class ChatEngine:
             )
             print(f"[ChatEngine Stream] 使用模型: {resolved_config['model']} (API: {resolved_config['api_base_url']})")
 
-            # 4. 转换对话历史为 ChatMessage 格式
-            chat_history = [
-                ChatMessage(role=msg["role"], content=msg["content"])
-                for msg in limited_conversation
-            ]
+            # 4. 转换对话历史为 ChatMessage 格式（保留 reasoning_content 以便思考模型回传）
+            chat_history = to_chat_messages(limited_conversation)
 
             # 5. 重置 token 计数器
             self.token_counter.reset_counts()
@@ -485,6 +477,10 @@ class ChatEngine:
 
                 if content:
                     yield f"data: {json.dumps({'type': 'token', 'data': content}, ensure_ascii=False)}\n\n"
+
+                thinking = reasoning_delta_from_chunk(response_chunk)
+                if thinking:
+                    yield f"data: {json.dumps({'type': 'reasoning', 'data': thinking}, ensure_ascii=False)}\n\n"
 
                 chunk_count += 1
                 if chunk_count % 10 == 0:

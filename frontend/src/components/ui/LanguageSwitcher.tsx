@@ -7,7 +7,7 @@ import {
   SupportedLanguage,
 } from '../../i18n'
 import { syncAnswerLanguage } from '../../utils/config'
-import { GlobeIcon, ChevronDownIcon } from './icons'
+import { TranslateIcon, ChevronDownIcon } from './icons'
 
 interface LanguageSwitcherProps {
   compact?: boolean
@@ -46,8 +46,8 @@ export default function LanguageSwitcher({ compact = false }: LanguageSwitcherPr
           aria-expanded={open}
           aria-haspopup="listbox"
         >
-          <GlobeIcon className="h-5 w-5 shrink-0" />
-          <span className="flex-1 truncate text-left">{LANGUAGE_LABELS[current]}</span>
+          <TranslateIcon className="h-5 w-5 shrink-0" />
+          <span className="flex-1 truncate text-left">Switch Language</span>
           <ChevronDownIcon
             className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
               open ? 'rotate-180' : ''
@@ -92,10 +92,8 @@ export default function LanguageSwitcher({ compact = false }: LanguageSwitcherPr
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <GlobeIcon className="h-4 w-4 shrink-0 text-on-surface-variant" />
-        <span className="flex-1 truncate text-left">
-          {LANGUAGE_LABELS[current]}
-        </span>
+        <TranslateIcon className="h-4 w-4 shrink-0 text-on-surface-variant" />
+        <span className="flex-1 truncate text-left">Switch Language</span>
         <ChevronDownIcon
           className={`h-4 w-4 shrink-0 text-on-surface-variant transition-transform duration-200 ${
             open ? 'rotate-180' : ''

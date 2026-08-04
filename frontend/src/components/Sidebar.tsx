@@ -16,6 +16,7 @@ import {
   PencilIcon,
   TrashIcon,
   OpenExternalIcon,
+  SparklesIcon,
 } from './ui/icons'
 
 interface SidebarProps {

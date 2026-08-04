@@ -27,6 +27,7 @@ from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.agent.workflow.workflow_events import AgentStream, ToolCall, ToolCallResult
 
 from common.llm_config import resolve_llm_config, format_llm_error
+from common.openai_like_reasoning import to_chat_messages, extract_reasoning
 from agent.prompt import DEFAULT_SYSTEM_PROMPT, NON_STREAM_OUTPUT_INSTRUCTION, build_non_chinese_instruction, normalize_answer_language
 from skill.service import get_document_json, get_node_info_json, list_documents_json, rag_search_json
 from translate.service import translate_terms_json
@@ -214,7 +215,7 @@ class AgentEngine:
 
         ctx_len = int(config.get("context_length", 3))
         limited = [] if ctx_len == 0 else conversation[-(ctx_len * 2):]
-        history = [ChatMessage(role=MessageRole(m["role"]), content=m["content"]) for m in limited]
+        history = to_chat_messages(limited)
 
         tool_ctx = "\n".join(
             f"{i}. {t.get('tool','')} [{t.get('status','')}]: {t.get('summary','')}"
@@ -277,7 +278,7 @@ class AgentEngine:
 
         ctx_len = int(config.get("context_length", 3))
         limited = [] if ctx_len == 0 else conversation[-(ctx_len * 2):]
-        chat_history = [ChatMessage(role=MessageRole(m["role"]), content=m["content"]) for m in limited]
+        chat_history = to_chat_messages(limited)
 
         answer_language = normalize_answer_language(config.get("answer_language"))
         agent = FunctionAgent(name="MiliastraAgent",
@@ -455,9 +456,14 @@ class AgentEngine:
 
             result = await handler
             diagrams = _collect_diagrams(tool_trace)
-            return {"answer": result.response.content or "", "sources": sources,
-                    "stats": {"tokens": 0, "tool_calls": tool_calls_count, "retrieval_calls": retrieval_calls_count},
-                    "tool_trace": tool_trace, "diagrams": diagrams}
+            reasoning = extract_reasoning(result.response.message) if result.response else None
+            payload: Dict[str, Any] = {"answer": result.response.content or "", "sources": sources,
+                                       "stats": {"tokens": 0, "tool_calls": tool_calls_count,
+                                                  "retrieval_calls": retrieval_calls_count},
+                                       "tool_trace": tool_trace, "diagrams": diagrams}
+            if reasoning:
+                payload["reasoning"] = reasoning
+            return payload
         except Exception as e:
             if self._is_max_iter_error(e):  # 迭代上限兜底：携带 tool_trace 生成最终回答
                 print("[AgentEngine] 达到迭代上限，携带工具结果兜底作答")
@@ -497,9 +503,12 @@ class AgentEngine:
                     tool_trace.append(trace)
                     yield f"data: {json.dumps({'type': 'tool_result', 'data': trace}, ensure_ascii=False)}\n\n"
                     sources.extend(self._extract_sources(ev))
-                elif isinstance(ev, AgentStream) and ev.delta:
-                    partial_answer += ev.delta
-                    yield f"data: {json.dumps({'type': 'token', 'data': ev.delta}, ensure_ascii=False)}\n\n"
+                elif isinstance(ev, AgentStream):
+                    if ev.delta:
+                        partial_answer += ev.delta
+                        yield f"data: {json.dumps({'type': 'token', 'data': ev.delta}, ensure_ascii=False)}\n\n"
+                    if ev.thinking_delta:
+                        yield f"data: {json.dumps({'type': 'reasoning', 'data': ev.thinking_delta}, ensure_ascii=False)}\n\n"
 
             # 步骤异常（如上游 429/超时）时，stream_events 只会收到一个空的
             # 哨兵 StopEvent 而静默结束，真正的异常挂在 handler future 上。

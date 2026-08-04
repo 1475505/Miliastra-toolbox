@@ -74,7 +74,8 @@
   "conversation": [
     {
       "role": "user|assistant",
-      "content": "string - 消息内容"
+      "content": "string - 消息内容",
+      "reasoning": "string - 可选；assistant 消息的推理内容，思考模式模型需原样回传"
     }
   ],
   "config": {
@@ -147,7 +148,7 @@
     "id": "string - 会话ID",
     "question": "string - 用户问题",
     "answer": "string - AI 回答",
-    "reasoning": "string - 推理内容（暂不支持）",
+    "reasoning": "string - 推理内容（思考模式模型返回，如 DeepSeek R1）",
     "sources": [
       {
         "title": "string - 文档标题",
@@ -296,7 +297,7 @@ curl -X POST http://localhost:8000/api/v1/rag/chat \
 | 类型 | 说明 | 数据格式 |
 |------|------|---------|
 | `sources` | 引用来源 | `{"data": [{"title", "url", "similarity"}]}` |
-| `reasoning` | 推理内容（暂不支持） | `{"data": "推理文本"}` |
+| `reasoning` | 推理内容（思考模式模型，增量分片） | `{"data": "推理文本"}` |
 | `token` | 文本片段 | `{"data": "文本内容"}` |
 | `done` | 完成信号 | `{"data": {"tokens": 123}}` |
 | `error` | 错误信息 | `{"data": "错误描述"}` |
@@ -410,7 +411,7 @@ for line in response.iter_lines():
 {
   "id": "string（可选）",
   "message": "string（必填，max=2000）",
-  "conversation": [{"role": "user|assistant", "content": "string"}],
+  "conversation": [{"role": "user|assistant", "content": "string", "reasoning": "string（可选，assistant 推理内容）"}],
   "config": {
     "api_key": "string",
     "api_base_url": "string",
@@ -433,6 +434,7 @@ for line in response.iter_lines():
     "id": "agent-abc123",
     "question": "碰撞触发器怎么用？",
     "answer": "碰撞触发器是事件节点...",
+    "reasoning": "string - 推理内容（思考模式模型返回，如 DeepSeek R1；可选）",
     "sources": [
       {"title": "碰撞触发器", "doc_id": "事件节点", "similarity": 1.0, "text_snippet": "...", "url": ""}
     ],
@@ -471,6 +473,7 @@ for line in response.iter_lines():
 |----------|------|
 | `tool_call` | 即将调用工具 |
 | `tool_result` | 工具调用结果摘要 |
+| `reasoning` | 推理内容增量（思考模式模型，可选） |
 | `token` | 流式文本片段 |
 | `sources` | 最终来源列表 |
 | `done` | 本轮完成，含统计信息 |
@@ -480,6 +483,7 @@ for line in response.iter_lines():
 
 ```text
 data: {"type": "tool_call", "data": {"tool": "get_node_info", "args": {"names": ["碰撞触发器"]}}}
+data: {"type": "reasoning", "data": "我需要先查找碰撞触发器的节点信息"}
 data: {"type": "tool_result", "data": {"tool": "get_node_info", "status": "success", "summary": "找到1个匹配节点"}}
 data: {"type": "tool_call", "data": {"tool": "generate_diagram", "args": {"svg_content": "<SVG 980 chars>", "title": "碰撞触发器流程"}}}
 data: {"type": "tool_result", "data": {"tool": "generate_diagram", "status": "success", "summary": "已生成图表「碰撞触发器流程」", "sources": [{"title": "碰撞触发器流程", "url": "/api/v1/agent/diagram/abc..."}]}}
