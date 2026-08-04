@@ -456,7 +456,7 @@ class AgentEngine:
 
             result = await handler
             diagrams = _collect_diagrams(tool_trace)
-            reasoning = extract_reasoning(result.response.message) if result.response else None
+            reasoning = extract_reasoning(result.response) if result.response else None
             payload: Dict[str, Any] = {"answer": result.response.content or "", "sources": sources,
                                        "stats": {"tokens": 0, "tool_calls": tool_calls_count,
                                                   "retrieval_calls": retrieval_calls_count},

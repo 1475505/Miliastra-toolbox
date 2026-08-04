@@ -471,11 +471,13 @@ class ChatEngine:
             stream_gen = await llm.astream_chat(chat_history + [last_msg])
 
             chunk_count = 0
+            partial_answer = ""
             async for response_chunk in stream_gen:
                 # response_chunk 是 ChatResponseChunk，包含 delta
                 content = response_chunk.delta
 
                 if content:
+                    partial_answer += content
                     yield f"data: {json.dumps({'type': 'token', 'data': content}, ensure_ascii=False)}\n\n"
 
                 thinking = reasoning_delta_from_chunk(response_chunk)
