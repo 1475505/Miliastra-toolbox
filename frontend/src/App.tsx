@@ -12,12 +12,14 @@ const ToolCall = lazy(() => import('./components/ToolCall'))
 const Notes = lazy(() => import('./components/Notes'))
 const DataQuery = lazy(() => import('./components/DataQuery'))
 const SvgDocs = lazy(() => import('./components/SvgDocs'))
+const Wonderland = lazy(() => import('./components/Wonderland'))
 
 const PATH_TO_TAB: Record<string, Tab> = {
   '/tool': 'tools',
   '/note': 'notes',
   '/data': 'data',
   '/svg': 'svg',
+  '/wonderland': 'wonderland',
 }
 
 const TAB_TO_PATH: Record<Tab, string> = {
@@ -26,6 +28,7 @@ const TAB_TO_PATH: Record<Tab, string> = {
   notes: '/note',
   data: '/data',
   svg: '/svg',
+  wonderland: '/wonderland',
 }
 
 function getTabFromPath(): Tab {
@@ -139,6 +142,13 @@ export default function App() {
           <div className={`h-full ${activeTab === 'svg' ? '' : 'hidden'}`}>
             <Suspense fallback={<div className="flex h-full items-center justify-center text-on-surface-variant">{t('app.loading')}</div>}>
               <SvgDocs />
+            </Suspense>
+          </div>
+        )}
+        {visitedTabs.has('wonderland') && (
+          <div className={`h-full ${activeTab === 'wonderland' ? '' : 'hidden'}`}>
+            <Suspense fallback={<div className="flex h-full items-center justify-center text-on-surface-variant">{t('app.loading')}</div>}>
+              <Wonderland />
             </Suspense>
           </div>
         )}

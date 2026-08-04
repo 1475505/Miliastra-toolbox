@@ -1,6 +1,6 @@
 # Frontend 模块
 
-前端采用 React + TailwindCSS 开发。使用 localStorage 存储 OpenAI 配置，并提供知识问答、工具调用、笔记、数据查询、一图流五个主要页签。
+前端采用 React + TailwindCSS 开发。使用 localStorage 存储 OpenAI 配置，并提供知识问答、工具调用、笔记、数据查询、一图流、奇域关卡查询六个主要页签。
 
 ## 快速开始
 
@@ -42,9 +42,10 @@ python3 main.py
 ```text
 frontend/
 ├── src/
-│   ├── components/      # UI 组件 (Chat 聊天、Notes 笔记、SvgDocs 一图流等及左侧菜单)
+│   ├── components/      # UI 组件 (Chat 聊天、Notes 笔记、SvgDocs 一图流、Wonderland 奇域关卡等及左侧菜单)
 │   │   ├── ToolCall.tsx # Skill API 的前端工具调用面板
-│   │   └── SvgDocs.tsx  # 一图流文档浏览器（/svg）
+│   │   ├── SvgDocs.tsx  # 一图流文档浏览器（/svg）
+│   │   └── Wonderland.tsx  # 奇域关卡查询（/wonderland，支持 ?guid= 链接直访与 localStorage 订阅）
 │   ├── utils/           # 各类工具函数（API调用、配置读写等）
 │   ├── App.tsx          # 页面主体布局与路由切换
 │   └── main.tsx         # React 挂载点

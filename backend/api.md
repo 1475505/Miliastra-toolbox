@@ -39,6 +39,10 @@
   - [3. 按文件名获取原始 SVG](#3-按文件名获取原始-svg)
   - [4. 模糊匹配并获取页面链接](#4-模糊匹配并获取页面链接)
 
+- [奇域 API](#奇域-api)
+  - [1. 查询关卡详情](#1-查询关卡详情)
+  - [2. 查询最新评论](#2-查询最新评论)
+
 ---
 
 # RAG API
@@ -1865,4 +1869,175 @@ curl "http://localhost:8000/api/v1/svg/resolve?q=变量"
 | 状态码 | 说明                      |
 | ------ | ------------------------- |
 | 404    | 未找到与关键词匹配的图表 |
+
+---
+
+# 奇域 API
+
+## 概述
+
+代理米游社 UGC 社区接口，提供奇域关卡详情与最新评论查询能力。前端页面入口：`/wonderland`，支持通过 `?guid=<level_id>` 链接直接访问。
+
+数据来源：米游社 `bbs-api.miyoushe.com` UGC 社区接口。
+
+---
+
+## 1. 查询关卡详情
+
+### 接口地址
+**GET** `/api/v1/wonderland/level`
+
+### 查询参数
+
+| 参数   | 类型   | 必填 | 说明                          |
+| ------ | ------ | ---- | ----------------------------- |
+| `guid` | string | 是   | 奇域关卡 ID（level_id），纯数字 |
+
+### 请求示例
+
+```bash
+curl "http://localhost:8000/api/v1/wonderland/level?guid=11380490243"
+```
+
+### 响应示例
+
+```json
+{
+  "success": true,
+  "data": {
+    "level_id": "11380490243",
+    "level_name": "跃跃律动舞力聚会",
+    "desc": "紫色光环盖住您控制的实体时...",
+    "level_intro": "简陋的跃跃律动舞力聚会...",
+    "cover_img": "https://ugc-upload.mihoyo.com/...",
+    "images": [{ "url": "https://ugc-upload.mihoyo.com/..." }],
+    "video_url": "https://ugc-upload.mihoyo.com/.../...mp4?auth_key=...",
+    "video_cover": "https://ugc-upload.mihoyo.com/.../snapshots/...jpg?auth_key=...",
+    "hot_score": "55",
+    "good_rate": "--",
+    "play_type": "合作",
+    "play_cate": "LEVEL_CATE_QUICK_EXPERIENCE",
+    "play_tags": ["休闲"],
+    "show_limit_play_num_str": "1-4",
+    "view_url": "https://act.miyoushe.com/ys/ugc_community/mx/#/pages/level-detail/index?id=11380490243&region=cn_gf01"
+  }
+}
+```
+
+### 响应字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `level_id` | string | 关卡 ID |
+| `level_name` | string | 关卡名称 |
+| `desc` | string | 关卡描述 |
+| `level_intro` | string | 关卡简介 |
+| `cover_img` | string | 封面图 URL |
+| `images` | array | 关卡图片列表，每项含 `url` |
+| `video_url` | string | 关卡视频 URL（可能为空） |
+| `video_cover` | string | 视频封面 URL |
+| `hot_score` | string | 热度值 |
+| `good_rate` | string | 推荐率（无数据时为 `"--"`） |
+| `play_type` | string | 玩法类型（如「合作」） |
+| `play_cate` | string | 玩法分类标识 |
+| `play_tags` | string[] | 玩法标签列表 |
+| `show_limit_play_num_str` | string | 游玩人数范围（如 `"1-4"`） |
+| `view_url` | string | 米游社关卡详情页链接 |
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | guid 为空或非数字 |
+| 502 | 上游 API 请求失败或返回异常 |
+
+---
+
+## 2. 查询最新评论
+
+### 接口地址
+**GET** `/api/v1/wonderland/replies`
+
+### 查询参数
+
+| 参数        | 类型    | 必填 | 默认值 | 说明                       |
+| ----------- | ------- | ---- | ------ | -------------------------- |
+| `guid`      | string  | 是   | -      | 奇域关卡 ID（level_id），纯数字 |
+| `max_loops` | integer | 否   | 10     | 最大翻页次数（1-30）        |
+
+### 说明
+
+- 按楼层倒序（最新优先）分页抓取评论，统计最近 24 / 72 小时内的评论数、差评数与差评率。
+- 遇到早于 72 小时的评论时停止翻页。
+- `is_recommend` 为 `false` 的评论视为差评。
+
+### 请求示例
+
+```bash
+curl "http://localhost:8000/api/v1/wonderland/replies?guid=32855326723"
+```
+
+### 响应示例
+
+```json
+{
+  "success": true,
+  "data": {
+    "level_id": "32855326723",
+    "stats": {
+      "total_24h": 0,
+      "bad_24h": 0,
+      "rate_24h": 0.0,
+      "total_72h": 4,
+      "bad_72h": 0,
+      "rate_72h": 0.0
+    },
+    "recent_comments": [
+      {
+        "content": "非常优秀的奇域，推荐大家游玩~",
+        "created_at": 1772692820,
+        "is_recommend": true,
+        "floor_id": 2342,
+        "nickname": "楚楚",
+        "like_count": 0
+      }
+    ],
+    "bad_comments": [],
+    "view_url": "https://act.miyoushe.com/ys/ugc_community/level-detail/index.html?mhy_presentation_style=fullscreen#/comment?level_id=32855326723&region=cn_gf01"
+  }
+}
+```
+
+### 响应字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `level_id` | string | 关卡 ID |
+| `stats.total_24h` | integer | 最近 24 小时评论数 |
+| `stats.bad_24h` | integer | 最近 24 小时差评数 |
+| `stats.rate_24h` | number | 最近 24 小时差评率（百分比） |
+| `stats.total_72h` | integer | 最近 72 小时评论数 |
+| `stats.bad_72h` | integer | 最近 72 小时差评数 |
+| `stats.rate_72h` | number | 最近 72 小时差评率（百分比） |
+| `recent_comments` | array | 最近评论列表（最多 15 条，按时间倒序） |
+| `bad_comments` | array | 差评列表（最多 10 条） |
+| `view_url` | string | 米游社评论页链接 |
+
+**评论项字段**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `content` | string | 评论内容 |
+| `created_at` | integer | 评论时间（Unix 时间戳，秒） |
+| `is_recommend` | boolean | 是否推荐（`false` 为差评） |
+| `floor_id` | integer | 楼层号 |
+| `nickname` | string | 评论者昵称 |
+| `like_count` | integer | 点赞数 |
+
+### 错误码
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | guid 为空或非数字 |
+| 502 | 上游 API 请求失败或返回异常 |
 

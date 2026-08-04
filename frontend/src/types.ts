@@ -68,7 +68,7 @@ export interface Conversation {
   updatedAt: number
 }
 
-export type Tab = 'chat' | 'tools' | 'notes' | 'data' | 'svg'
+export type Tab = 'chat' | 'tools' | 'notes' | 'data' | 'svg' | 'wonderland'
 
 export interface COSConfig {
   useDefault: boolean

@@ -20,6 +20,7 @@ from skill.router import router as skill_router
 from translate.router import router as translate_router
 from translate import term_service
 from svg.router import router as svg_router
+from wonderland.router import router as wonderland_router
 
 
 
@@ -266,6 +267,7 @@ app.include_router(data_router, prefix="/api/v1")
 app.include_router(skill_router, prefix="/api/v1")
 app.include_router(translate_router, prefix="/api/v1")
 app.include_router(svg_router, prefix="/api/v1/svg")
+app.include_router(wonderland_router, prefix="/api/v1")
 
 @app.get("/health")
 async def health():
@@ -301,6 +303,11 @@ async def data_spa() -> HTMLResponse:
 
 @app.get("/svg", response_class=HTMLResponse, include_in_schema=False)
 async def svg_spa() -> HTMLResponse:
+    return _serve_spa()
+
+
+@app.get("/wonderland", response_class=HTMLResponse, include_in_schema=False)
+async def wonderland_spa() -> HTMLResponse:
     return _serve_spa()
 
 

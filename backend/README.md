@@ -50,6 +50,7 @@ python3 main.py --host 127.0.0.1 --port 8000 --reload
 - **Web 界面**: `http://localhost:8000`
 - **工具导航页**: `http://localhost:8000/all`
 - **一图流文档**: `http://localhost:8000/svg`
+- **奇域关卡查询**: `http://localhost:8000/wonderland`
 - **Swagger API 文档**: `http://localhost:8000/docs`
 
 ### 静态资源策略
@@ -86,4 +87,9 @@ SVG 一图流文档 API：
 - `GET /api/v1/svg/search?name=<关键词>[&png=true][&scale=2.0]`：按名称模糊搜索（包含/被包含），返回 SVG 或 PNG
 - `GET /api/v1/svg/raw/{filename}`：按文件名精确返回原始 SVG
 - `GET /api/v1/svg/related/{filename}`：按文件名或 stem 模糊匹配，返回最匹配图表的相关文档 JSON
+
+奇域关卡 API：
+
+- `GET /api/v1/wonderland/level?guid=<level_id>`：查询奇域关卡详情（名称、描述、封面、视频、热度等）
+- `GET /api/v1/wonderland/replies?guid=<level_id>[&max_loops=10]`：查询最近 72 小时内的评论与差评统计
 

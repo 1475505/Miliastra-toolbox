@@ -101,6 +101,7 @@ export default function Sidebar({
   const tabs: { id: Tab; label: string }[] = [
     { id: 'chat', label: t('sidebar.tabs.chat') },
     { id: 'svg', label: t('sidebar.tabs.svg') },
+    { id: 'wonderland', label: t('sidebar.tabs.wonderland') },
     { id: 'tools', label: t('sidebar.tabs.tools') },
     { id: 'data', label: t('sidebar.tabs.data') },
     { id: 'notes', label: t('sidebar.tabs.notes') },
