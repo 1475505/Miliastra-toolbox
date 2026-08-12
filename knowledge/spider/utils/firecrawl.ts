@@ -143,17 +143,9 @@ export class FirecrawlClient {
     checkChanges?: boolean; // 新增：检查内容是否变化
   }): Promise<ScrapeResult & { fileSaved?: boolean }> {
     try {
-      // 优化的 Firecrawl 配置：只提取 .doc-view 容器内的内容
-      const result: Document = await this.client.scrape(url, {
-        formats: ['markdown' as const],
-        includeTags: ['.doc-view'], // 只提取文档主体内容，过滤导航、页脚等
-        excludeTags: ['nav', 'footer', 'header', 'aside', 'script', 'style'], // 排除不需要的标签
-        onlyMainContent: true, // 只提取主要内容
-        waitFor: 2000, // 等待动态内容加载完成
-        timeout: 180000, // 3分钟超时
-        maxAge: 4 * 60 * 60 * 1000, // 4小时内的缓存结果
-      });
-      
+      // 逐级降级爬取，确保拿到文档正文
+      const result: Document = await this.scrapeWithFallback(url);
+
       // 新版本直接返回数据，没有success属性
       const markdown = result.markdown || '';
       const metadata = result.metadata || {};
@@ -216,6 +208,58 @@ export class FirecrawlClient {
         error: (error as Error).message,
       };
     }
+  }
+
+  /**
+   * 逐级降级的爬取策略，确保能拿到文档正文：
+   * 1. 优先用 .doc-view 选择器 + 4h 缓存（命中既有成功路径，省额度）
+   * 2. 若为空：保持 .doc-view 但绕过缓存（maxAge:0），解决缓存返回空结果的情况
+   * 3. 仍为空：移除 includeTags，仅靠 onlyMainContent，解决页面无 .doc-view 容器的情况
+   * 每次降级间等待 16 秒以遵守 Firecrawl 速率限制（4 请求/分钟）。
+   */
+  private async scrapeWithFallback(url: string): Promise<Document> {
+    const baseOpts = {
+      formats: ['markdown' as const],
+      excludeTags: ['nav', 'footer', 'header', 'aside', 'script', 'style'],
+      onlyMainContent: true,
+      waitFor: 2000,
+      timeout: 180000,
+    };
+
+    // 1. 默认：.doc-view + 缓存
+    let result: Document = await this.client.scrape(url, {
+      ...baseOpts,
+      includeTags: ['.doc-view'],
+      maxAge: 4 * 60 * 60 * 1000,
+    });
+    if (result.markdown && result.markdown.trim()) {
+      return result;
+    }
+
+    // 2. .doc-view + 绕过缓存
+    await new Promise(resolve => setTimeout(resolve, 16000));
+    result = await this.client.scrape(url, {
+      ...baseOpts,
+      includeTags: ['.doc-view'],
+      maxAge: 0,
+    });
+    if (result.markdown && result.markdown.trim()) {
+      console.log('   ℹ️ 命中绕过缓存的 .doc-view 结果');
+      return result;
+    }
+
+    // 3. 移除 includeTags，仅 onlyMainContent（页面可能无 .doc-view 容器）
+    await new Promise(resolve => setTimeout(resolve, 16000));
+    result = await this.client.scrape(url, {
+      ...baseOpts,
+      maxAge: 0,
+    });
+    if (result.markdown && result.markdown.trim()) {
+      console.log('   ℹ️ 命中无 includeTags 的回退结果（页面无 .doc-view 容器）');
+      return result;
+    }
+
+    return result; // 三次尝试均为空
   }
 
   /**

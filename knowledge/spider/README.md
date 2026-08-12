@@ -114,10 +114,10 @@ npm run scrape -- --filter=pattern
 npm run scrape -- --output=./custom-data
 
 # 筛选更新时间（默认 2025.10.25）推荐使用，配合--force
-npm run scrape -- --since=2026.07.01
+npm run scrape -- --since=2026.08.13
 ```
 
-> 上次更新时间: 2026-07-01
+> 上次更新时间: 2026-08-13
 
 **参数说明**：
 - `--test`: 测试模式，限制处理文档数量
@@ -126,7 +126,7 @@ npm run scrape -- --since=2026.07.01
 - `--force`: 强制覆盖已存在的文件
 - `--filter=pattern`: URL过滤正则表达式
 - `--output=path`: 自定义输出目录
-- `--since=DATE`: 筛选更新时间晚于该日期的文档（格式：YYYY.MM.DD 或 YYYY-MM-DD，默认 2025.10.25）
+- `--since=DATE`: 筛选更新时间晚于该日期的文档（格式：YYYY.MM.DD 或 YYYY-MM-DD，默认 2025.10.25）。跳过判断以配置中的 `updated_at` 为准：仅当本地文件 `crawledAt` 不早于配置 `updated_at` 时跳过，文档在最后一次爬取后更新过则会重新爬取；`--since` 仅作为无 `updated_at` 条目时的回退比较基准。
 
 ### 3. 构建向量知识库(部署前后端可跳过此步骤)
 ```bash

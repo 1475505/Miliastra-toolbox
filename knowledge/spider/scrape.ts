@@ -58,22 +58,33 @@ class Crawler {
     try {
       await fs.access(filePath);
       if (!force) {
-        // 文件已存在，根据 since 参数判断是否跳过
-        if (since) {
-          // since 提供了日期：检查 crawledAt 是否存在且晚于 since 日期
-          const fileContent = await fs.readFile(filePath, 'utf-8');
-          const crawledAtMatch = fileContent.match(/crawledAt:\s*(.+)/);
-          if (crawledAtMatch) {
-            const crawledAtStr = crawledAtMatch[1].trim();
-            const crawledAt = new Date(crawledAtStr);
-            if (!isNaN(crawledAt.getTime()) && crawledAt > since) {
-              console.log(`   ⏭️ 跳过：文件已爬取且时间晚于 ${since.toISOString().split('T')[0]}`);
+        // 文件已存在，判断是否需要重新爬取
+        const fileContent = await fs.readFile(filePath, 'utf-8');
+        const crawledAtMatch = fileContent.match(/crawledAt:\s*(.+)/);
+        const crawledAtStr = crawledAtMatch ? crawledAtMatch[1].trim() : '';
+        const crawledAt = new Date(crawledAtStr);
+        const hasValidCrawledAt = crawledAtStr !== '' && !isNaN(crawledAt.getTime());
+
+        // 优先与配置中的 updated_at 比较：若文件爬取时间不早于文档更新时间，则视为已是最新，跳过
+        const updatedAtStr = entry.updated_at;
+        if (updatedAtStr) {
+          const updatedAt = new Date(updatedAtStr);
+          if (!isNaN(updatedAt.getTime())) {
+            if (hasValidCrawledAt && crawledAt >= updatedAt) {
+              console.log(`   ⏭️ 跳过：文件已爬取（${crawledAtStr}）不早于文档更新时间（${updatedAtStr}）`);
               return { success: true, skipped: true };
             }
+            // 文档在最后一次爬取后又有更新（或无 crawledAt），继续重新爬取
+          }
+        } else if (since) {
+          // 没有 updated_at 时退回原逻辑：与 --since 比较
+          if (hasValidCrawledAt && crawledAt > since) {
+            console.log(`   ⏭️ 跳过：文件已爬取且时间晚于 ${since.toISOString().split('T')[0]}`);
+            return { success: true, skipped: true };
           }
         } else {
-          // since 未提供：默认不覆盖
-          console.log(`   ⏭️ 跳过：文件已存在（未指定 --since 参数）`);
+          // 既无 updated_at 也无 --since：默认不覆盖
+          console.log(`   ⏭️ 跳过：文件已存在（无 updated_at 且未指定 --since 参数）`);
           return { success: true, skipped: true };
         }
       }
@@ -267,10 +278,9 @@ async function main() {
 
   console.log(`🔄 强制重爬: ${force ? '是' : '否'}`);
   console.log(`📅 配置筛选日期: ${configFilterDateStr} (只处理配置中更新时间晚于此日期的文档)`);
+  console.log(`📅 跳过策略: 仅当本地文件 crawledAt 不早于配置 updated_at 时跳过；文档更新后未重新爬取的会重新爬取`);
   if (sinceDate) {
-    console.log(`📅 爬虫模式: 已指定 --since，文件如果早于 ${sinceDateStr} 则重新爬取`);
-  } else {
-    console.log(`📅 爬虫模式: 未指定 --since，将默认不覆盖现有文件`);
+    console.log(`📅 --since=${sinceDateStr} 同时作为无 updated_at 条目时的回退比较基准`);
   }
   console.log(`🧪 测试模式: ${testMode ? '是' : '否'}${testMode ? ` (限制: ${testLimit})` : ''}`);
   console.log(`🚀 并发度: ${concurrency}\n`);

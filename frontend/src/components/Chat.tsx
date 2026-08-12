@@ -159,6 +159,12 @@ export default function Chat({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const reasoningBoxRef = useRef<HTMLDivElement>(null)
+  const isAtBottomRef = useRef(true)
+  const reasoningBufferRef = useRef('')
+  const contentBufferRef = useRef('')
+  const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const conversationTurns = buildConversationTurns(displayMessages)
 
   useEffect(() => {
@@ -321,12 +327,35 @@ export default function Chat({
     }
   }
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToBottom = (force = false) => {
+    if (!force && !isAtBottomRef.current) return
+    messagesEndRef.current?.scrollIntoView({
+      behavior: force || !loading ? 'smooth' : 'auto',
+      block: 'end',
+    })
   }
 
   useEffect(() => {
+    const el = scrollContainerRef.current
+    if (!el) return
+    const handleScroll = () => {
+      const threshold = 80
+      isAtBottomRef.current =
+        el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+    }
+    el.addEventListener('scroll', handleScroll, { passive: true })
+    return () => el.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
     scrollToBottom()
+  }, [displayMessages])
+
+  useEffect(() => {
+    const el = reasoningBoxRef.current
+    if (el) {
+      el.scrollTop = el.scrollHeight
+    }
   }, [displayMessages])
 
   useEffect(() => {
@@ -367,8 +396,80 @@ export default function Chat({
     setError('')
     setTimeoutWarning('')
     setStatusMessage('')
+    isAtBottomRef.current = true
+    reasoningBufferRef.current = ''
+    contentBufferRef.current = ''
 
     let hasCreatedAssistantMessage = false
+
+    const flushStreamBuffer = () => {
+      const reasoningDelta = reasoningBufferRef.current
+      const contentDelta = contentBufferRef.current
+      if (!reasoningDelta && !contentDelta) return
+      reasoningBufferRef.current = ''
+      contentBufferRef.current = ''
+
+      if (!hasCreatedAssistantMessage) {
+        hasCreatedAssistantMessage = true
+        const assistantMessage: ExtendedMessage = {
+          role: 'assistant',
+          content: contentDelta,
+          reasoning: reasoningDelta || undefined,
+          isReasoning: reasoningDelta ? true : undefined,
+        }
+        setMessages((prev) => [...prev, assistantMessage])
+        setDisplayMessages((prev) => [...prev, assistantMessage])
+        return
+      }
+
+      setMessages((prev) => {
+        const newMessages = [...prev]
+        const lastMsg = newMessages[newMessages.length - 1]
+        if (lastMsg && lastMsg.role === 'assistant') {
+          newMessages[newMessages.length - 1] = {
+            ...lastMsg,
+            reasoning: reasoningDelta
+              ? (lastMsg.reasoning || '') + reasoningDelta
+              : lastMsg.reasoning,
+            content: contentDelta
+              ? lastMsg.content + contentDelta
+              : lastMsg.content,
+            isReasoning: reasoningDelta
+              ? true
+              : contentDelta
+                ? false
+                : lastMsg.isReasoning,
+          }
+        }
+        return newMessages
+      })
+      setDisplayMessages((prev) => {
+        for (let i = prev.length - 1; i >= 0; i--) {
+          const msg = prev[i]
+          if ('role' in msg && msg.role === 'assistant') {
+            return [
+              ...prev.slice(0, i),
+              {
+                ...msg,
+                reasoning: reasoningDelta
+                  ? (msg.reasoning || '') + reasoningDelta
+                  : msg.reasoning,
+                content: contentDelta
+                  ? msg.content + contentDelta
+                  : msg.content,
+                isReasoning: reasoningDelta
+                  ? true
+                  : contentDelta
+                    ? false
+                    : msg.isReasoning,
+              },
+              ...prev.slice(i + 1),
+            ]
+          }
+        }
+        return prev
+      })
+    }
 
     try {
       const contextMessages = messages.slice(-(config.context_length * 2))
@@ -429,6 +530,8 @@ export default function Chat({
           setLoading(false)
         }
       }, 1000)
+
+      flushTimerRef.current = setInterval(() => flushStreamBuffer(), 80)
 
       while (reader) {
         const { done, value } = await reader.read()
@@ -534,96 +637,12 @@ export default function Chat({
               } else if (data.type === 'status') {
                 setStatusMessage(data.data.message || data.data)
               } else if (data.type === 'reasoning') {
-                if (!hasCreatedAssistantMessage) {
-                  hasCreatedAssistantMessage = true
-                  const assistantMessage: ExtendedMessage = {
-                    role: 'assistant',
-                    content: '',
-                    reasoning: data.data,
-                    isReasoning: true,
-                  }
-                  setMessages((prev) => [...prev, assistantMessage])
-                  setDisplayMessages((prev) => [...prev, assistantMessage])
-                } else {
-                  const updateMsg = (prev: ExtendedMessage[]) => {
-                    const newMessages = [...prev]
-                    const lastMsg = newMessages[newMessages.length - 1]
-                    if (lastMsg && lastMsg.role === 'assistant') {
-                      return [
-                        ...prev.slice(0, -1),
-                        {
-                          ...lastMsg,
-                          reasoning: (lastMsg.reasoning || '') + data.data,
-                          isReasoning: true,
-                        },
-                      ]
-                    }
-                    return newMessages
-                  }
-                  setMessages(updateMsg)
-                  setDisplayMessages((prev) => {
-                    for (let i = prev.length - 1; i >= 0; i--) {
-                      const msg = prev[i]
-                      if ('role' in msg && msg.role === 'assistant') {
-                        return [
-                          ...prev.slice(0, i),
-                          {
-                            ...msg,
-                            reasoning: (msg.reasoning || '') + data.data,
-                            isReasoning: true,
-                          },
-                          ...prev.slice(i + 1),
-                        ]
-                      }
-                    }
-                    return prev
-                  })
-                }
+                reasoningBufferRef.current += data.data
               } else if (data.type === 'token') {
-                if (!hasCreatedAssistantMessage) {
-                  hasCreatedAssistantMessage = true
-                  const assistantMessage: ExtendedMessage = {
-                    role: 'assistant',
-                    content: data.data,
-                  }
-                  setMessages((prev) => [...prev, assistantMessage])
-                  setDisplayMessages((prev) => [...prev, assistantMessage])
-                } else {
-                  setMessages((prev) => {
-                    const newMessages = [...prev]
-                    const lastMsg = newMessages[newMessages.length - 1]
-                    if (lastMsg && lastMsg.role === 'assistant') {
-                      return [
-                        ...prev.slice(0, -1),
-                        {
-                          ...lastMsg,
-                          content: lastMsg.content + data.data,
-                          isReasoning: false,
-                        },
-                      ]
-                    }
-                    return newMessages
-                  })
-                  setDisplayMessages((prev) => {
-                    for (let i = prev.length - 1; i >= 0; i--) {
-                      const msg = prev[i]
-                      if ('role' in msg && msg.role === 'assistant') {
-                        return [
-                          ...prev.slice(0, i),
-                          {
-                            ...msg,
-                            content: msg.content + data.data,
-                            isReasoning: false,
-                          },
-                          ...prev.slice(i + 1),
-                        ]
-                      }
-                    }
-                    return prev
-                  })
-                }
+                contentBufferRef.current += data.data
               } else if (data.type === 'done') {
                 setStatusMessage('')
+                flushStreamBuffer()
                 setDisplayMessages((prev) => {
                   const newMessages = [...prev]
                   for (let i = newMessages.length - 1; i >= 0; i--) {
@@ -657,6 +676,11 @@ export default function Chat({
           : '网络错误'
       setError(t('chat.connectionError', { detail }))
     } finally {
+      if (flushTimerRef.current) {
+        clearInterval(flushTimerRef.current)
+        flushTimerRef.current = null
+      }
+      flushStreamBuffer()
       setLoading(false)
       setStatusMessage('')
     }
@@ -682,7 +706,7 @@ export default function Chat({
         </Button>
       </PageHeader>
 
-      <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
         {displayMessages.length === 0 && (
           <div className="text-center text-on-surface mt-16 lg:mt-20">
             <div className="text-lg font-medium">
@@ -846,7 +870,10 @@ export default function Chat({
                           <summary className="px-4 py-2 bg-gray-50 cursor-pointer text-xs font-medium text-gray-500 hover:bg-gray-100 select-none flex items-center">
                             <span>{t('chat.reasoning')}</span>
                           </summary>
-                          <div className="px-4 py-3 text-gray-600 text-sm bg-gray-50/50 whitespace-pre-wrap border-t border-gray-100">
+                          <div
+                            ref={turn.assistant.isReasoning ? reasoningBoxRef : undefined}
+                            className="px-4 py-3 text-gray-600 text-sm bg-gray-50/50 whitespace-pre-wrap border-t border-gray-100 max-h-60 overflow-y-auto"
+                          >
                             {turn.assistant.reasoning}
                           </div>
                         </details>
