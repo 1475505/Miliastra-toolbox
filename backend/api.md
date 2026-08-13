@@ -612,7 +612,7 @@ Skill API 将千星沙箱知识库能力以 HTTP 形式暴露，和 MCP Server �
 
 - 返回 skill 元信息
 - 返回 5 个工具的 HTTP 调用路径
-- 返回 `mcp/SKILL.md` 原始 markdown 内容，方便前端直接展示说明
+- 返回 `skills/miliastra-knowledge/SKILL.md` 原始 markdown 内容，方便前端直接展示说明
 
 ## 3. Tool 执行
 

@@ -16,7 +16,7 @@ INDEX_PATH = DERIVED_DIR / "index.json"
 OFFICIAL_DIR = KNOWLEDGE_DIR / "official"
 RAG_DB_DIR = TOOLBOX_DIR / "knowledge" / "rag_v1" / "db"
 RAG_ENV_PATH = TOOLBOX_DIR / "knowledge" / "rag_v1" / ".env"
-SKILL_MARKDOWN_PATH = TOOLBOX_DIR / "mcp" / "SKILL.md"
+SKILL_MARKDOWN_PATH = TOOLBOX_DIR / "skills" / "miliastra-knowledge" / "SKILL.md"
 
 _SEPARATOR = "___"
 SKILL_ID = "miliastra-knowledge"
