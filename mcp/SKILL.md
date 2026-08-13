@@ -1,15 +1,23 @@
 ---
 name: miliastra-knowledge
-description: 千星沙箱（原神千星奇域）知识库查询。当用户询问千星沙箱的节点用法、编辑器功能、FAQ、教程文档，或需要把玩法需求拆解为具体节点与文档时，使用本skill。
+description: 查询千星沙箱（原神千星奇域 UGC 编辑器）知识库：节点用法与参数、官方指南/教程/FAQ 文档、语义检索。当用户询问千星沙箱节点（触发器、运动器、造物、仇恨、商店、背包等）、编辑器功能配置、"为什么不触发/不生效"类排障问题，或需要把玩法需求拆解为具体节点与参考文档时使用。
 ---
 
-# 千星沙箱知识库查询 Skill
+# 千星沙箱知识库查询
 
-API端点：https://ugc.070077.xyz/
+知识库覆盖：全部节点说明（含归属端与参数）、官方指南、教程、FAQ，共 300+ 篇文档。
 
-> 工具参数、返回结构与关键词详见 [references/tools.md](references/tools.md)。  
-> 服务连接配置也在同一文件。
-> 通过 HTTP Skill API 调用：`GET /api/v1/skills` 与 `POST /api/v1/skills/miliastra-knowledge/tools/*`。
+API端点：https://ugc.070077.xyz
+
+## 调用方式
+
+通过 HTTP Skill API 调用，JSON 请求体：
+
+```
+POST https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/<工具名>
+```
+
+> 各工具的参数、返回结构、可用关键词清单与 curl 示例详见 [references/tools.md](references/tools.md)。
 
 ## 什么时候用
 
@@ -19,67 +27,73 @@ API端点：https://ugc.070077.xyz/
 - 用户想了解某系统的整体设计或配置步骤
 - 需要把玩法需求拆解为具体节点名和参考文档
 
-## 4 个工具分别负责什么
+## 工具一览
 
 | 工具 | 职责 |
 |------|------|
-| `get_node_info` | 按节点名查说明、参数表、所属分类与来源文档；支持模糊匹配和批量查询 |
-| `list_documents` | 浏览或过滤知识库文档列表；用于不知道精确文档名时先看有哪些 |
-| `get_document` | 获取官方文档全文；支持批量，一次获取多篇相关文档 |
-| `rag_search` | 自然语言语义检索；支持批量，多个独立问题可一次查完 |
+| `get_node_info` | 按节点名查说明、参数、归属端与来源文档；支持模糊匹配和批量查询 |
+| `list_documents` | 按关键词列出文档标题（不含正文）；用于不知道精确文档名时先看有哪些 |
+| `get_document` | 按标题获取官方文档全文；支持批量，一次获取多篇相关文档 |
+| `rag_search` | 自然语言语义检索文档片段；支持批量，多个独立问题可一次查完 |
+
+**优先级：结构化工具优先，`rag_search` 兜底。** 能用节点名/文档名直接定位时不用 `rag_search`；`rag_search` 用于开放问题、排障、跨文档比较，或结构化工具结果不足时补充。
 
 ## 怎么选工具
 
-1. **用户说了具体节点名** → `get_node_info`（批量传入效率更高）
-2. **用户说"有没有关于 X 的文档"** → `list_documents(keywords=[X])` 先看列表；多个主题可批量传入
-3. **用户提到功能名/系统名** → `get_document(["系统名"])`；涉及多个系统可批量传入
-4. **用户用自然语言描述功能或问题** → `rag_search`；多个独立问题可批量传入
-5. **查节点后需要看完整配置说明** → 取 `source_doc_title`，再调 `get_document`
-6. **不确定文档精确名称** → 先 `list_documents`，再 `get_document`
+1. **用户说了具体节点名** → `get_node_info`
+2. **用户说"有没有关于 X 的文档"/不确定文档名** → `list_documents(keywords=[X])` 先看列表（`keywords` 传空列表可浏览全部文档）
+3. **已知文档/系统名，要完整内容** → `get_document(["系统名"])`
+4. **用户用自然语言描述功能或问题** → `rag_search`
+5. **查节点后需要看完整配置说明** → 取返回的 `source_doc_title`，再调 `get_document`
+
+**批量原则：多个独立查询合并为一次调用**（所有工具均支持列表入参），不要拆成多轮单条调用，也不要重复相同调用。
 
 ## 常见调用顺序
 
 **开放玩法需求**（不知道节点名）：
 ```
-rag_search(["需求描述"]) → get_node_info([命中的节点名]) → get_document([文档名])
+rag_search(["需求描述"]) → get_node_info([命中的节点名]) → get_document([来源文档])
 ```
 
 **已知节点名**：
 ```
-get_node_info([节点名]) → 若需深入 → get_document([source_doc_title])
+get_node_info([节点名]) → 需要深入时 → get_document([source_doc_title])
 ```
 
 **学习某个系统**（如商店、仇恨、背包）：
 ```
-list_documents(["关键词"]) → get_document("精确文档名")
-```
-**同时探索多个系统**：
-```
-list_documents(["关键词A", "关键词B"]) → get_document(各结果中的文档名)
+list_documents(["关键词"]) → get_document([精确文档名])
 ```
 
 **排障类**（"为什么不触发/不生效"）：
 ```
-rag_search(["描述问题A", "描述问题B"]) → get_document(["相关系统文档"])
+rag_search(["问题描述A", "问题描述B"]) → get_document(["相关系统文档"])
 ```
 
-**造物/技能专项**：
+**领域示例 —— 造物/技能**：
 ```
 list_documents(["造物状态"]) → get_document(["造物状态决策节点图", "复杂造物技能"])
   → get_node_info(["复杂造物定点位移", "造物转向指定朝向"])
 ```
 
-**仇恨系统批量查询**：
+**领域示例 —— 仇恨系统**：
 ```
 rag_search(["嘲讽和仇恨系统配置", "怪物追击玩家行为"])
   → get_node_info(["嘲讽目标", "增加指定实体的仇恨值", "获取指定实体的仇恨目标"])
   → get_document(["仇恨配置"])
 ```
 
-## 输出时怎么整理给用户
+## 异常处理
 
-- 来自 `get_node_info`：说明节点用途和关键参数，注意引用字段名
-- 来自 `get_document`：总结文档要点，必要时直接引用原文片段
-- 来自 `rag_search`：优先引用 similarity 最高的结果，注明来源文档
-- **始终区分"文档原文已说明"和"基于资料的推测建议"**
-- 不要编造节点名、参数名或官方结论；查不到就说查不到
+- `get_node_info` 无匹配 → 换更短/更通用的关键词重试；仍无结果 → 用 `rag_search`
+- `get_document` 返回 `status="too_many"` → 用更精确的关键词重查
+- `get_document` 返回 `status="not_found"` → 先 `list_documents` 找候选标题再重查
+- `rag_search` 结果为空或不相关 → 换用领域术语重写 query（如把"怪物追我"改为"仇恨 嘲讽 追击"）
+
+## 输出规范
+
+- 节点类回答：说明用途、关键参数、**归属端（`side`：服务端/客户端/双端）**，并注明来源文档
+- 文档类回答：总结要点，必要时直接引用原文片段
+- `rag_search` 结果：优先引用 `similarity` 最高的条目，注明来源文档
+- **严格区分"文档原文已说明"与"基于资料的推测建议"**
+- 不得编造节点名、参数名或官方结论；查不到就明确说查不到，并建议用户换个问法
