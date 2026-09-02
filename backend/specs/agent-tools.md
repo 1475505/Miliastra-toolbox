@@ -2,7 +2,7 @@
 
 ## 1. 目标
 
-本文定义 Agent 可调用工具的标准契约。与 [mcp/SKILL.md](../../mcp/SKILL.md) 保持一一对应：
+本文定义 Agent 可调用工具的标准契约。与 [skills/miliastra-knowledge/SKILL.md](../../skills/miliastra-knowledge/SKILL.md) 保持一一对应：
 
 - 4 个工具
 - 输入输出 schema
@@ -12,7 +12,7 @@
 ## 2. 设计原则
 
 1. 工具面向 Agent，不面向 HTTP。
-2. 工具与 `mcp/SKILL.md` 中描述的三类知识访问一一对应。
+2. 工具与 `skills/miliastra-knowledge/SKILL.md` 中描述的三类知识访问一一对应。
 3. 结构化工具优先于 RAG 工具。
 4. 工具支持模糊匹配，避免轻微命名差异导致空结果。
 5. 工具支持批量调用，减少 Agent 多轮请求消耗 token。
