@@ -22,7 +22,7 @@ from translate import term_service
 from svg.router import router as svg_router
 from wonderland.router import router as wonderland_router
 from share.router import router as share_router
-from share import share_service
+from share.service import share_service
 
 
 
