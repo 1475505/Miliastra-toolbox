@@ -13,6 +13,7 @@ const Notes = lazy(() => import('./components/Notes'))
 const DataQuery = lazy(() => import('./components/DataQuery'))
 const SvgDocs = lazy(() => import('./components/SvgDocs'))
 const Wonderland = lazy(() => import('./components/Wonderland'))
+const SharePage = lazy(() => import('./components/SharePage'))
 
 const PATH_TO_TAB: Record<string, Tab> = {
   '/tool': 'tools',
@@ -37,6 +38,11 @@ function getTabFromPath(): Tab {
   return PATH_TO_TAB[path] ?? 'chat'
 }
 
+function getShareIdFromPath(): string | null {
+  const match = window.location.pathname.match(/^\/share\/([a-zA-Z0-9]+)$/)
+  return match ? match[1] : null
+}
+
 export default function App() {
   const { t, i18n } = useTranslation()
   const [activeTab, setActiveTab] = useState<Tab>(getTabFromPath)
@@ -45,6 +51,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [currentConversationId, setCurrentConversationId] = useState<string>()
   const [conversationRefreshTrigger, setConversationRefreshTrigger] = useState(0)
+  const [shareId, setShareId] = useState<string | null>(getShareIdFromPath)
 
   // UI 语言变化（含首次浏览器语言检测）时同步回答语言
   useEffect(() => {
@@ -53,6 +60,7 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
+      setShareId(getShareIdFromPath())
       const tab = getTabFromPath()
       setActiveTab(tab)
       setVisitedTabs((prev) => new Set(prev).add(tab))
@@ -83,6 +91,17 @@ export default function App() {
 
   const handleRefreshConversations = () => {
     setConversationRefreshTrigger((v) => v + 1)
+  }
+
+  // 分享页：独立全屏只读视图，不挂侧边栏
+  if (shareId) {
+    return (
+      <div className="h-screen bg-surface/30 backdrop-blur-xl">
+        <Suspense fallback={<div className="flex h-full items-center justify-center text-on-surface-variant">{t('app.loading')}</div>}>
+          <SharePage shareId={shareId} />
+        </Suspense>
+      </div>
+    )
   }
 
   return (

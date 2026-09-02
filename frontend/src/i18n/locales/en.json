@@ -50,6 +50,13 @@
     "title": "Knowledge Q&A",
     "download": "Download",
     "downloadTitle": "Download conversation as plain text",
+    "share": "Share",
+    "sharing": "Sharing…",
+    "shareTitle": "Generate share link",
+    "shareLinkCopied": "Share link copied",
+    "shareCopyFallback": "Copy the link below to share the conversation",
+    "shareFailed": "Share failed: {{detail}}",
+    "sharedImagePlaceholder": "Image x{{count}}",
     "newConversation": "New Chat",
     "greeting": "Hello! I'm the Miliastra Knowledge Assistant. How can I help you?",
     "autoSaveHint": "Conversations are saved locally in your browser and can also be shared to save.",
@@ -97,6 +104,17 @@
     "selectedImageAlt": "Selected image {{index}}",
     "sizeCalculating": "Calculating size...",
     "footer": "Official Miliastra docs and related info are copyrighted by miHoYo. This site is a personal project and is not affiliated with miHoYo."
+  },
+  "sharePage": {
+    "title": "Shared Conversation",
+    "badge": "Read-only share",
+    "loading": "Loading…",
+    "generating": "Answer is being generated, please wait…",
+    "notFound": "Share not found or expired",
+    "notFoundHint": "Shared content is retained for a limited time and cleaned up automatically",
+    "loadFailed": "Failed to load share",
+    "taskFailed": "Chat generation failed",
+    "empty": "This share has no messages"
   },
   "config": {
     "title": "LLM Config (stored in browser only, not saved on server)",

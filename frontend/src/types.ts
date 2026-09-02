@@ -12,6 +12,8 @@ export interface Message {
   content: string
   imageBase64?: string
   imageBase64s?: string[]
+  /** 分享场景下图片被剥离后的数量占位 */
+  imageCount?: number
 }
 
 export interface Source {

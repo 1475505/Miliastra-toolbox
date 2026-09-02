@@ -50,6 +50,13 @@
     "title": "知识库问答",
     "download": "下载",
     "downloadTitle": "下载对话为纯文本",
+    "share": "分享",
+    "sharing": "分享中…",
+    "shareTitle": "生成分享链接",
+    "shareLinkCopied": "分享链接已复制",
+    "shareCopyFallback": "请复制下方链接分享对话",
+    "shareFailed": "分享失败：{{detail}}",
+    "sharedImagePlaceholder": "图片 x{{count}}",
     "newConversation": "新对话",
     "greeting": "你好！我是千星知识库助手，请问有什么可以帮你的？",
     "autoSaveHint": "对话将自动保存到浏览器本地，或者分享保存",
@@ -97,6 +104,17 @@
     "selectedImageAlt": "已选择的图片 {{index}}",
     "sizeCalculating": "大小信息计算中...",
     "footer": "千星奇域官方文档和相关信息版权归米哈游所有，本网站为个人兴趣，与米哈游无关"
+  },
+  "sharePage": {
+    "title": "分享的对话",
+    "badge": "只读分享",
+    "loading": "加载中…",
+    "generating": "回答生成中，请稍候…",
+    "notFound": "分享不存在或已过期",
+    "notFoundHint": "分享内容有保留期限，过期后会被自动清理",
+    "loadFailed": "加载分享失败",
+    "taskFailed": "对话生成失败",
+    "empty": "该分享没有消息内容"
   },
   "config": {
     "title": "LLM 配置（仅浏览器存储，后端不保存，放心填写）",

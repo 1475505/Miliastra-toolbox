@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from contextlib import asynccontextmanager
 from html import escape
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +21,8 @@ from translate.router import router as translate_router
 from translate import term_service
 from svg.router import router as svg_router
 from wonderland.router import router as wonderland_router
+from share.router import router as share_router
+from share import share_service
 
 
 
@@ -48,21 +50,17 @@ TOOL_ENTRIES: tuple[ToolEntry, ...] = (
                                 label="推荐通过 Workbuddy Skill 接入使用",
                                 url="https://www.bilibili.com/video/BV1fSDJB7Emi",
                         ),
-                        ToolLink(
-                                label="推荐通过 Deepseek Harness 接入使用",
-                                url="https://www.bilibili.com/video/BV1KFgF6zEtk",
-                        ),
                 ),
         ),
         ToolEntry(
                 title="图片转UI工具",
                 websites=(
-                        ToolLink(label="网站", url="https://qx-img.070077.xyz/"),
+                        ToolLink(label="网站", url="https://qxqy-245358-5-1304005994.sh.run.tcloudbase.com/"),
                 ),
                 tutorials=(
                         ToolLink(label="使用教程", url="https://www.bilibili.com/video/BV1kKDyB9EvY"),
                 ),
-                note="请打开本地模式使用。",
+                note="联系作者获取可执行 exe。",
         ),
         ToolEntry(
                 title="前端拼UI工具",
@@ -75,13 +73,13 @@ TOOL_ENTRIES: tuple[ToolEntry, ...] = (
                 features=(
                         "无需图片，直接通过 AI 工具生成 svg 或 css。",
                         "支持在线画布修改。",
+                        "支持输出超限模式 gia。",
                 ),
-                note="由于无法获取官方美术资源，只支持基础图形素材。",
+                note="TODO：在线编辑支持其他官方素材。暂时搁置。",
         ),
         ToolEntry(
-                title="十五国语言翻译工具",
-                websites=(ToolLink(label="网站", url="https://github.com/1475505/Miliastra-wonderland-15-lang-translator"),),
-                note="支持《原神》内术语表的版本需要进群联系群主获取",
+                title="字体图片转装饰物",
+                websites=(ToolLink(label="网站", url="https://qx-shaper.up.railway.app/"),),
         ),
 )
 
@@ -243,6 +241,12 @@ async def lifespan(app: FastAPI):
         # Error is already logged inside TermService.
         pass
 
+    # Soft-failure: shares 表初始化（分享 + 异步对话），失败不阻断其他功能。
+    try:
+        share_service.initialise()
+    except Exception:
+        pass
+
     yield
 
 
@@ -272,6 +276,28 @@ app.include_router(skill_router, prefix="/api/v1")
 app.include_router(translate_router, prefix="/api/v1")
 app.include_router(svg_router, prefix="/api/v1/svg")
 app.include_router(wonderland_router, prefix="/api/v1")
+app.include_router(share_router, prefix="/api/v1")
+
+
+@app.middleware("http")
+async def cache_control_middleware(request: Request, call_next):
+    """静态资源缓存策略（供 CDN 遵循源站）：
+    - /assets/* 构建产物带内容 hash，长缓存一年
+    - HTML（index.html / SPA 路由）不缓存，保证发版即生效
+    - 其余静态根文件（favicon、NOTICE.md 等无 hash）短缓存
+    - API 响应不干预
+    """
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/api/") or path == "/health":
+        return response
+    if path.startswith("/assets/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif response.headers.get("content-type", "").startswith("text/html"):
+        response.headers["Cache-Control"] = "no-cache"
+    else:
+        response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
 
 @app.get("/health")
 async def health():
@@ -317,6 +343,11 @@ async def wonderland_spa() -> HTMLResponse:
 
 @app.get("/svg/{doc_id}", response_class=HTMLResponse, include_in_schema=False)
 async def svg_doc_spa(doc_id: str) -> HTMLResponse:
+    return _serve_spa()
+
+
+@app.get("/share/{share_id}", response_class=HTMLResponse, include_in_schema=False)
+async def share_spa(share_id: str) -> HTMLResponse:
     return _serve_spa()
 
 
