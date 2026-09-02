@@ -48,17 +48,21 @@ TOOL_ENTRIES: tuple[ToolEntry, ...] = (
                                 label="推荐通过 Workbuddy Skill 接入使用",
                                 url="https://www.bilibili.com/video/BV1fSDJB7Emi",
                         ),
+                        ToolLink(
+                                label="推荐通过 Deepseek Harness 接入使用",
+                                url="https://www.bilibili.com/video/BV1KFgF6zEtk",
+                        ),
                 ),
         ),
         ToolEntry(
                 title="图片转UI工具",
                 websites=(
-                        ToolLink(label="网站", url="https://qxqy-245358-5-1304005994.sh.run.tcloudbase.com/"),
+                        ToolLink(label="网站", url="https://qx-img.070077.xyz/"),
                 ),
                 tutorials=(
                         ToolLink(label="使用教程", url="https://www.bilibili.com/video/BV1kKDyB9EvY"),
                 ),
-                note="联系作者获取可执行 exe。",
+                note="请打开本地模式使用。",
         ),
         ToolEntry(
                 title="前端拼UI工具",
@@ -71,13 +75,13 @@ TOOL_ENTRIES: tuple[ToolEntry, ...] = (
                 features=(
                         "无需图片，直接通过 AI 工具生成 svg 或 css。",
                         "支持在线画布修改。",
-                        "支持输出超限模式 gia。",
                 ),
-                note="TODO：在线编辑支持其他官方素材。暂时搁置。",
+                note="由于无法获取官方美术资源，只支持基础图形素材。",
         ),
         ToolEntry(
-                title="字体图片转装饰物",
-                websites=(ToolLink(label="网站", url="https://qx-shaper.up.railway.app/"),),
+                title="十五国语言翻译工具",
+                websites=(ToolLink(label="网站", url="https://github.com/1475505/Miliastra-wonderland-15-lang-translator"),),
+                note="支持《原神》内术语表的版本需要进群联系群主获取",
         ),
 )
 
