@@ -52,6 +52,7 @@ frontend/
 │   │   ├── SvgDocs.tsx  # 一图流文档浏览器（/svg）
 │   │   ├── Wonderland.tsx  # 奇域关卡查询（/wonderland，支持 ?guid= 链接直访与 localStorage 订阅）
 │   │   ├── ConversationView.tsx # 只读对话渲染（Chat 与分享页共用）
+│   │   ├── ShareLinkModal.tsx  # 分享成功后的链接弹窗（展示 URL + 复制/打开）
 │   │   └── SharePage.tsx   # 分享页（/share/:id，异步任务未完成时轮询）
 │   ├── utils/           # 各类工具函数（API调用、配置读写、分享等）
 │   ├── App.tsx          # 页面主体布局与路由切换

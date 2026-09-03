@@ -53,8 +53,6 @@
     "share": "Share",
     "sharing": "Sharing…",
     "shareTitle": "Generate share link",
-    "shareLinkCopied": "Share link copied",
-    "shareCopyFallback": "Copy the link below to share the conversation",
     "shareFailed": "Share failed: {{detail}}",
     "sharedImagePlaceholder": "Image x{{count}}",
     "newConversation": "New Chat",
@@ -115,6 +113,13 @@
     "loadFailed": "Failed to load share",
     "taskFailed": "Chat generation failed",
     "empty": "This share has no messages"
+  },
+  "shareLink": {
+    "title": "Share Link",
+    "hint": "Anyone with this link can view the conversation (images are not included).",
+    "copy": "Copy Link",
+    "copied": "Copied",
+    "open": "Open"
   },
   "config": {
     "title": "LLM Config (stored in browser only, not saved on server)",

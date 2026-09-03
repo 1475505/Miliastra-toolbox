@@ -1,4 +1,4 @@
-"""分享与异步对话 API 路由 - /api/v1/share/* 与 /api/v1/rag/chat/async"""
+"""分享与异步对话 API 路由 - /api/v1/share/* 与 /api/v1/rag/chat/async（agent 异步见 agent/router.py）"""
 from __future__ import annotations
 
 import asyncio

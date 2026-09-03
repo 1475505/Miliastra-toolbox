@@ -470,7 +470,7 @@ for line in response.iter_lines():
 
 ```json
 {
-  "id": "32位随机十六进制分享ID",
+  "id": "分享ID，格式为 YYYYMMDD-HHMMSS-<8位随机hex>（时间前缀便于辨识）",
   "url": "/share/{id}"
 }
 ```
@@ -508,7 +508,7 @@ for line in response.iter_lines():
 
 ### 特点
 
-- 入参与非流式 `/rag/chat` 完全一致
+- 入参与非流式 `/rag/chat` 完全一致（经典两阶段 RAG 管线，非 agent 模式）
 
 - 立即返回任务 ID 与链接，后台执行对话
 
@@ -518,7 +518,7 @@ for line in response.iter_lines():
 
 ```json
 {
-  "task_id": "32位随机十六进制任务ID",
+  "task_id": "任务ID，格式为 YYYYMMDD-HHMMSS-<8位随机hex>（时间前缀便于辨识）",
   "url": "/share/{task_id}",
   "status": "pending"
 }
@@ -529,6 +529,50 @@ for line in response.iter_lines():
 ```bash
 # 发起异步对话
 curl -X POST http://localhost:8000/api/v1/rag/chat/async \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "小地图如何使用？",
+    "conversation": [],
+    "config": {"api_key": "", "api_base_url": "", "model": "", "use_default_model": 1}
+  }'
+
+# 轮询任务状态（返回体中 status 为 pending/completed/error）
+curl http://localhost:8000/api/v1/share/{task_id}
+```
+
+***
+
+## 4. 发起异步 Agent 对话
+
+### 接口地址
+
+**POST** `/api/v1/agent/chat/async`
+
+### 特点
+
+- 入参与非流式 `/agent/chat` 完全一致（FunctionAgent + tool-calling，工具轨迹会保留在结果中）
+
+- 立即返回任务 ID 与链接，后台执行对话；轮询方式与异步 RAG 对话相同（`GET /api/v1/share/{task_id}`）
+
+- `completed` 后 `messages` 为分享页渲染格式：`user` 消息 → `{"type": "tool_trace", "traces": [...], "stats": {...}}`（有工具调用时）→ `assistant` 消息（含 `reasoning`，可选）
+
+- 回答中由 `generate_diagram` 生成的图表会内联为 data URI（图表内存缓存重启即失效，内联保证分享页长期可渲染）；总大小超 2MB 时降级保留相对 URL
+
+### 响应
+
+```json
+{
+  "task_id": "任务ID，格式为 YYYYMMDD-HHMMSS-<8位随机hex>（时间前缀便于辨识）",
+  "url": "/share/{task_id}",
+  "status": "pending"
+}
+```
+
+### 客户端调用示例
+
+```bash
+# 发起异步 Agent 对话
+curl -X POST http://localhost:8000/api/v1/agent/chat/async \
   -H "Content-Type: application/json" \
   -d '{
     "message": "小地图如何使用？",

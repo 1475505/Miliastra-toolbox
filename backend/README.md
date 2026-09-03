@@ -26,7 +26,7 @@
 
 - **对话分享**：`POST /api/v1/share` 将当前对话保存到 PostgreSQL（`shares` 表），生成只读分享链接 `/share/{id}`。总容量 100MB，超出按最近访问时间 LRU 淘汰；单条上限 2MB；消息中的 base64 图片会被剥离并以 `imageCount` 占位。
 
-- **异步对话**：`POST /api/v1/rag/chat/async` 入参与 `/rag/chat` 一致，立即返回任务链接，后台执行完成后结果挂到分享页上（通过 `GET /api/v1/share/{id}` 轮询 `status` 字段）。
+- **异步对话**：`POST /api/v1/rag/chat/async` 与 `POST /api/v1/agent/chat/async` 入参分别与 `/rag/chat`、`/agent/chat` 一致，立即返回任务链接，后台执行完成后结果挂到分享页上（通过 `GET /api/v1/share/{id}` 轮询 `status` 字段）。
 
 ### 部署与运维
 

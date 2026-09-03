@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
+from datetime import datetime
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
@@ -85,13 +86,17 @@ class ShareService:
         if not self._table_ready:
             self.initialise()
 
+    def _generate_id(self) -> str:
+        """生成带人类可读时间前缀的 ID：YYYYMMDD-HHMMSS-<8位随机hex>"""
+        return f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}"
+
     def create(self, kind: str, status: str, title: str, payload: Dict[str, Any]) -> str:
         """插入一条分享并执行 LRU 容量淘汰，返回生成的 id"""
         size = len(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
         if size > MAX_SINGLE_BYTES:
             raise ShareTooLargeError(f"payload {size} bytes exceeds limit {MAX_SINGLE_BYTES}")
 
-        share_id = uuid.uuid4().hex
+        share_id = self._generate_id()
         try:
             self._ensure_table()
             with pg_client.cursor() as cur:
@@ -164,18 +169,29 @@ class ShareService:
         payload: Optional[Dict[str, Any]] = None,
         error: Optional[str] = None,
     ) -> None:
-        """异步任务完成/失败后回写结果"""
+        """异步任务完成/失败后回写结果（payload 中的 title 同步回写 title 列）"""
         size = len(json.dumps(payload, ensure_ascii=False).encode("utf-8")) if payload is not None else 0
+        if size > MAX_SINGLE_BYTES:
+            raise ShareTooLargeError(f"payload {size} bytes exceeds limit {MAX_SINGLE_BYTES}")
+        title = payload.get("title") if payload else None
         try:
             self._ensure_table()
             with pg_client.cursor() as cur:
                 cur.execute(
                     """
                     UPDATE shares
-                    SET status = %s, payload = %s, size_bytes = %s, error = %s
+                    SET status = %s, payload = %s, size_bytes = %s, error = %s,
+                        title = COALESCE(%s, title)
                     WHERE id = %s
                     """,
-                    (status, Json(payload) if payload is not None else None, size, error, share_id),
+                    (
+                        status,
+                        Json(payload) if payload is not None else None,
+                        size,
+                        error,
+                        title[:256] if title else None,
+                        share_id,
+                    ),
                 )
         except Exception as e:
             raise ShareServiceError(str(e)) from e

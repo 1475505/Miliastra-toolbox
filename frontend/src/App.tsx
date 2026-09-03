@@ -39,7 +39,7 @@ function getTabFromPath(): Tab {
 }
 
 function getShareIdFromPath(): string | null {
-  const match = window.location.pathname.match(/^\/share\/([a-zA-Z0-9]+)$/)
+  const match = window.location.pathname.match(/^\/share\/([a-zA-Z0-9][a-zA-Z0-9-]*)$/)
   return match ? match[1] : null
 }
 

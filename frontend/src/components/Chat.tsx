@@ -22,6 +22,7 @@ import {
 } from '../utils/conversations'
 import { createShare } from '../utils/share'
 import ConversationView, { buildConversationTurns } from './ConversationView'
+import ShareLinkModal from './ShareLinkModal'
 import PageHeader from './ui/PageHeader'
 import Button from './ui/Button'
 import Surface from './ui/Surface'
@@ -65,6 +66,7 @@ export default function Chat({
   const [agentMode, setAgentMode] = useState(true)
   const [showConfig, setShowConfig] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [shareUrl, setShareUrl] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -249,13 +251,7 @@ export default function Chat({
         updatedAt: Date.now(),
       })
       const shareUrl = `${window.location.origin}${result.url}`
-      try {
-        await navigator.clipboard.writeText(shareUrl)
-        setStatusMessage(t('chat.shareLinkCopied'))
-      } catch {
-        window.prompt(t('chat.shareCopyFallback'), shareUrl)
-      }
-      setTimeout(() => setStatusMessage(''), 3000)
+      setShareUrl(shareUrl)
     } catch (e) {
       setError(t('chat.shareFailed', { detail: e instanceof Error ? e.message : '' }))
     } finally {
@@ -847,6 +843,9 @@ export default function Chat({
           onClose={() => setShowConfig(false)}
           onConfigSaved={onConfigSaved}
         />
+      )}
+      {shareUrl && (
+        <ShareLinkModal url={shareUrl} onClose={() => setShareUrl('')} />
       )}
     </div>
   )

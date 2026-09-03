@@ -24,7 +24,7 @@
 
 - **Skill + API 能力层**：同一套千星知识查询能力同时暴露为 MCP Server 和 HTTP Skill API。
 
-- **对话分享与异步对话**：对话可一键生成只读分享链接（`/share/:id`，PostgreSQL 存储，容量 100MB LRU 淘汰）；`POST /api/v1/rag/chat/async` 立即返回任务链接，后台执行完成后结果挂到分享页上。
+- **对话分享与异步对话**：对话可一键生成只读分享链接（`/share/:id`，PostgreSQL 存储，容量 100MB LRU 淘汰）；`POST /api/v1/rag/chat/async` 与 `POST /api/v1/agent/chat/async` 立即返回任务链接，后台执行完成后结果挂到分享页上。
 
 - **QQ机器人**：通过 nonebot 插件提供问答服务。
 

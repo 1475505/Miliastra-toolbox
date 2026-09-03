@@ -2,6 +2,7 @@
 RAG Chat API 服务
 FastAPI 启动文件
 """
+import logging
 import os
 from dataclasses import dataclass
 from contextlib import asynccontextmanager
@@ -23,6 +24,8 @@ from svg.router import router as svg_router
 from wonderland.router import router as wonderland_router
 from share.router import router as share_router
 from share.service import share_service
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -244,8 +247,8 @@ async def lifespan(app: FastAPI):
     # Soft-failure: shares 表初始化（分享 + 异步对话），失败不阻断其他功能。
     try:
         share_service.initialise()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error("shares 表初始化失败，分享/异步对话接口将返回 503: %s", e)
 
     yield
 

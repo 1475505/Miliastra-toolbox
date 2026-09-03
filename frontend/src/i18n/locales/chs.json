@@ -53,8 +53,6 @@
     "share": "分享",
     "sharing": "分享中…",
     "shareTitle": "生成分享链接",
-    "shareLinkCopied": "分享链接已复制",
-    "shareCopyFallback": "请复制下方链接分享对话",
     "shareFailed": "分享失败：{{detail}}",
     "sharedImagePlaceholder": "图片 x{{count}}",
     "newConversation": "新对话",
@@ -115,6 +113,13 @@
     "loadFailed": "加载分享失败",
     "taskFailed": "对话生成失败",
     "empty": "该分享没有消息内容"
+  },
+  "shareLink": {
+    "title": "分享链接",
+    "hint": "任何获得此链接的人都可以查看这段对话（图片不会包含在内）。",
+    "copy": "复制链接",
+    "copied": "已复制",
+    "open": "打开"
   },
   "config": {
     "title": "LLM 配置（仅浏览器存储，后端不保存，放心填写）",
