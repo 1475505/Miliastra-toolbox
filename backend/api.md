@@ -631,9 +631,12 @@ curl http://localhost:8000/api/v1/share/{task_id}
     "answer_language": "chs"
   },
   "image_base64": "string - 单张图片 Base64 Data URI（兼容旧版，可选）",
-  "image_base64s": ["string - 多张图片 Base64 Data URI（可选）"]
+  "image_base64s": ["string - 多张图片 Base64 Data URI（可选）"],
+  "auto_share": "boolean - 是否自动创建分享链接（可选，默认 false；成功后响应 data 中返回 share_url）"
 }
 ```
+
+**`auto_share`** **字段说明**：设为 `true` 时，对话完成后自动将本轮问答（user 消息 → tool_trace → assistant 消息）保存为普通分享（`kind=share`），消息格式与异步 Agent 任务一致，可在分享页直接渲染。分享失败不影响对话结果，此时 `share_url` 为 `null` 并附带 `share_error` 说明。仅非流式接口生效，流式与异步接口忽略该字段。
 
 ### 响应示例
 
@@ -659,13 +662,16 @@ curl http://localhost:8000/api/v1/share/{task_id}
         "title": "碰撞触发器流程",
         "png_data_uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
       }
-    ]
+    ],
+    "share_url": "http://localhost:8000/share/20260904-120000-a1b2c3d4"
   },
   "error": null
 }
 ```
 
 **`diagrams`** **字段说明**：AI 调用 `generate_diagram` 时自动填充，每项含 `diagram_id`、`title`、`png_data_uri`；无图表时为空数组 `[]`。PNG 同时可通过 `GET /api/v1/agent/diagram/{diagram_id}` 直接访问（内存存储，服务重启后失效）。
+
+**`share_url`** **字段说明**：仅当请求 `auto_share: true` 时返回，为可直接打开的分享页绝对链接；分享中的图表会内联为 data URI（超 2MB 时降级保留相对 URL）。分享存储不可用时为 `null`，并附带 `share_error` 字段说明原因。
 
 ***
 
@@ -677,7 +683,7 @@ curl http://localhost:8000/api/v1/share/{task_id}
 
 ### 请求参数
 
-与非流式接口相同。
+与非流式接口相同（`auto_share` 字段在流式接口中被忽略）。
 
 ### SSE 事件类型
 

@@ -52,7 +52,8 @@
     "context_length": 3
   },
   "image_base64": "string, optional - 单张图片 Base64 Data URI（兼容旧版）",
-  "image_base64s": ["string, optional - 多张图片 Base64 Data URI"]
+  "image_base64s": ["string, optional - 多张图片 Base64 Data URI"],
+  "auto_share": "boolean, optional, 默认 false - 是否自动创建分享链接（仅非流式 /agent/chat 生效）"
 }
 ```
 
@@ -107,7 +108,8 @@
         "title": "string",
         "png_data_uri": "string"
       }
-    ]
+    ],
+    "share_url": "string, optional - 仅请求 auto_share=true 时返回，可直接打开的分享页绝对链接"
   },
   "error": null
 }
@@ -121,6 +123,7 @@
 4. `sources` 为最终回答引用来源的统一视图。
 5. `diagrams` 为本轮由 `generate_diagram` 工具生成的图表列表，每条含 `diagram_id`、`title` 和 `png_data_uri`（包含 Data URI 前缀的 base64 PNG）。无图表时为空数组。
 6. PNG 图片也可通过 `GET /api/v1/agent/diagram/{diagram_id}` 单独获取（内存存储，服务重启后失效）。
+7. `auto_share` 为 `true` 时，对话完成后自动将本轮问答保存为普通分享（`kind=share`，消息格式与异步 Agent 任务一致：user → tool_trace → assistant），响应中 `share_url` 为可直接打开的分享页绝对链接；分享失败不影响对话结果，此时 `share_url` 为 `null` 并附带 `share_error`。流式与异步接口忽略该字段。
 
 ## 5. 流式接口
 

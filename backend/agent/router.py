@@ -13,10 +13,12 @@ from agent.agentEngine import AgentEngine
 from agent.diagram import diagram_store
 from share.service import (
     KIND_ASYNC_TASK,
+    KIND_SHARE,
     MAX_SINGLE_BYTES,
     STATUS_COMPLETED,
     STATUS_ERROR,
     STATUS_PENDING,
+    STATUS_READY,
     ShareServiceError,
     ShareTooLargeError,
     share_service,
@@ -50,6 +52,7 @@ class AgentChatRequest(BaseModel):
     config: LLMConfig
     image_base64: Optional[str] = None
     image_base64s: Optional[List[str]] = None
+    auto_share: bool = Field(default=False, description="是否自动创建分享链接（仅非流式 /agent/chat 生效，成功后返回 share_url）")
 
 
 # ── 单例 ────────────────────────────────────────────────────
@@ -72,6 +75,20 @@ def _normalize_image_base64s(body: AgentChatRequest) -> Optional[List[str]]:
 
 
 # ── 端点 ────────────────────────────────────────────────────
+def _create_agent_share_id(body: AgentChatRequest, result: Dict[str, Any]) -> str:
+    """将本轮 Agent 问答落为普通分享（kind=share），返回分享 ID。
+
+    消息格式与异步任务一致（user / tool_trace / assistant），可直接在分享页渲染；
+    内联图表超限时降级为保留相对 URL，仍超限由 create 抛 ShareTooLargeError。
+    """
+    payload = _build_agent_payload(body, result)
+    if _payload_bytes(payload) > MAX_SINGLE_BYTES:
+        payload = _build_agent_payload(body, result, inline_diagrams=False)
+    return share_service.create(
+        kind=KIND_SHARE, status=STATUS_READY, title=payload["title"], payload=payload
+    )
+
+
 @router.post("/agent/chat")
 async def agent_chat(req: Request, body: AgentChatRequest):
     try:
@@ -82,14 +99,31 @@ async def agent_chat(req: Request, body: AgentChatRequest):
             config=body.config.model_dump(),
             image_base64s=_normalize_image_base64s(body),
         )
+        # 分享需在 answer 改写为绝对 URL 之前创建（内联图表按相对 URL 匹配替换）
+        share_url: Optional[str] = None
+        share_error: Optional[str] = None
+        if body.auto_share:
+            # 分享失败不影响对话结果本身，仅在响应中给出 share_error
+            try:
+                share_id = _create_agent_share_id(body, result)
+                share_url = f"{base}/share/{share_id}" if base else f"/share/{share_id}"
+            except ShareServiceError as e:
+                logger.warning("auto share for agent chat failed: %s", e)
+                share_error = f"分享创建失败: {e}"
         answer = result.get("answer", "")
         if base and "/api/v1/agent/diagram/" in answer:
             result["answer"] = answer.replace(
                 "/api/v1/agent/diagram/", f"{base}/api/v1/agent/diagram/"
             )
-        return {"success": True, "data": {
+        data = {
             "id": body.id or f"agent-{uuid.uuid4().hex[:12]}",
-            "question": body.message, "mode": "agent", **result}, "error": None}
+            "question": body.message, "mode": "agent", **result,
+        }
+        if body.auto_share:
+            data["share_url"] = share_url
+            if share_error:
+                data["share_error"] = share_error
+        return {"success": True, "data": data, "error": None}
     except ValueError as e:
         return {"success": False, "data": None, "error": {"code": "INVALID_CONFIG", "message": str(e)}}
     except Exception as e:

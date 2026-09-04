@@ -20,7 +20,7 @@
 
 ### 扩展能力
 
-- **Agent 模式**：基于 LlamaIndex FunctionAgent，提供 tool-calling 的问答模式，支持结构化知识查询（节点信息、文档内容）与 RAG 语义检索。支持最大工具调用轮次和超时保护（环境变量 `AGENT_MAX_TOOL_ROUNDS` / `AGENT_TIMEOUT`）。
+- **Agent 模式**：基于 LlamaIndex FunctionAgent，提供 tool-calling 的问答模式，支持结构化知识查询（节点信息、文档内容）与 RAG 语义检索。支持最大工具调用轮次和超时保护（环境变量 `AGENT_MAX_TOOL_ROUNDS` / `AGENT_TIMEOUT`）。非流式 `/agent/chat` 支持请求参数 `auto_share: true`，对话完成后自动生成本轮问答的分享链接并在响应中返回 `share_url`。
 
 - **Skill API**：同一套知识查询能力同时以 MCP 和 HTTP API 暴露，支持 skill 发现、skill 详情查询和 4 个知识工具的直接调用。
 
