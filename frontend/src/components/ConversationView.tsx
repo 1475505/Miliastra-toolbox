@@ -1,6 +1,4 @@
 import { useEffect, useRef } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -10,6 +8,7 @@ import {
   type ToolCallMessage,
   type ToolTrace,
 } from '../types'
+import Markdown from './Markdown'
 
 export interface ConversationTurn {
   key: string
@@ -267,9 +266,7 @@ export default function ConversationView({ turns }: ConversationViewProps) {
                         </div>
                       </details>
                     )}
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {turn.assistant.content}
-                    </ReactMarkdown>
+                    <Markdown>{turn.assistant.content}</Markdown>
                   </div>
                 </div>
               </div>

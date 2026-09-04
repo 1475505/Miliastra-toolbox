@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 
 import {
   type DocumentMatch,
@@ -14,6 +12,7 @@ import {
   fetchNodeInfo,
   parseBatchInput,
 } from '../utils/skillApi'
+import Markdown from './Markdown'
 import PageHeader from './ui/PageHeader'
 import Surface from './ui/Surface'
 import Button from './ui/Button'
@@ -128,9 +127,7 @@ function NodeMatchCard({ match }: { match: NodeMatch }) {
         </div>
       </div>
       <div className="prose prose-sm mt-4 max-w-none rounded-xl border border-outline bg-surface-variant px-4 py-3 prose-headings:text-on-surface prose-p:text-on-surface prose-strong:text-on-surface">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {match.content || t('tools.noNodeContent')}
-        </ReactMarkdown>
+        <Markdown>{match.content || t('tools.noNodeContent')}</Markdown>
       </div>
     </Surface>
   )
@@ -159,9 +156,7 @@ function DocumentCard({ document }: { document: DocumentMatch }) {
           {t('tools.viewDocument')}
         </summary>
         <div className="prose prose-sm max-w-none border-t border-outline px-4 py-4 prose-headings:text-on-surface prose-p:text-on-surface prose-pre:bg-on-surface prose-pre:text-surface">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {document.content}
-          </ReactMarkdown>
+          <Markdown>{document.content}</Markdown>
         </div>
       </details>
     </Surface>

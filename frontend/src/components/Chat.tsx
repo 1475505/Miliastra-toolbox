@@ -1,6 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -13,6 +11,7 @@ import {
 } from '../types'
 import { getConfig } from '../utils/config'
 import ConfigModal from './ConfigModal'
+import Markdown from './Markdown'
 import {
   createNewConversation,
   saveConversation,
@@ -660,9 +659,7 @@ export default function Chat({
             {noticeContent.trim() && (
               <Surface className="mt-8 max-w-2xl mx-auto text-left">
                 <div className="prose prose-sm max-w-none prose-slate">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {noticeContent}
-                  </ReactMarkdown>
+                  <Markdown>{noticeContent}</Markdown>
                 </div>
               </Surface>
             )}
