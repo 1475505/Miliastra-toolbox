@@ -1,15 +1,20 @@
 ---
+slug: miliastra-toolbox
+displayName: 千星沙箱知识库
+version: 1.0.0
+summary: 查询千星沙箱节点、编辑器系统、官方指南与排障文档，帮助把玩法需求拆解为可执行的节点配置。
+license: Proprietary
 name: miliastra-knowledge
 description: 查询千星沙箱（原神千星奇域 UGC 编辑器）知识库：节点用法与参数、官方指南/教程/FAQ 文档、语义检索。当用户询问千星沙箱节点（触发器、运动器、造物、仇恨、商店、背包等）、编辑器功能配置、"为什么不触发/不生效"类排障问题，或需要把玩法需求拆解为具体节点与参考文档时使用。
 ---
 
 # 千星沙箱知识库查询
 
-知识库覆盖：全部节点说明（含归属端与参数）、官方指南、教程、FAQ，共 300+ 篇文档。
+用于查询千星沙箱（原神千星奇域 UGC 编辑器）的节点说明、系统配置、官方指南、教程和 FAQ。
 
-API端点：https://ugc.070077.xyz
+服务地址：`https://ugc.070077.xyz`
 
-## 调用方式
+## 调用方式与工具选择
 
 通过 HTTP Skill API 调用，JSON 请求体：
 
@@ -17,7 +22,9 @@ API端点：https://ugc.070077.xyz
 POST https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/<工具名>
 ```
 
-> 各工具的参数、返回结构、可用关键词清单与 curl 示例详见 [references/tools.md](references/tools.md)。
+各工具的参数、返回结构、可用关键词和 curl 示例详见 [references/tools.md](references/tools.md)。
+
+工具选择原则：结构化查询优先，`rag_search` 兜底；多个相互独立的问题应合并为一次批量调用。
 
 ## 什么时候用
 
@@ -38,7 +45,7 @@ POST https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/<工具名>
 
 **优先级：结构化工具优先，`rag_search` 兜底。** 能用节点名/文档名直接定位时不用 `rag_search`；`rag_search` 用于开放问题、排障、跨文档比较，或结构化工具结果不足时补充。
 
-## 怎么选工具
+## 选择工具
 
 1. **用户说了具体节点名** → `get_node_info`
 2. **用户说"有没有关于 X 的文档"/不确定文档名** → `list_documents(keywords=[X])` 先看列表（`keywords` 传空列表可浏览全部文档）
@@ -46,7 +53,7 @@ POST https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/<工具名>
 4. **用户用自然语言描述功能或问题** → `rag_search`
 5. **查节点后需要看完整配置说明** → 取返回的 `source_doc_title`，再调 `get_document`
 
-**批量原则：多个独立查询合并为一次调用**（所有工具均支持列表入参），不要拆成多轮单条调用，也不要重复相同调用。
+**批量原则：多个独立查询合并为一次调用**。所有工具均支持列表入参，不要拆成多轮单条调用，也不要重复相同调用。
 
 ## 常见调用顺序
 
@@ -90,7 +97,7 @@ rag_search(["嘲讽和仇恨系统配置", "怪物追击玩家行为"])
 - `get_document` 返回 `status="not_found"` → 先 `list_documents` 找候选标题再重查
 - `rag_search` 结果为空或不相关 → 换用领域术语重写 query（如把"怪物追我"改为"仇恨 嘲讽 追击"）
 
-## 输出规范
+## 输出要求
 
 - 节点类回答：说明用途、关键参数、**归属端（`side`：服务端/客户端/双端）**，并注明来源文档
 - 文档类回答：总结要点，必要时直接引用原文片段
