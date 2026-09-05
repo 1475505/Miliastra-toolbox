@@ -1,7 +1,7 @@
 ---
 slug: miliastra-toolbox
 displayName: 千星沙箱知识库
-version: 1.0.0
+version: 1.0.4
 summary: 查询千星沙箱节点、编辑器系统、官方指南与排障文档，帮助把玩法需求拆解为可执行的节点配置。
 license: Proprietary
 name: miliastra-knowledge
@@ -23,6 +23,17 @@ POST https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/<工具名>
 ```
 
 各工具的参数、返回结构、可用关键词和 curl 示例详见 [references/tools.md](references/tools.md)。
+
+首次调用前阅读该参考文件。所有请求使用 `Content-Type: application/json`，请求体必须是包含具名字段的 JSON 对象；下文调用顺序中的列表写法仅为流程示意。
+
+| 工具 | JSON 请求体示例 |
+|------|----------------|
+| `get_node_info` | `{"names": ["嘲讽目标"]}` |
+| `list_documents` | `{"keywords": ["仇恨"]}` |
+| `get_document` | `{"titles": ["仇恨配置"]}` |
+| `rag_search` | `{"queries": ["怪物追击玩家的仇恨配置"], "top_k": 5}` |
+
+先检查 HTTP 状态和响应中的 `success`、`error`，成功后从 `data.result` 读取工具结果。`rag_search` 还可能在结果内返回 `error` 对象，需单独处理。
 
 工具选择原则：结构化查询优先，`rag_search` 兜底；多个相互独立的问题应合并为一次批量调用。
 
@@ -54,6 +65,8 @@ POST https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/<工具名>
 5. **查节点后需要看完整配置说明** → 取返回的 `source_doc_title`，再调 `get_document`
 
 **批量原则：多个独立查询合并为一次调用**。所有工具均支持列表入参，不要拆成多轮单条调用，也不要重复相同调用。
+
+依赖上一步结果的查询应顺序执行，例如先获得 `source_doc_title` 再取全文。模糊查询命中多个节点时，结合 `main_title`、`side` 和来源文档筛选，避免把同名节点或不同节点图的配置混用。
 
 ## 常见调用顺序
 
@@ -96,11 +109,21 @@ rag_search(["嘲讽和仇恨系统配置", "怪物追击玩家行为"])
 - `get_document` 返回 `status="too_many"` → 用更精确的关键词重查
 - `get_document` 返回 `status="not_found"` → 先 `list_documents` 找候选标题再重查
 - `rag_search` 结果为空或不相关 → 换用领域术语重写 query（如把"怪物追我"改为"仇恨 嘲讽 追击"）
+- HTTP 失败、`success=false` 或结果内出现 `error` → 明确说明查询失败，不将其解释为知识库没有资料；RAG 不可用时可改用节点和文档查询
+- `rag_search` 的 `top_k` 必须为 1–20 的整数；参数错误应修正请求，避免原样重复调用
+
+## 排障与玩法方案
+
+- 先根据用户已提供的信息确定节点图类型、执行端、相关实体、触发条件和实际表现；缺少会影响判断的关键信息时再针对性询问
+- 查询后按“触发事件 → 条件判断 → 目标实体与参数 → 执行动作”组织排查步骤，各项判断注明资料依据或待验证假设
+- 对玩法需求先给最小可行节点流程，再补充所需组件和前置配置；所有具体节点名和参数均以查询结果为准
+- 同名节点、玩家与角色实体、服务端与客户端不能默认互换；资料未明确的连接方式标为待验证
 
 ## 输出要求
 
 - 节点类回答：说明用途、关键参数、**归属端（`side`：服务端/客户端/双端）**，并注明来源文档
 - 文档类回答：总结要点，必要时直接引用原文片段
-- `rag_search` 结果：优先引用 `similarity` 最高的条目，注明来源文档
+- `rag_search` 的 `similarity` 仅用于相关性排序，不代表结论可信度；`text_snippet` 是最多 200 字的截断片段，涉及具体参数、限制或配置步骤时先获取相关文档全文
+- 来源使用返回的文档标题；仅在返回结果提供可用链接时附链接，不把 `local_path` 或 `file_name` 拼成未经确认的公开 URL
 - **严格区分"文档原文已说明"与"基于资料的推测建议"**
 - 不得编造节点名、参数名或官方结论；查不到就明确说查不到，并建议用户换个问法

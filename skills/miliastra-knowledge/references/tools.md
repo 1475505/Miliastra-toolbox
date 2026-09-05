@@ -3,13 +3,13 @@
 ## 服务连接
 
 - API Base URL：`/api/v1/skills/miliastra-knowledge/tools`
-- 例子：`http://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools`
+- 例子：`https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools`
 - 调用方式：HTTP `POST` + JSON 请求体
 
 **curl 调用示例**（Windows PowerShell 请对应调整引号与转义语法）：
 
 ```bash
-curl -X POST http://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/get_node_info \
+curl -X POST https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/get_node_info \
   -H "Content-Type: application/json" \
   -d '{
     "names": ["碰撞触发器", "嘲讽目标"]
@@ -17,7 +17,7 @@ curl -X POST http://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/get_n
 ```
 
 ```javascript
-const response = await fetch('/api/v1/skills/miliastra-knowledge/tools/get_node_info', {
+const response = await fetch('https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/get_node_info', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -26,6 +26,9 @@ const response = await fetch('/api/v1/skills/miliastra-knowledge/tools/get_node_
 })
 
 const payload = await response.json()
+if (!response.ok || !payload.success) {
+  throw new Error(`Knowledge API request failed (HTTP ${response.status})`)
+}
 const result = payload.data.result
 ```
 
