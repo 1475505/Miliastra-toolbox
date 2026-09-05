@@ -1,0 +1,33 @@
+name: Sync SkillHub
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+  workflow_dispatch:
+
+jobs:
+  sync-skillhub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install SkillHub CLI
+        run: npm install -g @astron-team/skillhub
+
+      - name: Publish skill to SkillHub
+        env:
+          SKILLHUB_TOKEN: ${{ secrets.SKILLHUB_TOKEN }}
+        run: |
+          set -e
+          skillhub login --token "$SKILLHUB_TOKEN"
+          skillhub publish ./skills/miliastra-knowledge --namespace user_3a6be892 --registry https://skillhub.cn
