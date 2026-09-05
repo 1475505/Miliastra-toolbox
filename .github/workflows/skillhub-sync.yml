@@ -16,18 +16,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
       - name: Install SkillHub CLI
-        run: npm install -g @astron-team/skillhub
+        run: |
+          curl -fsSL https://skillhub.cn/install/install.sh | bash -s -- --cli-only
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Publish skill to SkillHub
+      - name: Login to SkillHub
         env:
           SKILLHUB_TOKEN: ${{ secrets.SKILLHUB_TOKEN }}
         run: |
           set -e
-          skillhub login --token "$SKILLHUB_TOKEN"
-          skillhub publish ./skills/miliastra-knowledge --namespace user_3a6be892 --registry https://skillhub.cn
+          skillhub login \
+            --key "$SKILLHUB_TOKEN" \
+            --host https://api.skillhub.cn
+          skillhub auth whoami
+
+      - name: Publish skill to SkillHub
+        run: |
+          set -e
+          skillhub publish ./skills/miliastra-knowledge \
+            --changelog "Automated update from GitHub Actions"
