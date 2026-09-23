@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import dotenv from 'dotenv';
 import { buildRelativeMarkdownPath } from './utils/documentPath.js';
+import { FilterConfig, filterCatalogEntries, loadFilterConfig } from './utils/filterConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -153,7 +154,7 @@ class URLGenerator {
   /**
    * 生成 URL 配置文件
    */
-  async generate(scopes: string[] = ['guide', 'tutorial', 'official_faq'], useFirecrawl: boolean = false) {
+  async generate(scopes: string[] = ['guide', 'tutorial', 'official_faq'], useFirecrawl: boolean = false, filterConfig?: FilterConfig) {
     console.log(`🚀 开始生成 URL 列表 (${useFirecrawl ? 'Firecrawl 模式' : 'JSON 目录模式'})\n`);
     console.log(`📋 类型: ${scopes.join(', ')}\n`);
 
@@ -181,6 +182,22 @@ class URLGenerator {
         entries = await this.fetchCatalogAndExtract(scope);
       }
       
+      if (filterConfig) {
+        const configPath = path.join(__dirname, '..', 'config', `urls-${scope}.json`);
+        let previousEntries: URLEntry[] = [];
+        try {
+          const previous = JSON.parse(await fs.readFile(configPath, 'utf-8')) as URLConfig;
+          previousEntries = previous.entries;
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        }
+        entries = filterCatalogEntries(entries, previousEntries, filterConfig);
+      }
+
+      if (entries.length === 0) {
+        throw new Error(`目录 ${scope} 为空，停止更新以免覆盖现有配置`);
+      }
+
       allEntries.push(...entries);
       scopeStats[scope] = entries.length;
 
@@ -271,6 +288,7 @@ async function main() {
   const args = process.argv.slice(2);
   const typeArg = args.find(a => a.startsWith('--type='))?.split('=')[1];
   const useFirecrawl = args.includes('--mode=firecrawl');
+  const filterConfigArg = args.find(a => a.startsWith('--filter-config='))?.split('=')[1];
   
   let scopes: string[];
   if (typeArg) {
@@ -284,7 +302,8 @@ async function main() {
 
   try {
     const generator = new URLGenerator();
-    await generator.generate(scopes, useFirecrawl);
+    const filterConfig = await loadFilterConfig(filterConfigArg);
+    await generator.generate(scopes, useFirecrawl, filterConfig);
     console.log('🎉 完成！\n');
   } catch (error) {
     console.error(`\n❌ 错误: ${(error as Error).message}\n`);

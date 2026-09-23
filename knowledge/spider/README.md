@@ -101,41 +101,40 @@ npm run scrape -- --test
 # 指定测试数量
 npm run scrape -- --test --limit=10
 
+# 按文档 ID 补抓失败项
+npm run scrape -- --ids=mho82r0ip7v4 --since=2026-08-13 --force --filter-config=../config/filtered-7.1.json
+
 # 自定义并发度（需根据API计划调整）
 npm run scrape -- --concurrency=2
 
 # 强制重新爬取（覆盖已存在的文件）
 npm run scrape -- --force
 
-# URL过滤模式
-npm run scrape -- --filter=pattern
-
-# 自定义输出目录
-npm run scrape -- --output=./custom-data
+# 7.1 更新：排除客户端控件相关变更
+npm run crawl -- --filter-config=../config/filtered-7.1.json
+npm run scrape -- --since=2026-08-13 --force --filter-config=../config/filtered-7.1.json
 
 # 筛选更新时间（默认 2025.10.25）推荐使用，配合--force
 npm run scrape -- --since=2026.08.13
 ```
 
-> 上次更新时间: 2026-08-13
+> 上次更新时间: 2026-09-24（7.1 过滤更新）
 
 **参数说明**：
 - `--test`: 测试模式，限制处理文档数量
 - `--limit=N`: 测试模式下处理的文档数量（默认5）
 - `--concurrency=N`: 并发爬取数量（默认1，Free Plan限制2）
 - `--force`: 强制覆盖已存在的文件
-- `--filter=pattern`: URL过滤正则表达式
-- `--output=path`: 自定义输出目录
-- `--since=DATE`: 筛选更新时间晚于该日期的文档（格式：YYYY.MM.DD 或 YYYY-MM-DD，默认 2025.10.25）。跳过判断以配置中的 `updated_at` 为准：仅当本地文件 `crawledAt` 不早于配置 `updated_at` 时跳过，文档在最后一次爬取后更新过则会重新爬取；`--since` 仅作为无 `updated_at` 条目时的回退比较基准。
+- `--filter-config=path`: 读取过滤配置；7.1 配置会排除 10 篇新增客户端控件文档，保留 4 篇旧版界面控件文档，且从 7.1 更新日志删去两个相关专题、从节点文档删去客户端脚本信号章节。目录生成与正文抓取时必须使用同一配置。页面代理失败时抓取器会尝试官方静态正文。
+- `--since=DATE`: 只处理目录中 `updated_at` 晚于该日期的文档（格式：YYYY.MM.DD 或 YYYY-MM-DD，默认 2025.10.25）。仅当本地文件 `crawledAt` 不早于目录中的 `updated_at` 时跳过；与 `--force` 合用时会重新抓取候选文档，并只在正文变化时覆盖。
 
-### 3. 构建向量知识库(部署前后端可跳过此步骤)
+### 3. 增量更新向量知识库
 ```bash
-# 使用 RAG 模块构建向量库
-npm run rag:build
-
-# 启动检索服务
-npm run rag:serve
+cd ../rag_v1
+python3 rag_cli.py init
 ```
+
+更新前先核对 Markdown 差异；`init --force` 会清空并全量重建集合，此处无需使用。
 
 ## 📝 生成的 Markdown 格式
 

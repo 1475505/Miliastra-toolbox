@@ -44,6 +44,9 @@ A. 回答
 - 中间爬取时下载的json可以存储在inter_data文件夹内，下次运行就不需要重复拉取了
 
 ## 使用说明
-- 测试模式：`python crawler.py --test`，输出`bbs-faq-test.md`
-- 实际爬取：`python crawler.py`，输出`bbs-faq.md`。如果`inter_data`中已有对应URL的数据，则不重复爬取。
-- 新增内容爬取：`python crawler.py --since-id 630`，输出`bbs-faq-since630.md`。只保留晚于第630楼的数据。
+- 测试模式：`python3 crawler.py --test`，输出 `bbs-faq-test.md`。
+- 全量爬取：`python3 crawler.py`，输出 `bbs-faq.md`。如果 `inter_data` 中已有对应 URL 的数据，则不重复爬取。
+- 增量爬取：先找出 `../Miliastra-knowledge/bbs/` 中已收录的最大楼层，再从下一楼开始，例如 `python3 crawler.py --since-id 1282`。输出 `bbs-faq-since1282.md`；仅包含该楼层及之后有回答的问答。使用新的 `since-id` 可避免命中旧的 `inter_data` 缓存。
+- 入库：检查新增问答，排除本次版本不纳入的客户端控件内容，再把生成的 Markdown 复制到 `../Miliastra-knowledge/bbs/`，运行 `cd ../rag_v1 && python3 rag_cli.py init` 增量更新向量库。`bbs_spider/` 下的生成文件被 `.gitignore` 忽略，只有复制进文档资产目录才会被收录。
+
+2026-09-24 已抓取 1282 楼及之后的 22 条有回答问答，并入库为 `bbs-faq-since1282.md`。

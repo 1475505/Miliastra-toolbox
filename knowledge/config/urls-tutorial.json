@@ -10,12 +10,21 @@
       "localPath": "Miliastra-knowledge/official/tutorial/mhg94h90x3oq_关卡导出.md"
     },
     {
+      "id": "mhw37k901ygy",
+      "title": "【奇匠小贴士】奇域共创计划使用指南",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhw37k901ygy",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhw37k901ygy",
+      "scope": "tutorial",
+      "updated_at": "2026-09-03 14:47:34",
+      "localPath": "Miliastra-knowledge/official/tutorial/mhw37k901ygy_【奇匠小贴士】奇域共创计划使用指南.md"
+    },
+    {
       "id": "mh8xj90jx5r4",
       "title": "【奇匠小贴士】数据中心食用指南—游玩时长",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh8xj90jx5r4",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh8xj90jx5r4",
       "scope": "tutorial",
-      "updated_at": "2026-04-24 19:18:00",
+      "updated_at": "2026-08-24 09:37:57",
       "localPath": "Miliastra-knowledge/official/tutorial/mh8xj90jx5r4_【奇匠小贴士】数据中心食用指南—游玩时长.md"
     },
     {
@@ -24,7 +33,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh76jr0msx4g",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh76jr0msx4g",
       "scope": "tutorial",
-      "updated_at": "2026-03-30 15:52:39",
+      "updated_at": "2026-08-24 09:37:55",
       "localPath": "Miliastra-knowledge/official/tutorial/mh76jr0msx4g_【奇匠小贴士】灵感激励计划一页流.md"
     },
     {
@@ -78,7 +87,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhgf8i0hvzag",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhgf8i0hvzag",
       "scope": "tutorial",
-      "updated_at": "2026-07-09 15:01:30",
+      "updated_at": "2026-08-24 09:37:56",
       "localPath": "Miliastra-knowledge/official/tutorial/mhgf8i0hvzag_1.6奇域资产中心.md"
     },
     {
@@ -87,7 +96,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhvoc3rviq32",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhvoc3rviq32",
       "scope": "tutorial",
-      "updated_at": "2026-05-14 11:06:22",
+      "updated_at": "2026-08-31 18:47:05",
       "localPath": "Miliastra-knowledge/official/tutorial/mhvoc3rviq32_1.7经典模式.md"
     },
     {
@@ -114,7 +123,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhz6s29zzonm",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhz6s29zzonm",
       "scope": "tutorial",
-      "updated_at": "2026-01-23 13:59:17",
+      "updated_at": "2026-08-24 09:37:57",
       "localPath": "Miliastra-knowledge/official/tutorial/mhz6s29zzonm_2.12场景生成模板管理——快速生成关卡的场景.md"
     },
     {
@@ -285,7 +294,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh6riq9wvxqq",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh6riq9wvxqq",
       "scope": "tutorial",
-      "updated_at": "2026-01-23 13:59:13",
+      "updated_at": "2026-08-24 09:37:56",
       "localPath": "Miliastra-knowledge/official/tutorial/mh6riq9wvxqq_3.19复杂造物——通过状态决策触发自定义造物技能.md"
     },
     {
@@ -339,7 +348,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhc5uurnzzt2",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhc5uurnzzt2",
       "scope": "tutorial",
-      "updated_at": "2025-10-22 10:26:30",
+      "updated_at": "2026-09-21 14:43:26",
       "localPath": "Miliastra-knowledge/official/tutorial/mhc5uurnzzt2_3.6信号通信——一对多的信号广播，触发多物体产生不同行为.md"
     },
     {
@@ -420,7 +429,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh3id60oxiqw",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh3id60oxiqw",
       "scope": "tutorial",
-      "updated_at": "2026-03-25 17:48:42",
+      "updated_at": "2026-08-24 09:37:57",
       "localPath": "Miliastra-knowledge/official/tutorial/mh3id60oxiqw_信号.md"
     },
     {
@@ -438,7 +447,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhujr59z1756",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhujr59z1756",
       "scope": "tutorial",
-      "updated_at": "2026-03-25 17:25:25",
+      "updated_at": "2026-08-24 09:37:56",
       "localPath": "Miliastra-knowledge/official/tutorial/mhujr59z1756_全局计时器.md"
     },
     {
@@ -465,7 +474,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhutlz9w46ze",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhutlz9w46ze",
       "scope": "tutorial",
-      "updated_at": "2026-07-01 09:01:16",
+      "updated_at": "2026-08-24 09:37:56",
       "localPath": "Miliastra-knowledge/official/tutorial/mhutlz9w46ze_加入奇匠共创讨论群，获取更多活动资讯.md"
     },
     {
@@ -474,7 +483,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhu04t9rm1xm",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhu04t9rm1xm",
       "scope": "tutorial",
-      "updated_at": "2026-02-24 14:53:12",
+      "updated_at": "2026-08-24 09:37:56",
       "localPath": "Miliastra-knowledge/official/tutorial/mhu04t9rm1xm_千星奇域_开发组分享（一）_玩法设计交流.md"
     },
     {
@@ -483,7 +492,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhyrrdiy2zis",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhyrrdiy2zis",
       "scope": "tutorial",
-      "updated_at": "2026-02-04 21:04:26",
+      "updated_at": "2026-08-24 09:37:56",
       "localPath": "Miliastra-knowledge/official/tutorial/mhyrrdiy2zis_千星奇域创作分享.md"
     },
     {
@@ -492,7 +501,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhzzrx0fu1i8",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhzzrx0fu1i8",
       "scope": "tutorial",
-      "updated_at": "2026-04-15 13:41:16",
+      "updated_at": "2026-08-24 09:37:57",
       "localPath": "Miliastra-knowledge/official/tutorial/mhzzrx0fu1i8_千星灵感小报-第一期.md"
     },
     {
@@ -501,7 +510,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhji9b9qxw9m",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhji9b9qxw9m",
       "scope": "tutorial",
-      "updated_at": "2026-05-25 11:59:34",
+      "updated_at": "2026-08-24 09:37:57",
       "localPath": "Miliastra-knowledge/official/tutorial/mhji9b9qxw9m_千星灵感小报-第二期.md"
     },
     {
@@ -519,7 +528,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh7jw0r0a106",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh7jw0r0a106",
       "scope": "tutorial",
-      "updated_at": "2026-07-17 18:36:33",
+      "updated_at": "2026-08-24 09:37:56",
       "localPath": "Miliastra-knowledge/official/tutorial/mh7jw0r0a106_奇匠订阅.md"
     },
     {
@@ -528,7 +537,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhi1f1ifqj1w",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhi1f1ifqj1w",
       "scope": "tutorial",
-      "updated_at": "2026-03-03 19:11:11",
+      "updated_at": "2026-08-24 09:37:56",
       "localPath": "Miliastra-knowledge/official/tutorial/mhi1f1ifqj1w_奇域资产中心.md"
     },
     {
@@ -546,7 +555,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhv9m60wv7ew",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhv9m60wv7ew",
       "scope": "tutorial",
-      "updated_at": "2026-02-12 14:23:53",
+      "updated_at": "2026-08-24 09:37:57",
       "localPath": "Miliastra-knowledge/official/tutorial/mhv9m60wv7ew_如何打造吸引玩家的宣传素材.md"
     },
     {
@@ -564,7 +573,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhll54i94vjg",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhll54i94vjg",
       "scope": "tutorial",
-      "updated_at": "2026-03-25 17:43:51",
+      "updated_at": "2026-08-24 09:37:56",
       "localPath": "Miliastra-knowledge/official/tutorial/mhll54i94vjg_定时器.md"
     },
     {
@@ -582,7 +591,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhd6259kqvyi",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhd6259kqvyi",
       "scope": "tutorial",
-      "updated_at": "2025-10-22 09:15:35",
+      "updated_at": "2026-09-01 16:57:54",
       "localPath": "Miliastra-knowledge/official/tutorial/mhd6259kqvyi_新手入门系列视频教程.md"
     },
     {
@@ -654,7 +663,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhjobxrdykym",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhjobxrdykym",
       "scope": "tutorial",
-      "updated_at": "2026-07-10 16:14:20",
+      "updated_at": "2026-08-24 09:37:57",
       "localPath": "Miliastra-knowledge/official/tutorial/mhjobxrdykym_界面控件——手柄适配引导.md"
     },
     {
@@ -741,10 +750,10 @@
   ],
   "metadata": {
     "source": "tutorial",
-    "extractedAt": "2026-08-12T17:10:47.720Z",
-    "totalCount": 82,
+    "extractedAt": "2026-09-23T17:50:36.724Z",
+    "totalCount": 83,
     "scopes": {
-      "tutorial": 82
+      "tutorial": 83
     }
   }
 }

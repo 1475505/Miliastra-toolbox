@@ -9,6 +9,10 @@
       "localPath": "Miliastra-knowledge/official/tutorial/mh76jr0msx4g_【奇匠小贴士】灵感激励计划一页流.md"
     },
     {
+      "title": "【奇匠小贴士】奇域共创计划使用指南",
+      "localPath": "Miliastra-knowledge/official/tutorial/mhw37k901ygy_【奇匠小贴士】奇域共创计划使用指南.md"
+    },
+    {
       "title": "【奇匠小贴士】数据中心食用指南—游玩时长",
       "localPath": "Miliastra-knowledge/official/tutorial/mh8xj90jx5r4_【奇匠小贴士】数据中心食用指南—游玩时长.md"
     },
@@ -953,6 +957,10 @@
       "localPath": "Miliastra-knowledge/official/guide/mh0pppib5eyc_小地图标识.md"
     },
     {
+      "title": "协作编辑",
+      "localPath": "Miliastra-knowledge/official/guide/mhj3gr0ye4wg_协作编辑.md"
+    },
+    {
       "title": "新手入门系列视频教程",
       "localPath": "Miliastra-knowledge/official/tutorial/mhd6259kqvyi_新手入门系列视频教程.md"
     },
@@ -1203,10 +1211,14 @@
     {
       "title": "组件设置：资产导入",
       "localPath": "Miliastra-knowledge/official/tutorial/mhysk6rycl8m_组件设置：资产导入.md"
+    },
+    {
+      "title": "ID修改",
+      "localPath": "Miliastra-knowledge/official/guide/mhsd6lrx3voe_ID修改.md"
     }
   ],
   "metadata": {
-    "generatedAt": "2026-08-12T17:10:48.384Z",
-    "totalCount": 301
+    "generatedAt": "2026-09-23T17:50:37.350Z",
+    "totalCount": 304
   }
 }

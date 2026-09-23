@@ -16,6 +16,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { buildAbsoluteMarkdownPath } from './documentPath.js';
+import { FilterConfig, redactMarkdown } from './filterConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -141,13 +142,14 @@ export class FirecrawlClient {
     documentId?: string;
     title?: string; // 新增：支持传递自定义标题
     checkChanges?: boolean; // 新增：检查内容是否变化
+    filterConfig?: FilterConfig;
   }): Promise<ScrapeResult & { fileSaved?: boolean }> {
     try {
       // 逐级降级爬取，确保拿到文档正文
       const result: Document = await this.scrapeWithFallback(url);
 
       // 新版本直接返回数据，没有success属性
-      const markdown = result.markdown || '';
+      const markdown = redactMarkdown(result.markdown || '', options?.documentId || this.extractIdFromUrl(url), options?.filterConfig);
       const metadata = result.metadata || {};
       
       if (!markdown) {
@@ -185,7 +187,7 @@ export class FirecrawlClient {
             options?.checkChanges
           );
         } catch (saveError) {
-          console.warn(`警告: 保存 markdown 文件失败 - ${(saveError as Error).message}`);
+          throw new Error(`保存 markdown 文件失败: ${(saveError as Error).message}`);
         }
       }
       
@@ -210,13 +212,50 @@ export class FirecrawlClient {
     }
   }
 
-  /**
-   * 逐级降级的爬取策略，确保能拿到文档正文：
-   * 1. 优先用 .doc-view 选择器 + 4h 缓存（命中既有成功路径，省额度）
-   * 2. 若为空：保持 .doc-view 但绕过缓存（maxAge:0），解决缓存返回空结果的情况
-   * 3. 仍为空：移除 includeTags，仅靠 onlyMainContent，解决页面无 .doc-view 容器的情况
-   * 每次降级间等待 16 秒以遵守 Firecrawl 速率限制（4 请求/分钟）。
-   */
+  /** 官方页面通过该静态路径加载单篇正文。 */
+  private staticContentURL(url: string): string | undefined {
+    const match = url.match(/^https:\/\/act\.mihoyo\.com\/ys\/ugc\/tutorial\/(?:(course|faq)\/)?detail\/([a-z0-9]+)$/);
+    if (!match) return undefined;
+    const category = match[1] || 'knowledge';
+    return `https://act-webstatic.mihoyo.com/ugc-tutorial/${category}/cn/zh-cn/${match[2]}/content.html?v=1016`;
+  }
+
+  private repairStaticMarkdownEncoding(markdown: string): string {
+    const decoder = new TextDecoder('windows-1252');
+    const inverse = new Map<string, number>();
+    for (let byte = 0; byte < 256; byte++) {
+      inverse.set(decoder.decode(Uint8Array.of(byte)), byte);
+    }
+    const bytes: number[] = [];
+    for (const character of markdown) {
+      const byte = inverse.get(character);
+      if (byte === undefined) return markdown;
+      bytes.push(byte);
+    }
+    try {
+      return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(bytes));
+    } catch {
+      return markdown;
+    }
+  }
+
+  private async scrapeStaticContent(url: string): Promise<Document> {
+    const staticURL = this.staticContentURL(url);
+    if (!staticURL) throw new Error(`无法构建官方静态正文地址: ${url}`);
+    await new Promise(resolve => setTimeout(resolve, 16000));
+    const result = await this.client.scrape(staticURL, {
+      formats: ['markdown'],
+      onlyMainContent: true,
+      maxAge: 0,
+      timeout: 180000,
+    });
+    result.markdown = this.repairStaticMarkdownEncoding(result.markdown || '');
+    if (!result.markdown.trim()) throw new Error(`官方静态正文为空: ${staticURL}`);
+    console.log('   ℹ️ 使用官方静态正文补抓');
+    return result;
+  }
+
+  /** 先抓页面容器，失败或正文为空时尝试官方静态正文。 */
   private async scrapeWithFallback(url: string): Promise<Document> {
     const baseOpts = {
       formats: ['markdown' as const],
@@ -226,40 +265,40 @@ export class FirecrawlClient {
       timeout: 180000,
     };
 
-    // 1. 默认：.doc-view + 缓存
-    let result: Document = await this.client.scrape(url, {
-      ...baseOpts,
-      includeTags: ['.doc-view'],
-      maxAge: 4 * 60 * 60 * 1000,
-    });
-    if (result.markdown && result.markdown.trim()) {
-      return result;
-    }
+    try {
+      let result: Document = await this.client.scrape(url, {
+        ...baseOpts,
+        includeTags: ['.doc-view'],
+        maxAge: 4 * 60 * 60 * 1000,
+      });
+      if (result.markdown && result.markdown.trim()) return result;
 
-    // 2. .doc-view + 绕过缓存
-    await new Promise(resolve => setTimeout(resolve, 16000));
-    result = await this.client.scrape(url, {
-      ...baseOpts,
-      includeTags: ['.doc-view'],
-      maxAge: 0,
-    });
-    if (result.markdown && result.markdown.trim()) {
-      console.log('   ℹ️ 命中绕过缓存的 .doc-view 结果');
-      return result;
-    }
+      await new Promise(resolve => setTimeout(resolve, 16000));
+      result = await this.client.scrape(url, {
+        ...baseOpts,
+        includeTags: ['.doc-view'],
+        maxAge: 0,
+      });
+      if (result.markdown && result.markdown.trim()) {
+        console.log('   ℹ️ 命中绕过缓存的 .doc-view 结果');
+        return result;
+      }
 
-    // 3. 移除 includeTags，仅 onlyMainContent（页面可能无 .doc-view 容器）
-    await new Promise(resolve => setTimeout(resolve, 16000));
-    result = await this.client.scrape(url, {
-      ...baseOpts,
-      maxAge: 0,
-    });
-    if (result.markdown && result.markdown.trim()) {
-      console.log('   ℹ️ 命中无 includeTags 的回退结果（页面无 .doc-view 容器）');
-      return result;
+      await new Promise(resolve => setTimeout(resolve, 16000));
+      result = await this.client.scrape(url, {
+        ...baseOpts,
+        maxAge: 0,
+      });
+      if (result.markdown && result.markdown.trim()) {
+        console.log('   ℹ️ 命中无 includeTags 的回退结果（页面无 .doc-view 容器）');
+        return result;
+      }
+      throw new Error('页面正文为空');
+    } catch (error) {
+      if (!this.staticContentURL(url)) throw error;
+      console.warn(`   ⚠️ 页面抓取失败，尝试官方静态正文: ${(error as Error).message}`);
+      return await this.scrapeStaticContent(url);
     }
-
-    return result; // 三次尝试均为空
   }
 
   /**

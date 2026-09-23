@@ -92,5 +92,5 @@ MCP (Streaming HTTP）： http://qx-mcp.070077.xyz
 │       ├── bbs/           # 社区问答文档
 │       └── derived/       # 预处理产物（节点分类、FAQ、SVG 图、索引）
 ├── docker/            # Docker 部署配置
-└── CLAUDE.md          # 开发规范
+└── AGENTS.md          # 开发规范
 ```

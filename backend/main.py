@@ -46,24 +46,32 @@ class ToolEntry:
 
 TOOL_ENTRIES: tuple[ToolEntry, ...] = (
         ToolEntry(
+                title="千星沙箱模拟器",
+                websites=(ToolLink(label="GitHub", url="https://github.com/1475505/miliastra-beyond-simulator"),),
+        ),
+        ToolEntry(
                 title="知识库问答系统",
                 websites=(ToolLink(label="网站", url="https://ugc.070077.xyz"),),
                 tutorials=(
                         ToolLink(
-                                label="推荐通过 Workbuddy Skill 接入使用",
+                                label="Skill / Workbuddy 接入：",
                                 url="https://www.bilibili.com/video/BV1fSDJB7Emi",
+                        ),
+                        ToolLink(
+                                label="Deepseek Harness plugin 接入：",
+                                url="https://www.bilibili.com/video/BV1KFgF6zEtk/",
                         ),
                 ),
         ),
         ToolEntry(
                 title="图片转UI工具",
                 websites=(
-                        ToolLink(label="网站", url="https://qxqy-245358-5-1304005994.sh.run.tcloudbase.com/"),
+                        ToolLink(label="网站", url="https://qx-img.070077.xyz/"),
                 ),
                 tutorials=(
                         ToolLink(label="使用教程", url="https://www.bilibili.com/video/BV1kKDyB9EvY"),
                 ),
-                note="联系作者获取可执行 exe。",
+                note="请开启本地模式使用。联系作者获取可执行 exe。",
         ),
         ToolEntry(
                 title="前端拼UI工具",
@@ -74,15 +82,15 @@ TOOL_ENTRIES: tuple[ToolEntry, ...] = (
                         ToolLink(label="使用教程", url="https://www.bilibili.com/video/BV1evocBqEQ1/"),
                 ),
                 features=(
-                        "无需图片，直接通过 AI 工具生成 svg 或 css。",
-                        "支持在线画布修改。",
-                        "支持输出超限模式 gia。",
+                        "通过 Skill 生成 svg 或 css",
+                        "支持 webmcp， AI 在线进行UI绘制。",
+                        "支持导出：超限模式 gia、图元数据等",
                 ),
                 note="TODO：在线编辑支持其他官方素材。暂时搁置。",
         ),
         ToolEntry(
-                title="字体图片转装饰物",
-                websites=(ToolLink(label="网站", url="https://qx-shaper.up.railway.app/"),),
+                title="十五国语言翻译工具（不含术语表）",
+                websites=(ToolLink(label="下载地址", url="https://github.com/1475505/Miliastra-wonderland-15-lang-translator/releases"),),
         ),
 )
 

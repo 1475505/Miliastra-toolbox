@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import dotenv from 'dotenv';
 import { buildRelativeMarkdownPath } from './utils/documentPath.js';
+import { FilterConfig, loadFilterConfig, shouldSkipScrape } from './utils/filterConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,13 +26,15 @@ const MS_PER_REQUEST = Math.ceil(60000 / RATE_LIMIT_PER_MINUTE); // 15000ms
 
 class Crawler {
   private firecrawl: FirecrawlClient;
+  private filterConfig?: FilterConfig;
   
-  constructor() {
+  constructor(filterConfig?: FilterConfig) {
     // 验证环境变量
     this.validateEnv();
     
     // 初始化 Firecrawl 客户端
     this.firecrawl = new FirecrawlClient(process.env.FIRECRAWL_API_KEY!);
+    this.filterConfig = filterConfig;
   }
   
   private validateEnv() {
@@ -100,7 +103,8 @@ class Crawler {
         saveMarkdown: true,
         documentId: entry.id,
         title: entry.title, // 传递正确的标题
-        checkChanges: force // 如果强制重爬，检查内容是否变化
+        checkChanges: force, // 如果强制重爬，检查内容是否变化
+        filterConfig: this.filterConfig
       });
 
       if (!result.success) {
@@ -220,6 +224,7 @@ class Crawler {
     Object.entries(scopeStats).forEach(([scope, count]) => {
       console.log(`  ${scope}: ${count}`);
     });
+    return failCount;
   }
 
   /**
@@ -251,6 +256,10 @@ async function main() {
   const limitArg = args.find(a => a.startsWith('--limit='))?.split('=')[1];
   const concurrencyArg = args.find(a => a.startsWith('--concurrency='))?.split('=')[1];
   const sinceArg = args.find(a => a.startsWith('--since='))?.split('=')[1];
+  const filterConfigArg = args.find(a => a.startsWith('--filter-config='))?.split('=')[1];
+  const idsArg = args.find(a => a.startsWith('--ids='))?.split('=')[1];
+  const requestedIds = idsArg ? new Set(idsArg.split(',').filter(Boolean)) : undefined;
+  const filterConfig = await loadFilterConfig(filterConfigArg);
   
   const testLimit = limitArg ? parseInt(limitArg, 10) : 5;
   const concurrency = concurrencyArg ? parseInt(concurrencyArg, 10) : 1;
@@ -310,6 +319,8 @@ async function main() {
       if (config.entries && config.entries.length > 0) {
         // 根据 updated_at 筛选
         const filteredEntries = config.entries.filter(entry => {
+          if (requestedIds && !requestedIds.has(entry.id)) return false;
+          if (shouldSkipScrape(entry.id, filterConfig)) return false;
           if (!entry.updated_at) return false;
           const entryDate = new Date(entry.updated_at);
           return entryDate > configFilterDate;
@@ -320,6 +331,10 @@ async function main() {
       }
     }
     
+    if (requestedIds && allEntries.length !== requestedIds.size) {
+      throw new Error(`请求了 ${requestedIds.size} 个文档 ID，目录中只有 ${allEntries.length} 个符合筛选条件`);
+    }
+
     if (allEntries.length === 0) {
       throw new Error('所有配置文件中都没有文档条目');
     }
@@ -354,8 +369,11 @@ async function main() {
     }
     
     // 执行爬取
-    const crawler = new Crawler();
-    await crawler.scrapeMultiple(entriesToProcess, { force, concurrency, since: sinceDate });
+    const crawler = new Crawler(filterConfig);
+    const failCount = await crawler.scrapeMultiple(entriesToProcess, { force, concurrency, since: sinceDate });
+    if (failCount > 0) {
+      throw new Error(`${failCount} 篇文档抓取失败，请检查日志并重试`);
+    }
     
     if (testMode) {
       console.log(`\n🧪 测试完成！已处理 ${entriesToProcess.length}/${allEntries.length} 个文档`);

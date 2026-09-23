@@ -6,7 +6,7 @@
   "scripts": {
     "crawl": "tsx crawl.ts",
     "scrape": "tsx scrape.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsx --test filterConfig.test.ts"
   },
   "keywords": [
     "crawler",
