@@ -6,8 +6,10 @@ from pydantic import BaseModel, Field
 from skill.service import (
     SKILL_ID,
     SKILL_VERSION,
+    get_client_document_data,
     get_document_data,
     get_node_info_data,
+    list_client_documents_data,
     list_documents_data,
     rag_search_data,
     read_skill_markdown,
@@ -108,6 +110,22 @@ def _build_tools() -> list[SkillToolDefinition]:
             ],
         ),
         SkillToolDefinition(
+            name="list_client_documents",
+            description="列出客户端控件/客户端脚本文档标题和路径，可按关键词过滤。",
+            http_path=f"{base_path}/list_client_documents",
+            parameters=[
+                SkillParameter(name="keywords", type="string[]", required=False, description="关键词列表")
+            ],
+        ),
+        SkillToolDefinition(
+            name="get_client_document",
+            description="根据文档标题获取客户端控件/客户端脚本文档完整内容。",
+            http_path=f"{base_path}/get_client_document",
+            parameters=[
+                SkillParameter(name="titles", type="string[]", required=True, description="文档标题列表")
+            ],
+        ),
+        SkillToolDefinition(
             name="rag_search",
             description="使用向量检索在知识库中搜索相关内容。",
             http_path=f"{base_path}/rag_search",
@@ -177,6 +195,18 @@ async def run_list_documents(skill_id: str, request: ListDocumentsRequest):
 async def run_get_document(skill_id: str, request: GetDocumentRequest):
     _assert_skill(skill_id)
     return {"success": True, "data": {"skill": skill_id, "tool": "get_document", "result": get_document_data(request.titles)}, "error": None}
+
+
+@router.post("/skills/{skill_id}/tools/list_client_documents")
+async def run_list_client_documents(skill_id: str, request: ListDocumentsRequest):
+    _assert_skill(skill_id)
+    return {"success": True, "data": {"skill": skill_id, "tool": "list_client_documents", "result": list_client_documents_data(request.keywords)}, "error": None}
+
+
+@router.post("/skills/{skill_id}/tools/get_client_document")
+async def run_get_client_document(skill_id: str, request: GetDocumentRequest):
+    _assert_skill(skill_id)
+    return {"success": True, "data": {"skill": skill_id, "tool": "get_client_document", "result": get_client_document_data(request.titles)}, "error": None}
 
 
 @router.post("/skills/{skill_id}/tools/rag_search")

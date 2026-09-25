@@ -309,6 +309,103 @@ const result = payload.data.result
 ```
 ---
 
+## `list_client_documents`
+
+### 参数
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `keywords` | `list[str]` | 否 | 过滤关键词列表，支持模糊匹配；空列表时返回全部客户端控件文档 |
+
+### 行为
+
+- 数据来源：`knowledge/Miliastra-knowledge/client/`，即 7.1 客户端控件/客户端脚本文档（10 篇）
+- **独立语料**：这批文档不在 `official/` 下，`list_documents`、`get_document`、`rag_search`、`get_node_info` 都查不到，必须用本工具
+- 匹配规则与返回结构跟 `list_documents` 完全一致（单关键词返回数组，空关键词返回 `{total, documents}`）
+- 返回结果只含 `title` 和 `file`，不含正文（正文需用 `get_client_document`）
+- 部署中未包含分流语料时 `total` 为 0，此时应如实告知用户
+
+### 返回结构
+
+**单关键词**（`keywords=["控件"]`）：
+```json
+[
+  {
+    "keyword": "控件",
+    "total": 10,
+    "documents": [
+      {"title": "客户端控件容器", "file": "client/mhlz2lrly3dq_客户端控件容器.md"}
+    ]
+  }
+]
+```
+
+**无关键词**（`keywords=[]` 或不传）：
+```json
+{
+  "total": 10,
+  "documents": [{"title": "客户端控件容器", "file": "..."}]
+}
+```
+
+### 示例
+
+```json
+{"keywords": ["控件"]}
+```
+
+```json
+{"keywords": ["控件", "脚本"]}
+```
+
+---
+
+## `get_client_document`
+
+### 参数
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `titles` | `list[str]` | 是 | 文档标题或关键词列表，支持模糊匹配，可批量传入 |
+
+### 行为
+
+- 在 `client/` 目录内匹配，规则与 `get_document` 一致：`ok`（1–5 篇，返回全文）/ `too_many`（>5 篇，只返回标题列表）/ `not_found`（返回可用标题样本）
+- **不返回节点关联**：这批文档没有 `derived/` 节点产物，`related_nodes` 恒为空数组
+- 不经向量库，`rag_search` 不覆盖这批内容
+
+### 返回结构
+
+```json
+[
+  {
+    "query": "客户端控件容器",
+    "status": "ok",
+    "documents": [
+      {
+        "title": "客户端控件容器",
+        "file": "client/mhlz2lrly3dq_客户端控件容器.md",
+        "content": "---\ntitle: 客户端控件容器\n...",
+        "related_nodes": []
+      }
+    ]
+  }
+]
+```
+
+### 示例
+
+```json
+{"titles": ["客户端控件容器"]}
+```
+
+批量取多篇（推荐）：
+```json
+{"titles": ["客户端控件容器", "客户端控件API文档", "客户端控件和客户端脚本"]}
+```
+
+---
+
 ## `rag_search`
 
 ### 参数

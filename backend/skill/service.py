@@ -14,13 +14,14 @@ DERIVED_DIR = KNOWLEDGE_DIR / "derived"
 NODE_DIR = DERIVED_DIR / "node"
 INDEX_PATH = DERIVED_DIR / "index.json"
 OFFICIAL_DIR = KNOWLEDGE_DIR / "official"
+CLIENT_DIR = KNOWLEDGE_DIR / "client"
 RAG_DB_DIR = TOOLBOX_DIR / "knowledge" / "rag_v1" / "db"
 RAG_ENV_PATH = TOOLBOX_DIR / "knowledge" / "rag_v1" / ".env"
 SKILL_MARKDOWN_PATH = TOOLBOX_DIR / "skills" / "miliastra-knowledge" / "SKILL.md"
 
 _SEPARATOR = "___"
 SKILL_ID = "miliastra-knowledge"
-SKILL_VERSION = "1.0.0"
+SKILL_VERSION = "1.1.0"
 
 
 class NodeMatch(TypedDict):
@@ -230,16 +231,27 @@ def get_node_info_json(names: list[str]) -> str:
     return json.dumps(get_node_info_data(names), ensure_ascii=False, indent=2)
 
 
-def list_documents_data(keywords: list[str] | None = None) -> ListDocumentsResult | list[FilteredDocumentsResult]:
-    candidates: list[DocumentEntry] = []
-    for md_file in sorted(OFFICIAL_DIR.rglob("*.md")):
-        lower_name = md_file.name.lower()
-        if lower_name in ("readme.md", "category.md"):
+def _iter_document_candidates(base_dir: Path) -> list[tuple[str, Path]]:
+    """扫描指定目录下的候选文档，跳过目录说明文件；目录不存在时返回空列表。"""
+    candidates: list[tuple[str, Path]] = []
+    for md_file in sorted(base_dir.rglob("*.md")):
+        if md_file.name.lower() in ("readme.md", "category.md"):
             continue
-        candidates.append({
-            "title": _extract_title(md_file),
+        candidates.append((_extract_title(md_file), md_file))
+    return candidates
+
+
+def list_documents_data(
+    keywords: list[str] | None = None,
+    base_dir: Path = OFFICIAL_DIR,
+) -> ListDocumentsResult | list[FilteredDocumentsResult]:
+    candidates: list[DocumentEntry] = [
+        {
+            "title": doc_title,
             "file": md_file.relative_to(KNOWLEDGE_DIR).as_posix(),
-        })
+        }
+        for doc_title, md_file in _iter_document_candidates(base_dir)
+    ]
 
     if not keywords:
         return {"total": len(candidates), "documents": candidates}
@@ -258,17 +270,16 @@ def list_documents_json(keywords: list[str] | None = None) -> str:
     return json.dumps(list_documents_data(keywords), ensure_ascii=False, indent=2)
 
 
-def get_document_data(titles: list[str]) -> list[DocumentQueryResult]:
-    candidates: list[tuple[str, Path]] = []
-    for md_file in sorted(OFFICIAL_DIR.rglob("*.md")):
-        lower_name = md_file.name.lower()
-        if lower_name in ("readme.md", "category.md"):
-            continue
-        candidates.append((_extract_title(md_file), md_file))
+def get_document_data(
+    titles: list[str],
+    base_dir: Path = OFFICIAL_DIR,
+    include_related_nodes: bool = True,
+) -> list[DocumentQueryResult]:
+    candidates = _iter_document_candidates(base_dir)
 
     results: list[DocumentQueryResult] = []
     for title in titles:
-        related_nodes = _lookup_node_matches(title)
+        related_nodes = _lookup_node_matches(title) if include_related_nodes else []
         matches: list[DocumentMatch] = []
         for doc_title, md_file in candidates:
             if _fuzzy_match(title, doc_title) or _fuzzy_match(title, md_file.stem):
@@ -307,6 +318,25 @@ def get_document_data(titles: list[str]) -> list[DocumentQueryResult]:
 
 def get_document_json(titles: list[str]) -> str:
     return json.dumps(get_document_data(titles), ensure_ascii=False, indent=2)
+
+
+# ── 客户端控件/脚本文档（7.1 分流语料，仅对外工具使用）──────────────
+# 存放在 knowledge/Miliastra-knowledge/client/，不在 official/ 下，
+# 也没有 derived/ 节点产物，因此不参与节点关联，也不进向量库。
+def list_client_documents_data(keywords: list[str] | None = None) -> ListDocumentsResult | list[FilteredDocumentsResult]:
+    return list_documents_data(keywords, base_dir=CLIENT_DIR)
+
+
+def list_client_documents_json(keywords: list[str] | None = None) -> str:
+    return json.dumps(list_client_documents_data(keywords), ensure_ascii=False, indent=2)
+
+
+def get_client_document_data(titles: list[str]) -> list[DocumentQueryResult]:
+    return get_document_data(titles, base_dir=CLIENT_DIR, include_related_nodes=False)
+
+
+def get_client_document_json(titles: list[str]) -> str:
+    return json.dumps(get_client_document_data(titles), ensure_ascii=False, indent=2)
 
 
 def rag_search_data(queries: list[str], top_k: int = 5) -> list[RagSearchQueryResult] | RagErrorResult:

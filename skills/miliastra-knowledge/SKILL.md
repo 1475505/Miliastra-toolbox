@@ -1,11 +1,11 @@
 ---
 slug: miliastra-toolbox
 displayName: 千星沙箱知识库
-version: 1.0.4
+version: 1.1.0
 summary: 查询千星沙箱节点、编辑器系统、官方指南与排障文档，帮助把玩法需求拆解为可执行的节点配置。
 license: Proprietary
 name: miliastra-knowledge
-description: 查询千星沙箱（原神千星奇域 UGC 编辑器）知识库：节点用法与参数、官方指南/教程/FAQ 文档、语义检索。当用户询问千星沙箱节点（触发器、运动器、造物、仇恨、商店、背包等）、编辑器功能配置、"为什么不触发/不生效"类排障问题，或需要把玩法需求拆解为具体节点与参考文档时使用。
+description: 查询千星沙箱（原神千星奇域 UGC 编辑器）知识库：节点用法与参数、官方指南/教程/FAQ 文档、语义检索，以及 7.1 新增的客户端控件/客户端脚本文档。当用户询问千星沙箱节点（触发器、运动器、造物、仇恨、商店、背包等）、编辑器功能配置、"为什么不触发/不生效"类排障问题、客户端控件与客户端脚本用法，或需要把玩法需求拆解为具体节点与参考文档时使用。
 ---
 
 # 千星沙箱知识库查询
@@ -31,6 +31,8 @@ POST https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/<工具名>
 | `get_node_info` | `{"names": ["嘲讽目标"]}` |
 | `list_documents` | `{"keywords": ["仇恨"]}` |
 | `get_document` | `{"titles": ["仇恨配置"]}` |
+| `list_client_documents` | `{"keywords": ["控件"]}` |
+| `get_client_document` | `{"titles": ["客户端控件容器"]}` |
 | `rag_search` | `{"queries": ["怪物追击玩家的仇恨配置"], "top_k": 5}` |
 
 先检查 HTTP 状态和响应中的 `success`、`error`，成功后从 `data.result` 读取工具结果。`rag_search` 还可能在结果内返回 `error` 对象，需单独处理。
@@ -44,6 +46,7 @@ POST https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/<工具名>
 - 用户遇到"为什么不触发/不生效"等排障问题
 - 用户想了解某系统的整体设计或配置步骤
 - 需要把玩法需求拆解为具体节点名和参考文档
+- 用户询问客户端控件、客户端脚本（7.1 新增）的用法与 API
 
 ## 工具一览
 
@@ -52,9 +55,13 @@ POST https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/<工具名>
 | `get_node_info` | 按节点名查说明、参数、归属端与来源文档；支持模糊匹配和批量查询 |
 | `list_documents` | 按关键词列出文档标题（不含正文）；用于不知道精确文档名时先看有哪些 |
 | `get_document` | 按标题获取官方文档全文；支持批量，一次获取多篇相关文档 |
+| `list_client_documents` | 按关键词列出**客户端控件/客户端脚本**文档标题（7.1 分流语料，独立于主知识库） |
+| `get_client_document` | 按标题获取客户端控件/客户端脚本文档全文；支持批量 |
 | `rag_search` | 自然语言语义检索文档片段；支持批量，多个独立问题可一次查完 |
 
 **优先级：结构化工具优先，`rag_search` 兜底。** 能用节点名/文档名直接定位时不用 `rag_search`；`rag_search` 用于开放问题、排障、跨文档比较，或结构化工具结果不足时补充。
+
+**客户端控件/脚本文档是独立语料**：7.1 新增的客户端控件与客户端脚本内容不进主知识库，因此 `list_documents`、`get_document`、`rag_search`、`get_node_info` 都查不到它们，必须用 `list_client_documents` / `get_client_document`。这批文档无节点关联，返回中不含 `related_nodes`。
 
 ## 选择工具
 
@@ -63,6 +70,7 @@ POST https://ugc.070077.xyz/api/v1/skills/miliastra-knowledge/tools/<工具名>
 3. **已知文档/系统名，要完整内容** → `get_document(["系统名"])`
 4. **用户用自然语言描述功能或问题** → `rag_search`
 5. **查节点后需要看完整配置说明** → 取返回的 `source_doc_title`，再调 `get_document`
+6. **用户问客户端控件/客户端脚本** → `list_client_documents(keywords=[X])` 先列文档，再 `get_client_document([文档名])` 取全文；不要用 `rag_search`
 
 **批量原则：多个独立查询合并为一次调用**。所有工具均支持列表入参，不要拆成多轮单条调用，也不要重复相同调用。
 
@@ -103,11 +111,18 @@ rag_search(["嘲讽和仇恨系统配置", "怪物追击玩家行为"])
   → get_document(["仇恨配置"])
 ```
 
+**领域示例 —— 客户端控件/客户端脚本**（独立语料，不走 rag_search）：
+```
+list_client_documents(["控件"]) → get_client_document(["客户端控件容器", "客户端控件API文档"])
+```
+
 ## 异常处理
 
 - `get_node_info` 无匹配 → 换更短/更通用的关键词重试；仍无结果 → 用 `rag_search`
 - `get_document` 返回 `status="too_many"` → 用更精确的关键词重查
 - `get_document` 返回 `status="not_found"` → 先 `list_documents` 找候选标题再重查
+- 客户端控件问题：`list_client_documents` 返回 `total=0` → 说明该部署未包含分流语料，如实告知；不要改用 `rag_search` 反复尝试
+- `get_client_document` 返回 `status="not_found"` → 先 `list_client_documents` 找候选标题再重查
 - `rag_search` 结果为空或不相关 → 换用领域术语重写 query（如把"怪物追我"改为"仇恨 嘲讽 追击"）
 - HTTP 失败、`success=false` 或结果内出现 `error` → 明确说明查询失败，不将其解释为知识库没有资料；RAG 不可用时可改用节点和文档查询
 - `rag_search` 的 `top_k` 必须为 1–20 的整数；参数错误应修正请求，避免原样重复调用

@@ -1,0 +1,102 @@
+{
+  "entries": [
+    {
+      "id": "mhd4fxr5v6la",
+      "title": "光标检测区域控件",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhd4fxr5v6la",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhd4fxr5v6la",
+      "scope": "client",
+      "updated_at": "2026-08-25 17:14:50",
+      "localPath": "Miliastra-knowledge/client/mhd4fxr5v6la_光标检测区域控件.md"
+    },
+    {
+      "id": "mhtakr07vej4",
+      "title": "客户端控件API文档",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhtakr07vej4",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhtakr07vej4",
+      "scope": "client",
+      "updated_at": "2026-09-14 11:29:17",
+      "localPath": "Miliastra-knowledge/client/mhtakr07vej4_客户端控件API文档.md"
+    },
+    {
+      "id": "mhbgxf0nynww",
+      "title": "客户端控件和客户端脚本",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhbgxf0nynww",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhbgxf0nynww",
+      "scope": "client",
+      "updated_at": "2026-08-31 16:17:49",
+      "localPath": "Miliastra-knowledge/client/mhbgxf0nynww_客户端控件和客户端脚本.md"
+    },
+    {
+      "id": "mhlz2lrly3dq",
+      "title": "客户端控件容器",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhlz2lrly3dq",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhlz2lrly3dq",
+      "scope": "client",
+      "updated_at": "2026-08-25 16:59:03",
+      "localPath": "Miliastra-knowledge/client/mhlz2lrly3dq_客户端控件容器.md"
+    },
+    {
+      "id": "mh3qqq9xc102",
+      "title": "容器节点控件",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh3qqq9xc102",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh3qqq9xc102",
+      "scope": "client",
+      "updated_at": "2026-08-28 18:35:17",
+      "localPath": "Miliastra-knowledge/client/mh3qqq9xc102_容器节点控件.md"
+    },
+    {
+      "id": "mh265urgupye",
+      "title": "按键提示控件",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh265urgupye",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mh265urgupye",
+      "scope": "client",
+      "updated_at": "2026-08-25 17:14:44",
+      "localPath": "Miliastra-knowledge/client/mh265urgupye_按键提示控件.md"
+    },
+    {
+      "id": "mhv38jig94kk",
+      "title": "文本视窗控件",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhv38jig94kk",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhv38jig94kk",
+      "scope": "client",
+      "updated_at": "2026-08-25 17:05:50",
+      "localPath": "Miliastra-knowledge/client/mhv38jig94kk_文本视窗控件.md"
+    },
+    {
+      "id": "mhucb6reudwm",
+      "title": "模板引用控件",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhucb6reudwm",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhucb6reudwm",
+      "scope": "client",
+      "updated_at": "2026-08-25 17:21:38",
+      "localPath": "Miliastra-knowledge/client/mhucb6reudwm_模板引用控件.md"
+    },
+    {
+      "id": "mhfkrr0i7gds",
+      "title": "网格视窗控件",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhfkrr0i7gds",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhfkrr0i7gds",
+      "scope": "client",
+      "updated_at": "2026-08-25 17:19:52",
+      "localPath": "Miliastra-knowledge/client/mhfkrr0i7gds_网格视窗控件.md"
+    },
+    {
+      "id": "mhdbkf04v6y8",
+      "title": "预设按钮控件",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhdbkf04v6y8",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhdbkf04v6y8",
+      "scope": "client",
+      "updated_at": "2026-08-25 17:11:13",
+      "localPath": "Miliastra-knowledge/client/mhdbkf04v6y8_预设按钮控件.md"
+    }
+  ],
+  "metadata": {
+    "source": "client",
+    "extractedAt": "2026-09-25T17:54:09.605Z",
+    "totalCount": 10,
+    "scopes": {
+      "client": 10
+    }
+  }
+}

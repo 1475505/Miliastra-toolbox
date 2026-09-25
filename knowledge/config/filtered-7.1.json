@@ -1,6 +1,6 @@
 {
   "version": "7.1",
-  "excludeNewIds": [
+  "divertIds": [
     "mhlz2lrly3dq",
     "mh3qqq9xc102",
     "mhv38jig94kk",
@@ -12,6 +12,7 @@
     "mhbgxf0nynww",
     "mhtakr07vej4"
   ],
+  "divertScope": "client",
   "skipUpdateIds": [
     "mhnltrr3g966",
     "mh2iyk9fa4gy",
@@ -35,5 +36,5 @@
     }
   ],
   "source": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhs2w008wf14",
-  "description": "排除 7.1 更新日志中“客户端控件与客户端脚本相关”的新增、修改与日志段落；旧版界面控件文档继续保留。"
+  "description": "7.1 客户端控件/客户端脚本相关文档（10 篇）从主知识库分流到 client/ 目录：不进主目录、title.json 与向量库，改由对外工具 list_client_documents / get_client_document 按需获取；4 篇旧版界面控件文档保留原内容不跟进 7.1 改写；7.1 更新日志与《执行节点》中的相关段落仍做红删。"
 }

@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { FilterConfig, filterCatalogEntries, redactMarkdown, shouldSkipScrape } from './utils/filterConfig.js';
+import { FilterConfig, filterCatalogEntries, getDivertEntries, redactMarkdown, shouldSkipScrape } from './utils/filterConfig.js';
+import { buildRelativeMarkdownPath } from './utils/documentPath.js';
 import { URLEntry } from './types.js';
 import { FirecrawlClient } from './utils/firecrawl.js';
 
 const config: FilterConfig = {
   version: '7.1',
-  excludeNewIds: ['new-control'],
+  divertIds: ['new-control'],
+  divertScope: 'client',
   skipUpdateIds: ['old-control'],
   redactSections: [{
     documentId: 'release-notes',
@@ -22,15 +24,27 @@ function entry(id: string, updatedAt: string): URLEntry {
   return { id, title: id, url: `https://example.com/${id}`, uniqueId: id, scope: 'guide', updated_at: updatedAt };
 }
 
-test('7.1 目录排除新增控件并保留已有控件的旧版条目', () => {
+test('7.1 目录排除分流文档并保留已有控件的旧版条目', () => {
   const latest = [entry('new-control', '2026-09-01'), entry('old-control', '2026-09-01'), entry('feature', '2026-09-01')];
   const old = [entry('old-control', '2026-07-01')];
   const result = filterCatalogEntries(latest, old, config);
   assert.deepEqual(result.map(item => item.id), ['old-control', 'feature']);
   assert.equal(result[0].updated_at, '2026-07-01');
-  assert.equal(shouldSkipScrape('new-control', config), true);
+  assert.equal(shouldSkipScrape('new-control', config), false);
   assert.equal(shouldSkipScrape('old-control', config), true);
   assert.equal(shouldSkipScrape('feature', config), false);
+});
+
+test('分流条目改写 scope 并落到独立目录', () => {
+  const latest = [entry('new-control', '2026-09-01'), entry('feature', '2026-09-01')];
+  const diverted = getDivertEntries(latest, config);
+  assert.deepEqual(diverted.map(item => item.id), ['new-control']);
+  assert.equal(diverted[0].scope, 'client');
+  assert.equal(buildRelativeMarkdownPath(diverted[0]), 'Miliastra-knowledge/client/new-control_new-control.md');
+});
+
+test('分流文档在目录中缺失时拒绝产出不完整的对外文档集', () => {
+  assert.throws(() => getDivertEntries([entry('feature', '2026-09-01')], config));
 });
 
 test('只删 7.1 更新日志中的两处客户端控件专题', () => {

@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import dotenv from 'dotenv';
 import { buildRelativeMarkdownPath } from './utils/documentPath.js';
-import { FilterConfig, filterCatalogEntries, loadFilterConfig } from './utils/filterConfig.js';
+import { FilterConfig, filterCatalogEntries, getDivertEntries, loadFilterConfig } from './utils/filterConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -159,7 +159,12 @@ class URLGenerator {
     console.log(`📋 类型: ${scopes.join(', ')}\n`);
 
     const allEntries: URLEntry[] = [];
+    const rawEntries: URLEntry[] = [];
     const scopeStats: Record<string, number> = { guide: 0, tutorial: 0, official_faq: 0 };
+
+    if (!filterConfig) {
+      await this.warnMissingDivertConfig();
+    }
 
     for (const scope of scopes) {
       let entries: URLEntry[] = [];
@@ -191,6 +196,7 @@ class URLGenerator {
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
         }
+        rawEntries.push(...entries);
         entries = filterCatalogEntries(entries, previousEntries, filterConfig);
       }
 
@@ -210,6 +216,14 @@ class URLGenerator {
     console.log(`   guide: ${scopeStats.guide} 个`);
     console.log(`   tutorial: ${scopeStats.tutorial} 个`);
     console.log(`   official_faq: ${scopeStats.official_faq} 个`);
+
+    // 生成独立的分流配置（如 client），供对外工具按需获取；不写入主目录与 title.json
+    if (filterConfig) {
+      const divertedEntries = getDivertEntries(rawEntries, filterConfig);
+      if (divertedEntries.length > 0) {
+        await this.saveDivertConfigs(divertedEntries, filterConfig);
+      }
+    }
 
     // 生成 title.json
     await this.generateTitleJson(allEntries);
@@ -248,6 +262,59 @@ class URLGenerator {
     const outputPath = path.join(configDir, `urls-${scope}.json`);
     await fs.writeFile(outputPath, JSON.stringify(config, null, 2), 'utf-8');
     console.log(`   ✓ 写入json - ${scope}: ${outputPath} (${entriesWithLocalPath.length} 个条目)`);
+  }
+
+  /**
+   * 未传 --filter-config 时，若检测到历史分流配置，提醒本次会把分流文档重新写回主知识库
+   */
+  private async warnMissingDivertConfig() {
+    const knownScopes = new Set(['guide', 'tutorial', 'official_faq']);
+    const configDir = path.join(__dirname, '..', 'config');
+    let configFiles: string[] = [];
+    try {
+      configFiles = await fs.readdir(configDir);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      return;
+    }
+    const divertConfigs = configFiles.filter(file =>
+      file.startsWith('urls-') && file.endsWith('.json') && !knownScopes.has(file.slice('urls-'.length, -'.json'.length))
+    );
+    if (divertConfigs.length > 0) {
+      console.warn(`   ⚠️ 已存在分流配置（${divertConfigs.join(', ')}），但本次未传 --filter-config：`);
+      console.warn('      分流文档会被重新写回主目录，并随后进入向量库。如需保持分流，请加 --filter-config=../config/filtered-*.json\n');
+    }
+  }
+
+  /**
+   * 保存分流配置：条目 scope 已改写为 divertScope，localPath 因此指向 Miliastra-knowledge/<divertScope>/
+   */
+  private async saveDivertConfigs(entries: URLEntry[], filterConfig: FilterConfig) {
+    const configDir = path.join(__dirname, '..', 'config');
+    await fs.mkdir(configDir, { recursive: true });
+
+    entries.sort((a, b) => a.title.localeCompare(b.title));
+
+    const entriesWithLocalPath: URLEntry[] = entries.map((entry) => ({
+      ...entry,
+      localPath: buildRelativeMarkdownPath(entry),
+    }));
+
+    const config: URLConfig = {
+      entries: entriesWithLocalPath,
+      metadata: {
+        source: filterConfig.divertScope,
+        extractedAt: new Date().toISOString(),
+        totalCount: entriesWithLocalPath.length,
+        scopes: {
+          [filterConfig.divertScope]: entriesWithLocalPath.length
+        },
+      },
+    };
+
+    const outputPath = path.join(configDir, `urls-${filterConfig.divertScope}.json`);
+    await fs.writeFile(outputPath, JSON.stringify(config, null, 2), 'utf-8');
+    console.log(`   ✓ 写入分流json - ${filterConfig.divertScope}: ${outputPath} (${entriesWithLocalPath.length} 个条目)`);
   }
 
   /**

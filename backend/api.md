@@ -808,7 +808,7 @@ Skill API 将千星沙箱知识库能力以 HTTP 形式暴露，和 MCP Server �
   "data": [
     {
       "id": "miliastra-knowledge",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "title": "Miliastra Knowledge",
       "description": "以 skill + HTTP API 形式暴露千星沙箱知识库查询能力。",
       "transports": ["mcp", "http"],
@@ -838,7 +838,7 @@ Skill API 将千星沙箱知识库能力以 HTTP 形式暴露，和 MCP Server �
 
 - 返回 skill 元信息
 
-- 返回 5 个工具的 HTTP 调用路径
+- 返回 7 个工具的 HTTP 调用路径（其中 `list_client_documents` / `get_client_document` 为仅对外披露的客户端控件文档工具，内置 Agent 不感知）
 
 - 返回 `skills/miliastra-knowledge/SKILL.md` 原始 markdown 内容，方便前端直接展示说明
 
@@ -906,6 +906,34 @@ Skill API 将千星沙箱知识库能力以 HTTP 形式暴露，和 MCP Server �
   "target_lang": "en"
 }
 ```
+
+### 3.6 list\_client\_documents
+
+**POST** `/api/v1/skills/miliastra-knowledge/tools/list_client_documents`
+
+请求体：
+
+```json
+{
+  "keywords": ["控件"]
+}
+```
+
+说明：查询 7.1 客户端控件/客户端脚本文档（分流语料，不在主知识库内）。`keywords` 为空时返回全部，未部署分流语料时 `total` 为 0。
+
+### 3.7 get\_client\_document
+
+**POST** `/api/v1/skills/miliastra-knowledge/tools/get_client_document`
+
+请求体：
+
+```json
+{
+  "titles": ["客户端控件容器"]
+}
+```
+
+说明：取客户端控件/客户端脚本文档全文。这批文档无节点关联，`related_nodes` 恒为空数组，也不参与 `rag_search`。
 
 ### 通用响应格式
 

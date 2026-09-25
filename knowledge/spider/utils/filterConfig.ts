@@ -13,7 +13,10 @@ export interface SectionRedaction {
 
 export interface FilterConfig {
   version: string;
-  excludeNewIds: string[];
+  /** 需要从主知识库分流出去的文档：不进主目录、title.json 与向量库，改由 urls-<divertScope>.json 单独抓取。 */
+  divertIds: string[];
+  /** 分流条目的 scope，同时决定落盘目录 Miliastra-knowledge/<divertScope>/。 */
+  divertScope: string;
   skipUpdateIds: string[];
   redactSections: SectionRedaction[];
 }
@@ -22,7 +25,13 @@ export async function loadFilterConfig(fileName?: string): Promise<FilterConfig 
   if (!fileName) return undefined;
   const filePath = path.resolve(process.cwd(), fileName);
   const config = JSON.parse(await fs.readFile(filePath, 'utf-8')) as FilterConfig;
-  if (!Array.isArray(config.excludeNewIds) || !Array.isArray(config.skipUpdateIds) || !Array.isArray(config.redactSections)) {
+  if (
+    !Array.isArray(config.divertIds) ||
+    !Array.isArray(config.skipUpdateIds) ||
+    !Array.isArray(config.redactSections) ||
+    typeof config.divertScope !== 'string' ||
+    config.divertScope.trim() === ''
+  ) {
     throw new Error(`过滤配置格式错误: ${filePath}`);
   }
   return config;
@@ -31,10 +40,10 @@ export async function loadFilterConfig(fileName?: string): Promise<FilterConfig 
 export function filterCatalogEntries(entries: URLEntry[], previousEntries: URLEntry[], config?: FilterConfig): URLEntry[] {
   if (!config) return entries;
   const previousById = new Map(previousEntries.map(entry => [entry.id, entry]));
-  const excluded = new Set(config.excludeNewIds);
+  const diverted = new Set(config.divertIds);
   const preserved = new Set(config.skipUpdateIds);
   return entries
-    .filter(entry => !excluded.has(entry.id))
+    .filter(entry => !diverted.has(entry.id))
     .map(entry => {
       if (!preserved.has(entry.id)) return entry;
       const previous = previousById.get(entry.id);
@@ -43,8 +52,21 @@ export function filterCatalogEntries(entries: URLEntry[], previousEntries: URLEn
     });
 }
 
+/** 收集需要分流到独立目录的条目，并把 scope 改写为 divertScope（决定落盘路径）。 */
+export function getDivertEntries(entries: URLEntry[], config?: FilterConfig): URLEntry[] {
+  if (!config || config.divertIds.length === 0) return [];
+  const diverted = new Set(config.divertIds);
+  const matched = entries.filter(entry => diverted.has(entry.id));
+  const missing = config.divertIds.filter(id => !matched.some(entry => entry.id === id));
+  if (missing.length > 0) {
+    throw new Error(`分流配置中的文档在目录中找不到: ${missing.join(', ')}`);
+  }
+  return matched.map(entry => ({ ...entry, scope: config.divertScope }));
+}
+
+/** 主知识库抓取时跳过的条目：保留本地旧版内容，不用新版覆盖。分流条目不在此列，它们由独立配置抓取。 */
 export function shouldSkipScrape(id: string, config?: FilterConfig): boolean {
-  return config !== undefined && (config.excludeNewIds.includes(id) || config.skipUpdateIds.includes(id));
+  return config !== undefined && config.skipUpdateIds.includes(id);
 }
 
 export function redactMarkdown(markdown: string, documentId: string, config?: FilterConfig): string {

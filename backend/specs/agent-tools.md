@@ -2,12 +2,25 @@
 
 ## 1. 目标
 
-本文定义 Agent 可调用工具的标准契约。与 [skills/miliastra-knowledge/SKILL.md](../../skills/miliastra-knowledge/SKILL.md) 保持一一对应：
+本文定义 Agent 可调用工具的标准契约。其中**知识库检索类工具**与 [skills/miliastra-knowledge/SKILL.md](../../skills/miliastra-knowledge/SKILL.md) 保持一一对应：
 
-- 4 个工具
+- 4 个检索工具（`get_node_info` / `list_documents` / `get_document` / `rag_search`）
 - 输入输出 schema
 - 模糊匹配与批量调用规则
 - 错误语义
+
+Agent 另有两个非检索类工具（`generate_diagram`、`translate_terms`），不在本文范围，定义见 `backend/agent/agentEngine.py` 与 `backend/agent/prompt.py`。
+
+### 1.1 仅对外工具（Agent 不感知）
+
+以下工具只在 Skill API / MCP 对外登记，**不注册到 `AGENT_TOOLS`**，也不出现在 System Prompt 中，内置知识库问答不应感知或调用：
+
+| 工具 | 职责 | 数据来源 |
+|------|------|----------|
+| `list_client_documents` | 列出客户端控件/客户端脚本文档标题 | `knowledge/Miliastra-knowledge/client/`（7.1 分流语料） |
+| `get_client_document` | 按标题取客户端控件/客户端脚本文档全文 | 同上 |
+
+这批语料不在 `official/` 下，既不参与 `list_documents` / `get_document` / `get_node_info`，也不进向量库，因此 `rag_search` 也不会命中。分流规则见 `knowledge/config/filtered-*.json` 与 `knowledge/spider/utils/filterConfig.ts`。
 
 ## 2. 设计原则
 

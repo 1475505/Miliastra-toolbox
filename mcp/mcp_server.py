@@ -1,11 +1,16 @@
 """
 Miliastra 知识库 MCP Server
 
-提供四个工具：
-1. get_node_info    - 按节点名称查询节点说明（模糊匹配，支持批量）
-2. list_documents   - 列出文档标题和路径（可选模糊过滤）
-3. get_document     - 按文档标题获取完整文档内容（模糊匹配）
-4. rag_search       - 知识库向量检索（直接查询 ChromaDB）
+提供六个工具：
+1. get_node_info          - 按节点名称查询节点说明（模糊匹配，支持批量）
+2. list_documents         - 列出文档标题和路径（可选模糊过滤）
+3. get_document           - 按文档标题获取完整文档内容（模糊匹配）
+4. list_client_documents  - 列出客户端控件/客户端脚本文档标题（7.1 分流语料）
+5. get_client_document    - 按文档标题获取客户端控件/客户端脚本文档全文
+6. rag_search             - 知识库向量检索（直接查询 ChromaDB）
+
+其中 list_client_documents / get_client_document 面向外部调用方单独披露，
+不出现在内置 Agent 的工具列表中。
 """
 
 import argparse
@@ -20,7 +25,14 @@ BACKEND_DIR = TOOLBOX_DIR / "backend"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from skill.service import get_document_json, get_node_info_json, list_documents_json, rag_search_json
+from skill.service import (
+    get_client_document_json,
+    get_document_json,
+    get_node_info_json,
+    list_client_documents_json,
+    list_documents_json,
+    rag_search_json,
+)
 
 
 # ── MCP Server ──────────────────────────────────────────────
@@ -64,6 +76,29 @@ def list_documents(keywords: list[str] = []) -> str:
 )
 def get_document(titles: list[str]) -> str:
     return get_document_json(titles)
+
+
+@mcp.tool(
+    name="list_client_documents",
+    description=(
+        "列出客户端控件/客户端脚本文档的标题和路径（7.1 分流语料，不在主知识库内）。"
+        "支持批量关键词过滤：传入关键词时逐个返回匹配结果，空列表时返回全部。"
+        "用于浏览可用的客户端控件文档或确认文档名称。"
+    ),
+)
+def list_client_documents(keywords: list[str] = []) -> str:
+    return list_client_documents_json(keywords)
+
+
+@mcp.tool(
+    name="get_client_document",
+    description=(
+        "根据文档标题获取客户端控件/客户端脚本文档的完整内容（client/ 目录）。"
+        "支持模糊匹配与批量查询。此类文档不参与节点关联与向量检索。"
+    ),
+)
+def get_client_document(titles: list[str]) -> str:
+    return get_client_document_json(titles)
 
 
 @mcp.tool(

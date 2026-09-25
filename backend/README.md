@@ -22,7 +22,7 @@
 
 - **Agent 模式**：基于 LlamaIndex FunctionAgent，提供 tool-calling 的问答模式，支持结构化知识查询（节点信息、文档内容）与 RAG 语义检索。支持最大工具调用轮次和超时保护（环境变量 `AGENT_MAX_TOOL_ROUNDS` / `AGENT_TIMEOUT`）。非流式 `/agent/chat` 支持请求参数 `auto_share: true`，对话完成后自动生成本轮问答的分享链接并在响应中返回 `share_url`。
 
-- **Skill API**：同一套知识查询能力同时以 MCP 和 HTTP API 暴露，支持 skill 发现、skill 详情查询和 4 个知识工具的直接调用。
+- **Skill API**：同一套知识查询能力同时以 MCP 和 HTTP API 暴露，支持 skill 发现、skill 详情查询和 6 个知识工具的直接调用（其中 `list_client_documents` / `get_client_document` 仅对外披露，内置 Agent 不注册）。
 
 - **对话分享**：`POST /api/v1/share` 将当前对话保存到 PostgreSQL（`shares` 表），生成只读分享链接 `/share/{id}`。总容量 100MB，超出按最近访问时间 LRU 淘汰；单条上限 2MB；消息中的 base64 图片会被剥离并以 `imageCount` 占位。
 
@@ -114,6 +114,10 @@ pytest tests/ -v
 - `POST /api/v1/skills/miliastra-knowledge/tools/list_documents`
 
 - `POST /api/v1/skills/miliastra-knowledge/tools/get_document`
+
+- `POST /api/v1/skills/miliastra-knowledge/tools/list_client_documents`
+
+- `POST /api/v1/skills/miliastra-knowledge/tools/get_client_document`
 
 - `POST /api/v1/skills/miliastra-knowledge/tools/rag_search`
 
