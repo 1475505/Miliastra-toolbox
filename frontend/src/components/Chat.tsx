@@ -11,7 +11,6 @@ import {
 } from '../types'
 import { getConfig } from '../utils/config'
 import ConfigModal from './ConfigModal'
-import Markdown from './Markdown'
 import {
   createNewConversation,
   saveConversation,
@@ -24,7 +23,6 @@ import ConversationView, { buildConversationTurns } from './ConversationView'
 import ShareLinkModal from './ShareLinkModal'
 import PageHeader from './ui/PageHeader'
 import Button from './ui/Button'
-import Surface from './ui/Surface'
 import Textarea from './ui/Textarea'
 import {
   DownloadIcon,
@@ -33,6 +31,9 @@ import {
   ImageIcon,
   SettingsIcon,
   SendIcon,
+  TerminalIcon,
+  PuzzleIcon,
+  ImageConvertIcon,
 } from './ui/icons'
 
 interface ChatProps {
@@ -51,6 +52,14 @@ export default function Chat({
   onConfigSaved,
 }: ChatProps) {
   const { t } = useTranslation()
+
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return t('chat.greetingMorning')
+    if (hour < 18) return t('chat.greetingAfternoon')
+    return t('chat.greetingEvening')
+  }
+
   const [conversationId, setConversationId] = useState<string>('')
   const [messages, setMessages] = useState<ExtendedMessage[]>([])
   const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([])
@@ -60,7 +69,6 @@ export default function Chat({
   const [timeoutWarning, setTimeoutWarning] = useState('')
   const [statusMessage, setStatusMessage] = useState('')
   const [showConfigHint, setShowConfigHint] = useState(false)
-  const [noticeContent, setNoticeContent] = useState('')
   const [images, setImages] = useState<{ base64: string; info: string }[]>([])
   const [agentMode, setAgentMode] = useState(true)
   const [showConfig, setShowConfig] = useState(false)
@@ -287,13 +295,6 @@ export default function Chat({
     const needConfig = !config.use_default_model && !config.api_key
     setShowConfigHint(needConfig)
   }, [configVersion])
-
-  useEffect(() => {
-    fetch('/NOTICE.md')
-      .then((response) => response.text())
-      .then((text) => setNoticeContent(text))
-      .catch((err) => console.warn('Failed to load NOTICE.md:', err))
-  }, [])
 
   const handleSend = async () => {
     if ((!input.trim() && images.length === 0) || loading) return
@@ -646,23 +647,78 @@ export default function Chat({
 
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
         {displayMessages.length === 0 && (
-          <div className="text-center text-on-surface mt-16 lg:mt-20">
-            <div className="text-lg font-medium">
-              {t('chat.greeting')}
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-on-surface">
+            {/* 欢迎语 */}
+            <div className="text-center mb-8">
+              <div className="text-lg font-medium text-on-surface">
+                {getGreeting()}
+              </div>
             </div>
-            <div className="text-sm mt-2 text-on-surface-variant">
-              {t('chat.autoSaveHint')}
+
+            {/* 快捷工具卡片 */}
+            <div className="w-full max-w-2xl px-4">
+              <div className="text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-4 text-center">
+                {t('chat.quickTools')}
+              </div>
+              <div className="grid grid-cols-1 min-[520px]:grid-cols-3 gap-3">
+                <a
+                  href="https://github.com/1475505/miliastra-beyond-simulator"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-outline bg-surface/80 backdrop-blur-md transition-all duration-200 hover:border-primary hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-primary-container flex items-center justify-center text-on-primary-container group-hover:scale-105 transition-transform">
+                    <TerminalIcon className="w-6 h-6" />
+                  </div>
+                  <div className="text-center">
+                    <div className="font-medium text-sm text-on-surface">
+                      {t('chat.toolSandbox')}
+                    </div>
+                    <div className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                      {t('chat.toolSandboxDesc')}
+                    </div>
+                  </div>
+                </a>
+
+                <a
+                  href="https://qx.070077.xyz/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-outline bg-surface/80 backdrop-blur-md transition-all duration-200 hover:border-primary hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-primary-container flex items-center justify-center text-on-primary-container group-hover:scale-105 transition-transform">
+                    <PuzzleIcon className="w-6 h-6" />
+                  </div>
+                  <div className="text-center">
+                    <div className="font-medium text-sm text-on-surface">
+                      {t('chat.toolPuzzle')}
+                    </div>
+                    <div className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                      {t('chat.toolPuzzleDesc')}
+                    </div>
+                  </div>
+                </a>
+
+                <a
+                  href="https://qx-img.070077.xyz/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-outline bg-surface/80 backdrop-blur-md transition-all duration-200 hover:border-primary hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-primary-container flex items-center justify-center text-on-primary-container group-hover:scale-105 transition-transform">
+                    <ImageConvertIcon className="w-6 h-6" />
+                  </div>
+                  <div className="text-center">
+                    <div className="font-medium text-sm text-on-surface">
+                      {t('chat.toolConvert')}
+                    </div>
+                    <div className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                      {t('chat.toolConvertDesc')}
+                    </div>
+                  </div>
+                </a>
+              </div>
             </div>
-            <div className="text-sm mt-1 text-on-surface-variant">
-              {t('chat.contextHint')}
-            </div>
-            {noticeContent.trim() && (
-              <Surface className="mt-8 max-w-2xl mx-auto text-left">
-                <div className="prose prose-sm max-w-none prose-slate">
-                  <Markdown>{noticeContent}</Markdown>
-                </div>
-              </Surface>
-            )}
           </div>
         )}
 
@@ -708,6 +764,16 @@ export default function Chat({
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* 知识库更新提示 - 贴合对话框上方 */}
+      {displayMessages.length === 0 && (
+        <div className="px-4 lg:px-6">
+          <div className="flex items-center justify-center gap-2 py-2 px-4 bg-yellow-50 border border-yellow-200/60 text-xs text-yellow-700 max-w-2xl mx-auto">
+            <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 shrink-0" />
+            <span>{t('chat.noticeUpdate')}</span>
+          </div>
+        </div>
+      )}
 
       <div className="border-t border-outline bg-surface/70 backdrop-blur-md p-4">
         <div className="flex flex-col gap-2">

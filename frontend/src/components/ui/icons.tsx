@@ -176,3 +176,26 @@ export const TranslateIcon = createIcon(
     <path d="M14 18h6" />
   </>
 )
+
+export const TerminalIcon = createIcon(
+  <>
+    <polyline points="4 17 10 11 4 5" />
+    <line x1="12" y1="19" x2="20" y2="19" />
+  </>
+)
+
+export const PuzzleIcon = createIcon(
+  <>
+    <path d="M19 3h-3a2 2 0 0 0-2 2v3a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3a2 2 0 0 0 2-2v-3a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2h3a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2h-3a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2h3a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" />
+  </>
+)
+
+export const ImageConvertIcon = createIcon(
+  <>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="8.5" cy="8.5" r="1.5" />
+    <path d="M21 15 16 10 5 21" />
+    <path d="M15 3v4" />
+    <path d="M13 5h4" />
+  </>
+)
