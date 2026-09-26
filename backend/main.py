@@ -21,6 +21,7 @@ from skill.router import router as skill_router
 from translate.router import router as translate_router
 from translate import term_service
 from svg.router import router as svg_router
+from wonderland import router as wonderland_module
 from wonderland.router import router as wonderland_router
 from share.router import router as share_router
 from share.service import share_service
@@ -259,6 +260,12 @@ async def lifespan(app: FastAPI):
         logger.error("shares 表初始化失败，分享/异步对话接口将返回 503: %s", e)
 
     yield
+
+    # 关闭奇域模块的上游连接池（soft-failure，不影响退出）
+    try:
+        await wonderland_module.close_client()
+    except Exception as e:
+        logger.warning("奇域连接池关闭失败: %s", e)
 
 
 app = FastAPI(
