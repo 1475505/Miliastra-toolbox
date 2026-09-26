@@ -21,7 +21,7 @@ SKILL_MARKDOWN_PATH = TOOLBOX_DIR / "skills" / "miliastra-knowledge" / "SKILL.md
 
 _SEPARATOR = "___"
 SKILL_ID = "miliastra-knowledge"
-SKILL_VERSION = "1.1.0"
+SKILL_VERSION = "1.2.0"
 
 
 class NodeMatch(TypedDict):

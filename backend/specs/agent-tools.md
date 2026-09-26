@@ -25,7 +25,7 @@ Agent 另有两个非检索类工具（`generate_diagram`、`translate_terms`）
 ## 2. 设计原则
 
 1. 工具面向 Agent，不面向 HTTP。
-2. 工具与 `skills/miliastra-knowledge/SKILL.md` 中描述的三类知识访问一一对应。
+2. 工具与 `skills/miliastra-knowledge/SKILL.md` 中描述的四个检索工具一一对应（客户端工具不在该文件内，模型侧指引见 `skills/miliastra-knowledge-lua/SKILL.md`）。
 3. 结构化工具优先于 RAG 工具。
 4. 工具支持模糊匹配，避免轻微命名差异导致空结果。
 5. 工具支持批量调用，减少 Agent 多轮请求消耗 token。

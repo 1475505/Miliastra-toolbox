@@ -31,8 +31,11 @@ jobs:
             --host https://api.skillhub.cn
           skillhub auth whoami
 
-      - name: Publish skill to SkillHub
+      - name: Publish skills to SkillHub
         run: |
           set -e
-          skillhub publish ./skills/miliastra-knowledge \
-            --changelog "Automated update from GitHub Actions"
+          for skill in miliastra-knowledge miliastra-knowledge-lua; do
+            echo "Publishing $skill"
+            skillhub publish "./skills/$skill" \
+              --changelog "Automated update from GitHub Actions"
+          done

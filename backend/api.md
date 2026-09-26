@@ -808,7 +808,7 @@ Skill API 将千星沙箱知识库能力以 HTTP 形式暴露，和 MCP Server �
   "data": [
     {
       "id": "miliastra-knowledge",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "title": "Miliastra Knowledge",
       "description": "以 skill + HTTP API 形式暴露千星沙箱知识库查询能力。",
       "transports": ["mcp", "http"],
@@ -838,9 +838,9 @@ Skill API 将千星沙箱知识库能力以 HTTP 形式暴露，和 MCP Server �
 
 - 返回 skill 元信息
 
-- 返回 7 个工具的 HTTP 调用路径（其中 `list_client_documents` / `get_client_document` 为仅对外披露的客户端控件文档工具，内置 Agent 不感知）
+- 返回 7 个工具的 HTTP 调用路径（其中 `list_client_documents` / `get_client_document` 为仅对外披露的客户端控件文档工具，内置 Agent 不感知，由独立技能 `miliastra-knowledge-lua` 指引调用）
 
-- 返回 `skills/miliastra-knowledge/SKILL.md` 原始 markdown 内容，方便前端直接展示说明
+- 返回 `skills/miliastra-knowledge/SKILL.md` 原始 markdown 内容，方便前端直接展示说明。该文件只描述 4 个通用工具（服务端语料），不再包含客户端工具说明——客户端控件/脚本文档的模型侧指引见 `skills/miliastra-knowledge-lua/SKILL.md`
 
 ## 3. Tool 执行
 
