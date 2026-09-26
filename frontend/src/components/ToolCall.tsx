@@ -17,6 +17,8 @@ import PageHeader from './ui/PageHeader'
 import Surface from './ui/Surface'
 import Button from './ui/Button'
 import Textarea from './ui/Textarea'
+import DataQuery from './DataQuery'
+import { ChevronDownIcon } from './ui/icons'
 
 function SectionHeader({
   title,
@@ -179,6 +181,8 @@ export default function ToolCall() {
   const [titleLoading, setTitleLoading] = useState(false)
   const [titleError, setTitleError] = useState('')
   const [titleResults, setTitleResults] = useState<FilteredDocumentsResult[]>([])
+
+  const [dataOpen, setDataOpen] = useState(false)
 
   const handleNodeSearch = async () => {
     const names = parseBatchInput(nodeInput)
@@ -504,6 +508,35 @@ export default function ToolCall() {
               </ResultShell>
             </div>
           </div>
+        </Surface>
+
+        {/* 数据查询 - 并入工具调用，默认折叠 */}
+        <Surface className="!p-0 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setDataOpen(!dataOpen)}
+            className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+          >
+            <div>
+              <h3 className="text-base font-semibold text-on-surface">
+                {t('data.title')}
+              </h3>
+              <p className="mt-1 text-xs text-on-surface-variant">
+                {t('tools.dataSectionHint')}
+              </p>
+            </div>
+            <ChevronDownIcon
+              className={[
+                'w-5 h-5 shrink-0 text-on-surface-variant transition-transform duration-200',
+                dataOpen ? 'rotate-0' : '-rotate-90',
+              ].join(' ')}
+            />
+          </button>
+          {dataOpen && (
+            <div className="border-t border-outline">
+              <DataQuery embedded />
+            </div>
+          )}
         </Surface>
       </div>
     </div>

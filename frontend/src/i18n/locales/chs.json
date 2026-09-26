@@ -25,7 +25,7 @@
     "tabs": {
       "chat": "知识库问答",
       "svg": "文档一图流",
-      "wonderland": "奇域",
+      "wonderland": "奇域信息",
       "tools": "工具调用",
       "data": "数据查询",
       "notes": "笔记"
@@ -44,6 +44,7 @@
     "qqGroup": "用户 QQ 群：1007538100",
     "qqGroupBot": "已接入机器人",
     "authorQq": "作者 QQ：725230880",
+    "authorBilibili": "作者 B 站：神奇嘟嘟可",
     "language": "语言"
   },
   "chat": {
@@ -100,7 +101,6 @@
     "toolPuzzleDesc": "由人或AI拼接图片素材，生成 GIA/Lua 奇域资产",
     "toolConvert": "图元拟合 && GIA 转换",
     "toolConvertDesc": "图片、素材组 GIA、Lua生成和互转，可配合拼图工具使用",
-    "noticeUpdate": "知识库更新日期：2026-9-24（版本：7.1），不含 Lua 知识",
     "imageCompressed": "已压缩至约 {{size}} KB",
     "imageTooLarge": "图片压缩后仍大于 1MB，请选择更小的图片",
     "canvasUnsupported": "Canvas 不支持",
@@ -158,6 +158,7 @@
     "documentSubtitle": "输入文档标题或系统关键词，直接查看命中文档全文和相关节点。",
     "titleSection": "文档标题检索",
     "titleSubtitle": "先看有哪些文档，再决定下一步拿全文还是回到聊天里问。",
+    "dataSectionHint": "术语翻译、道具、特效、BGM 等数据查询，点击展开",
     "queryNode": "查询节点",
     "fetchDocument": "获取文档",
     "searchTitle": "检索标题",

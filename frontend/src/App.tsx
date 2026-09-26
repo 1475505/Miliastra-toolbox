@@ -10,7 +10,6 @@ import { SupportedLanguage } from './i18n'
 const Chat = lazy(() => import('./components/Chat'))
 const ToolCall = lazy(() => import('./components/ToolCall'))
 const Notes = lazy(() => import('./components/Notes'))
-const DataQuery = lazy(() => import('./components/DataQuery'))
 const SvgDocs = lazy(() => import('./components/SvgDocs'))
 const Wonderland = lazy(() => import('./components/Wonderland'))
 const SharePage = lazy(() => import('./components/SharePage'))
@@ -18,7 +17,8 @@ const SharePage = lazy(() => import('./components/SharePage'))
 const PATH_TO_TAB: Record<string, Tab> = {
   '/tool': 'tools',
   '/note': 'notes',
-  '/data': 'data',
+  // 数据查询已并入工具调用页，旧链接兼容跳转
+  '/data': 'tools',
   '/svg': 'svg',
   '/wonderland': 'wonderland',
 }
@@ -27,7 +27,6 @@ const TAB_TO_PATH: Record<Tab, string> = {
   chat: '/',
   tools: '/tool',
   notes: '/note',
-  data: '/data',
   svg: '/svg',
   wonderland: '/wonderland',
 }
@@ -147,13 +146,6 @@ export default function App() {
           <div className={`h-full ${activeTab === 'notes' ? '' : 'hidden'}`}>
             <Suspense fallback={<div className="flex h-full items-center justify-center text-on-surface-variant">{t('app.loading')}</div>}>
               <Notes />
-            </Suspense>
-          </div>
-        )}
-        {visitedTabs.has('data') && (
-          <div className={`h-full ${activeTab === 'data' ? '' : 'hidden'}`}>
-            <Suspense fallback={<div className="flex h-full items-center justify-center text-on-surface-variant">{t('app.loading')}</div>}>
-              <DataQuery />
             </Suspense>
           </div>
         )}

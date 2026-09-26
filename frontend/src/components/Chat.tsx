@@ -11,6 +11,7 @@ import {
 } from '../types'
 import { getConfig } from '../utils/config'
 import ConfigModal from './ConfigModal'
+import Markdown from './Markdown'
 import {
   createNewConversation,
   saveConversation,
@@ -69,6 +70,7 @@ export default function Chat({
   const [timeoutWarning, setTimeoutWarning] = useState('')
   const [statusMessage, setStatusMessage] = useState('')
   const [showConfigHint, setShowConfigHint] = useState(false)
+  const [noticeContent, setNoticeContent] = useState('')
   const [images, setImages] = useState<{ base64: string; info: string }[]>([])
   const [agentMode, setAgentMode] = useState(true)
   const [showConfig, setShowConfig] = useState(false)
@@ -295,6 +297,14 @@ export default function Chat({
     const needConfig = !config.use_default_model && !config.api_key
     setShowConfigHint(needConfig)
   }, [configVersion])
+
+  // 公告内容通过 NOTICE.md 维护，无需 i18n
+  useEffect(() => {
+    fetch('/NOTICE.md')
+      .then((response) => response.text())
+      .then((text) => setNoticeContent(text))
+      .catch((err) => console.warn('Failed to load NOTICE.md:', err))
+  }, [])
 
   const handleSend = async () => {
     if ((!input.trim() && images.length === 0) || loading) return
@@ -765,12 +775,13 @@ export default function Chat({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 知识库更新提示 - 贴合对话框上方 */}
-      {displayMessages.length === 0 && (
+      {/* 公告提示 - 内容来自 NOTICE.md，贴合对话框上方 */}
+      {displayMessages.length === 0 && noticeContent.trim() && (
         <div className="px-4 lg:px-6">
-          <div className="flex items-center justify-center gap-2 py-2 px-4 bg-yellow-50 border border-yellow-200/60 text-xs text-yellow-700 max-w-2xl mx-auto">
-            <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 shrink-0" />
-            <span>{t('chat.noticeUpdate')}</span>
+          <div className="max-w-2xl mx-auto border border-yellow-200/60 bg-yellow-50 px-4 py-2 text-xs text-yellow-700">
+            <div className="prose prose-sm max-w-none prose-a:text-yellow-800 prose-strong:text-yellow-800 prose-headings:text-yellow-800">
+              <Markdown>{noticeContent}</Markdown>
+            </div>
           </div>
         </div>
       )}

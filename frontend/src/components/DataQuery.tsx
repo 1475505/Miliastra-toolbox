@@ -91,7 +91,7 @@ function isValidInteger(value: string): boolean {
   return /^\d+$/.test(value.trim())
 }
 
-export default function DataQuery() {
+export default function DataQuery({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation()
 
   const LANGUAGES = [
@@ -298,7 +298,7 @@ export default function DataQuery() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title={t('data.title')} />
+      {!embedded && <PageHeader title={t('data.title')} />}
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
         {/* 术语翻译查询 */}
