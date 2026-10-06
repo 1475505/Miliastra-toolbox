@@ -12,7 +12,6 @@ _CHANNEL_ENV: dict[int, tuple[str, str, str]] = {
     2: ("DEFAULT_FREE_MODEL_KEY2", "DEFAULT_FREE_MODEL_URL2", "DEFAULT_FREE_MODEL_NAME2"),
     3: ("DEFAULT_FREE_MODEL_KEY3", "DEFAULT_FREE_MODEL_URL3", "DEFAULT_FREE_MODEL_NAME3"),
     4: ("DEFAULT_FREE_MODEL_KEY3", "DEFAULT_FREE_MODEL_URL3", "DEFAULT_FREE_MODEL_NAME4"),
-    5: ("DEFAULT_FREE_MODEL_KEY2", "DEFAULT_FREE_MODEL_URL2", "DEFAULT_FREE_MODEL_NAME5"),
 }
 
 
@@ -52,11 +51,11 @@ def format_llm_error(err: Exception) -> str:
 def resolve_llm_config(config: Dict[str, Any]) -> Dict[str, str | int]:
     """解析 LLM 配置，返回 {api_key, api_base_url, model, channel_id}
 
-    所有渠道 1-5 均记录用量（渠道 1/2/5 同时强制每日限额，
+    所有渠道 1-4 均记录用量（渠道 1/2 同时强制每日限额，
     """
     ch = config.get("use_default_model", 0)
 
-    if ch in (1, 2, 3, 4, 5):
+    if ch in (1, 2, 3, 4):
         quota = model_usage_manager.check_and_increment(ch)
         if not quota["allowed"]:
             raise ValueError(

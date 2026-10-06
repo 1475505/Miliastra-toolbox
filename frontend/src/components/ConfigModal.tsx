@@ -73,10 +73,9 @@ export default function ConfigModal({ onClose, onConfigSaved }: ConfigModalProps
                 }
               >
                 <option value={1}>{t('config.channel1')}</option>
-                <option value={2}>{t('config.channel2')}</option>
+                <option value={2} disabled>{t('config.channel2')}</option>
                 <option value={3}>{t('config.channel3')}</option>
                 <option value={4}>{t('config.channel4')}</option>
-                <option value={5}>{t('config.channel5')}</option>
               </Select>
             </div>
           </div>

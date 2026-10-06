@@ -15,7 +15,7 @@ load_dotenv()
 
 # ── 模型渠道限额配置（修改请在此调整）──────────────────────────
 # 需要限额的渠道及每日限额
-RATE_LIMITED_CHANNELS = {1: 50, 2: 250, 5: 250}
+RATE_LIMITED_CHANNELS = {1: 50, 2: 250}
 # 仅追踪用量、不限额的渠道（免费渠道）
 TRACKED_CHANNELS = {3, 4}
 # 兼容性默认值（当渠道未在 RATE_LIMITED_CHANNELS 中配置时使用）
@@ -150,7 +150,7 @@ class ModelUsageManager:
         注意：这里假设表中可以存储多条记录，通过 date 字段区分日期
         实际使用时，channel_id 需要存储在某个字段中（例如复用 model_id 存储渠道ID）
         """
-        # 方案：直接使用 model_id 字段存储渠道ID (1-5)
+        # 方案：直接使用 model_id 字段存储渠道ID (1-4)
         # 每天为每个渠道创建/更新一条记录
         return channel_id
     
@@ -158,7 +158,7 @@ class ModelUsageManager:
         """检查限额并递增使用次数
         
         Args:
-            channel_id: 模型渠道ID (1-5)
+            channel_id: 模型渠道ID (1-4)
             
         Returns:
             {
