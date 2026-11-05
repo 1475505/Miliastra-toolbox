@@ -2,6 +2,7 @@
 RAG引擎核心模块
 """
 import logging
+import json
 import os
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional, Union
@@ -127,6 +128,10 @@ class RAGEngine:
                 for entry in config.KNOWLEDGE_SOURCE_DIRS
             ]
         
+        # Validate source identity before mutating the collection.
+        from .cleanup import load_current_documents, reconcile
+        all_documents = load_current_documents(self.parser, source_entries)
+
         # force_rebuild 模式：先清空整个集合，确保无残留数据
         if force_rebuild:
             logging.info("强制重建模式：清空现有集合...")
@@ -140,20 +145,6 @@ class RAGEngine:
                 config.KNOWLEDGE_BASE_PATH, config.CHROMA_COLLECTION_NAME
             )
             self.index = None
-        
-        # 加载所有文档
-        all_documents = []
-        for directory, filename_prefix in source_entries:
-            if not os.path.isdir(directory):
-                logging.warning(f"目录不存在，跳过: {directory}")
-                continue
-            logging.info(f"加载目录: {directory}" + (f" (前缀过滤: {filename_prefix}*)" if filename_prefix else ""))
-            docs = self.parser.load_documents(directory)
-            if filename_prefix:
-                before = len(docs)
-                docs = [d for d in docs if os.path.basename(d.metadata.get('file_name', '')).startswith(filename_prefix)]
-                logging.info(f"  前缀过滤: {before} → {len(docs)} 个文档")
-            all_documents.extend(docs)
         
         if not all_documents:
             logging.error("在指定目录中未找到可处理的文档。")
@@ -189,6 +180,10 @@ class RAGEngine:
                 error_count += 1
                 continue
         
+        if error_count == 0 and source_directories is None:
+            cleanup = reconcile(config.KNOWLEDGE_BASE_PATH, config.CHROMA_COLLECTION_NAME, apply=True)
+            logging.info("清洗结果: %s", cleanup)
+
         # 返回统计信息
         stats = get_collection_stats(config.KNOWLEDGE_BASE_PATH, config.CHROMA_COLLECTION_NAME)
         
@@ -566,6 +561,7 @@ class RAGEngine:
         text = node.get_text()
         metadata = node.metadata
         return {
+            "all_sources": json.loads(metadata.get("all_sources_json", "[]")),
             "title": metadata.get("title", metadata.get("file_name", "未知文档")),
             "h1_title": metadata.get("h1_title", ""),
             "doc_id": getattr(inner, 'ref_doc_id', "") or "",

@@ -163,7 +163,7 @@ def get_document_crawled_at(persist_dir: str, collection_name: str, doc_id: str)
 
 def delete_document_by_id(persist_dir: str, collection_name: str, doc_id: str) -> int:
     """
-    删除知识库中指定 ref_doc_id 的所有节点。
+    删除指定文档独占的节点；共享节点转交给剩余来源。
     
     Args:
         persist_dir: 数据库目录
@@ -177,17 +177,7 @@ def delete_document_by_id(persist_dir: str, collection_name: str, doc_id: str) -
         db = chromadb.PersistentClient(path=persist_dir)
         collection = db.get_collection(name=collection_name)
         
-        # 查询所有包含指定 ref_doc_id 的文档
-        results = collection.get(
-            where={"ref_doc_id": doc_id},
-            include=['metadatas']
-        )
-        
-        if len(results['ids']) > 0:
-            # 删除这些文档
-            collection.delete(ids=results['ids'])
-            return len(results['ids'])
-        
-        return 0
+        from .cleanup import detach_document
+        return detach_document(collection, doc_id)
     except Exception as e:
         raise Exception(f"删除文档失败: {str(e)}")

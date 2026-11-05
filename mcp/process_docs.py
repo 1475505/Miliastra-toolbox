@@ -1,4 +1,5 @@
 import json
+import hashlib
 import re
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -44,6 +45,7 @@ class Chunk:
     local_path: str
     content: str
     side: str  # server | client | both
+    source_paths: tuple[str, ...] = ()
 
 
 def ensure_dirs() -> None:
@@ -76,7 +78,7 @@ def split_frontmatter(content: str) -> tuple[dict[str, str], str]:
 
 
 def clean_heading(text: str) -> str:
-    text = MARK_RE.sub("", text).strip()
+    text = MARK_RE.sub("", text).replace("\\.", ".").strip()
     text = QUESTION_PREFIX_RE.sub("", text)
     text = LEADING_INDEX_RE.sub("", text)
     return SPACE_RE.sub(" ", text).strip()
@@ -185,32 +187,38 @@ def collect_chunks(file_path: Path, is_faq: bool, side_map: dict[str, dict[str, 
 
 
 def dedupe_chunks(chunks: list[Chunk]) -> list[Chunk]:
-    """按 (title, content) 聚合去重，合并各来源的端归属（并集）。
-
-    一个节点若同时出现在服务端与客户端节点图文档中，其 side 合并为 both。
-    """
-    merged: dict[tuple[str, str], tuple[Chunk, set[str]]] = {}
-    order: list[tuple[str, str]] = []
+    """Merge identical textual node definitions within one side; preserve images and sources."""
+    image_re = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+    merged: dict[tuple[str, str, str], Chunk] = {}
     for chunk in chunks:
-        key = (chunk.title, normalize_text(chunk.content))
+        text = image_re.sub("", chunk.content)
+        # Image-only definitions cannot be compared by their text.
+        comparable = text if "**节点功能**" in text and "**节点参数**" in text else chunk.content
+        key = (chunk.title, chunk.side, comparable.strip() if "```" in comparable else normalize_text(comparable))
+        paths = chunk.source_paths or (chunk.local_path,)
         if key not in merged:
-            merged[key] = (chunk, set())
-            order.append(key)
-        merged[key][1].add(chunk.side)
+            merged[key] = replace(chunk, source_paths=paths)
+            continue
+        previous = merged[key]
+        images = [img for img in image_re.findall(chunk.content) if img not in previous.content]
+        content = previous.content
+        if images:
+            content += "\n\n" + "\n\n".join(dict.fromkeys(images))
+        merged[key] = replace(previous, content=content,
+                              source_paths=tuple(dict.fromkeys(previous.source_paths + paths)))
+    return list(merged.values())
 
-    result: list[Chunk] = []
-    for key in order:
-        chunk, sides = merged[key]
-        side = merge_sides(sides)
-        result.append(replace(chunk, side=side))
-    return result
+
+def chunk_id(chunk: Chunk) -> str:
+    payload = json.dumps([chunk.title, chunk.side, chunk.content, chunk.source_paths], ensure_ascii=False)
+    return hashlib.sha256(payload.encode()).hexdigest()[:24]
 
 
 def write_markdown(output_path: Path, title: str, chunks: list[Chunk]) -> None:
     blocks = [f"# {title}", ""]
     for chunk in chunks:
         side_label = SIDE_LABEL.get(chunk.side, "")
-        block = ["___", "", f"# {chunk.title}", ""]
+        block = ["___", "", f"# {chunk.title}", f"<!-- chunk-id: {chunk_id(chunk)} -->", ""]
         if side_label:
             block.append(f"**归属端**：{side_label}")
             block.append("")
@@ -222,6 +230,8 @@ def write_markdown(output_path: Path, title: str, chunks: list[Chunk]) -> None:
 
 def build_index_entries(output_path: Path, chunks: list[Chunk]) -> list[dict[str, str]]:
     return [{
+        "chunk_id": chunk_id(chunk),
+        "source_paths_json": json.dumps(chunk.source_paths or (chunk.local_path,), ensure_ascii=False),
         "title": chunk.title,
         "main_title": chunk.main_title,
         "side": chunk.side,

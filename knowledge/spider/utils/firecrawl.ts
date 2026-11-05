@@ -15,7 +15,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { buildAbsoluteMarkdownPath } from './documentPath.js';
+import { buildAbsoluteMarkdownPath, pruneObsoleteMarkdownPaths } from './documentPath.js';
 import { FilterConfig, redactMarkdown } from './filterConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -365,6 +365,7 @@ export class FirecrawlClient {
         // 移除 frontmatter
         const existingMarkdown = existingContent.replace(/^---\n[\s\S]*?\n---\n\n/, '');
         if (existingMarkdown.trim() === markdown.trim()) {
+          await pruneObsoleteMarkdownPaths(knowledgeDir, { id: documentId, title, scope });
           return false; // 内容未变化，跳过保存
         }
       } catch (error) {
@@ -372,7 +373,10 @@ export class FirecrawlClient {
       }
     }
 
-    await fs.writeFile(filePath, markdownContent, 'utf-8');
+    const temporaryPath = `${filePath}.tmp`;
+    await fs.writeFile(temporaryPath, markdownContent, 'utf-8');
+    await fs.rename(temporaryPath, filePath);
+    await pruneObsoleteMarkdownPaths(knowledgeDir, { id: documentId, title, scope });
     return true;
   }
 }

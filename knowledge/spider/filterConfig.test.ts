@@ -120,3 +120,28 @@ test('官方静态正文真实 CP1252 乱码与 C1 控制符恢复', () => {
   assert.equal(client['repairStaticMarkdownEncoding']('7.2ç‰ˆæœ¬'), '7.2版本');
   assert.equal(client['repairStaticMarkdownEncoding']('## 中文保持原样'), '## 中文保持原样');
 });
+
+test('renamed documents prune old IDs only after a valid replacement exists', async () => {
+  const fs = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const { buildAbsoluteMarkdownPath, pruneObsoleteMarkdownPaths } = await import('./utils/documentPath.js');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'knowledge-rename-'));
+  const oldInput = { id: 'mh-test', title: 'old', scope: 'tutorial' };
+  const newInput = { ...oldInput, title: 'new', scope: 'guide' };
+  const oldPath = buildAbsoluteMarkdownPath(root, oldInput);
+  const newPath = buildAbsoluteMarkdownPath(root, newInput);
+  try {
+    await fs.mkdir(path.dirname(oldPath), { recursive: true });
+    await fs.mkdir(path.dirname(newPath), { recursive: true });
+    await fs.writeFile(oldPath, '---\nid: mh-test\n---\nold');
+    await assert.rejects(pruneObsoleteMarkdownPaths(root, newInput));
+    assert.equal(await fs.readFile(oldPath, 'utf-8'), '---\nid: mh-test\n---\nold');
+    await fs.writeFile(newPath, '---\nid: mh-test\n---\nnew');
+    await pruneObsoleteMarkdownPaths(root, newInput);
+    await assert.rejects(fs.access(oldPath));
+    assert.match(await fs.readFile(newPath, 'utf-8'), /new$/);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});

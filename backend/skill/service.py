@@ -1,6 +1,7 @@
 """Miliastra knowledge skill shared service."""
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import TypedDict
@@ -25,6 +26,8 @@ SKILL_VERSION = "1.2.0"
 
 
 class NodeMatch(TypedDict):
+    chunk_id: str
+    source_paths: list[str]
     title: str
     main_title: str
     side: str
@@ -78,7 +81,18 @@ class DocumentQueryResult(TypedDict, total=False):
     related_nodes: list[NodeMatch]
 
 
+class RagSource(TypedDict):
+    crawledAt: str
+    doc_id: str
+    title: str
+    file_path: str
+    url: str
+    chunk_index: int
+    subchunk_index: int
+
+
 class RagSearchResultItem(TypedDict):
+    all_sources: list[RagSource]
     title: str
     h1_title: str
     file_name: str
@@ -141,22 +155,30 @@ def _fuzzy_match(query: str, target: str) -> bool:
 
 
 def _parse_chunks_from_md(file_path: Path) -> dict[str, str]:
-    text = file_path.read_text(encoding="utf-8")
     chunks: dict[str, str] = {}
     title = ""
+    key = ""
     lines: list[str] = []
-    for line in text.splitlines():
+
+    def flush() -> None:
+        if not title:
+            return
+        identity = key or title
+        if identity in chunks:
+            raise ValueError(f"Duplicate node block identity in {file_path}: {identity}")
+        chunks[identity] = "\n".join(lines).strip()
+
+    for line in file_path.read_text(encoding="utf-8").splitlines():
         if line.strip() == _SEPARATOR:
-            if title:
-                chunks[title] = "\n".join(lines).strip()
-            title = ""
-            lines = []
+            flush()
+            title, key, lines = "", "", []
         elif line.startswith("# ") and not lines:
             title = line[2:].strip()
+        elif match := re.fullmatch(r"<!-- chunk-id: ([a-f0-9]{24}) -->", line):
+            key = match[1]
         elif title:
             lines.append(line)
-    if title:
-        chunks[title] = "\n".join(lines).strip()
+    flush()
     return chunks
 
 
@@ -188,8 +210,11 @@ def _lookup_node_matches(name: str) -> list[NodeMatch]:
         if not _fuzzy_match(name, title):
             continue
         md_name = Path(output_file).name
-        content = chunk_cache.get(md_name, {}).get(title, "")
+        identity = entry.get("chunk_id", title)
+        content = chunk_cache.get(md_name, {}).get(identity, "")
         matched.append({
+            "chunk_id": entry.get("chunk_id", ""),
+            "source_paths": json.loads(entry.get("source_paths_json", "[]")) or [entry.get("local_path", "")],
             "title": title,
             "main_title": entry.get("main_title", ""),
             "side": entry.get("side", ""),
@@ -369,6 +394,7 @@ def rag_search_data(queries: list[str], top_k: int = 5) -> list[RagSearchQueryRe
                 metadata = metadatas[index]
                 snippet = doc[:200] + ("..." if len(doc) > 200 else "")
                 sources.append({
+                    "all_sources": json.loads(metadata.get("all_sources_json", "[]")),
                     "title": metadata.get("title", metadata.get("file_name", "未知文档")),
                     "h1_title": metadata.get("h1_title", ""),
                     "file_name": metadata.get("file_name", ""),

@@ -145,3 +145,7 @@ pytest tests/ -v
 
 - `POST /api/v1/rag/chat/async`：发起异步对话，立即返回任务链接
 
+
+### 节点索引唯一标识
+
+`derived/index.json` 与派生 Markdown 通过 `chunk_id` 关联，查询不能仅用节点标题定位。同名但参数或归属端不同的节点独立返回；同端相同文字定义合并并保留全部配图和 `source_paths`。生成后同时重启 `qx-be`、`qx-mcp` 清除索引缓存。RAG 精确去重后的返回信息通过 `all_sources` 保留所有原始来源。

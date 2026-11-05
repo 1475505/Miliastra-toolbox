@@ -391,3 +391,11 @@ WHERE
     key = 'ref_doc_id' 
     AND string_value = '源文档的_DOC_ID';
 ```
+
+## 确定性清洗
+
+完整 `init` 成功后自动清洗。源文件按 ID 校验唯一性；README/category、空块及纯播放器模板不入库。完全相同切片只保留一条向量，`all_sources_json` 记录全部来源；返回的来源信息包含 `all_sources`。更新主来源时，共享向量转交剩余来源，避免误删。不同正文不做语义合并。
+
+从仓库根目录运行 `python3 -m knowledge.rag_v1.src.cleanup` 预览，备份并停止读写服务后加 `--apply` 应用。清洗复用已有向量，不请求嵌入服务；如源正文没有对应向量则在写入前失败，应先增量入库。再次预览应为零删除、零元数据更新。自定义 `source_directories` 导入不触发全库清洗。
+
+回归测试：`python3 -m unittest knowledge.test_cleanup mcp.test_process_docs`。

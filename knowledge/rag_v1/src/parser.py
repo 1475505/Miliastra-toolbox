@@ -162,6 +162,8 @@ class DocumentParser:
         """
         nodes = []
         for i, chunk in enumerate(chunks):
+            if not chunk.strip() or ("不支持的音频/视频格式请试试刷新" in chunk and not re.search(r"^# ", chunk, re.MULTILINE) and len(chunk.strip()) < 250):
+                continue
             # 提取一级标题作为额外元数据
             h1_match = re.search(r'^# (.+)$', chunk, re.MULTILINE)
             h1_title = h1_match.group(1).strip() if h1_match else f"Section {i+1}"
@@ -228,6 +230,8 @@ class DocumentParser:
         # 同时设置 doc_id 属性用于文档级别的管理
         cleaned_docs = []
         for doc in docs:
+            if Path(doc.metadata.get("file_name", "")).name.lower() in {"readme.md", "category.md"}:
+                continue
             _, cleaned_text = extract_yaml_frontmatter(doc.text)
             
             # 使用 YAML 中的 id 或文件路径作为 doc_id

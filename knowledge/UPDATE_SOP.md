@@ -75,6 +75,7 @@ python3 knowledge/filter_bbs.py \
 - 从仓库根目录运行 `python3 mcp/process_docs.py`，生成节点分类和 `derived/index.json`。
 - 对本轮功能变化更新现有 SVG；新主题新增 SVG，并同步 `derived/svg_index.md`。SVG 以官方正文为依据，检查 XML、文字溢出和版本标记；未涉及的旧图不应只改版本号伪装成已更新。
 - 检查主目录及派生节点中不存在本轮排除的客户端章节。
+- 节点索引与 Markdown 使用 `chunk_id` 对齐，禁止按标题覆盖正文。同端且文字定义相同的节点合并，保留全部来源和配图；不同端或参数不同的同名节点保留独立条目。
 
 ## 6. 增量更新向量库
 
@@ -87,6 +88,18 @@ python3 rag_cli.py retrieve '造物扰动装置如何配置'
 ```
 
 不要使用 `init --force`：它会清空集合并全量重建。普通增量依赖 `crawledAt`；文档前置元数据 `force: true`（历史 BBS 文件常见）仍会触发重新嵌入，因此处理数不一定等于新增文档数。
+
+普通 `init` 完成后自动执行确定性清洗：排除 README/category、空块与播放器模板，完全相同切片合并并保留 `all_sources_json`。文档 ID 重复时停止导入，需先清理旧标题文件；爬虫成功保存新文件后会清理同 ID 的旧文件。自定义目录导入不会触发全库清洗。
+
+已有向量库可先预览再应用（不调用嵌入服务；缺少任一源切片的向量时停止写入）：
+
+```bash
+# 从仓库根目录执行；应用前备份数据库并停止持有嵌入式 Chroma 的服务
+python3 -m knowledge.rag_v1.src.cleanup
+python3 -m knowledge.rag_v1.src.cleanup --apply
+```
+
+应用后再次预览，`removed` 和 `metadata_updates` 应为 0；核对每条来源切片都有对应向量（包含合并来源），并检查源文件 ID、BBS 楼层唯一性。
 
 必须核对：失败数为 0、新文档/BBS 节点存在、分流 ID 不在集合中、删节正文未残留。检查实际召回来源，而不只看总节点数。若当前向量库已有应排除的历史数据，须按明确 ID 处理，不能仅期待增量任务自动删除。
 
