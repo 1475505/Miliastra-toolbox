@@ -10,6 +10,33 @@
       "localPath": "Miliastra-knowledge/official/tutorial/mhg94h90x3oq_关卡导出.md"
     },
     {
+      "id": "mhwkx6rfofja",
+      "title": "【奇匠小贴士】「筑星计划」第一期：筑星训练营地",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhwkx6rfofja",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhwkx6rfofja",
+      "scope": "tutorial",
+      "updated_at": "2026-10-16 17:40:05",
+      "localPath": "Miliastra-knowledge/official/tutorial/mhwkx6rfofja_【奇匠小贴士】「筑星计划」第一期：筑星训练营地.md"
+    },
+    {
+      "id": "mh9xw6rzpvgm",
+      "title": "【奇匠小贴士】「筑星计划」第二期：奇匠签约计划",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh9xw6rzpvgm",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh9xw6rzpvgm",
+      "scope": "tutorial",
+      "updated_at": "2026-11-02 18:02:55",
+      "localPath": "Miliastra-knowledge/official/tutorial/mh9xw6rzpvgm_【奇匠小贴士】「筑星计划」第二期：奇匠签约计划.md"
+    },
+    {
+      "id": "mh7734ihfgq4",
+      "title": "【奇匠小贴士】关卡创意企划书：从灵感到关卡",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh7734ihfgq4",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh7734ihfgq4",
+      "scope": "tutorial",
+      "updated_at": "2026-10-09 17:07:32",
+      "localPath": "Miliastra-knowledge/official/tutorial/mh7734ihfgq4_【奇匠小贴士】关卡创意企划书：从灵感到关卡.md"
+    },
+    {
       "id": "mhw37k901ygy",
       "title": "【奇匠小贴士】奇域共创计划使用指南",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhw37k901ygy",
@@ -125,6 +152,15 @@
       "scope": "tutorial",
       "updated_at": "2026-08-24 09:37:57",
       "localPath": "Miliastra-knowledge/official/tutorial/mhz6s29zzonm_2.12场景生成模板管理——快速生成关卡的场景.md"
+    },
+    {
+      "id": "mhosu90yfikg",
+      "title": "2.13光标碰撞盒与常驻光标——光标交互与多设备适配",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhosu90yfikg",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhosu90yfikg",
+      "scope": "tutorial",
+      "updated_at": "2026-10-21 16:58:38",
+      "localPath": "Miliastra-knowledge/official/tutorial/mhosu90yfikg_2.13光标碰撞盒与常驻光标——光标交互与多设备适配.md"
     },
     {
       "id": "mhumsn9uap96",
@@ -307,6 +343,24 @@
       "localPath": "Miliastra-knowledge/official/tutorial/mhflri07dzd4_3.1自定义变量——特定条件下，切换物体表现状态.md"
     },
     {
+      "id": "mhjobxrdykym",
+      "title": "3.20界面控件——手柄适配引导",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhjobxrdykym",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhjobxrdykym",
+      "scope": "tutorial",
+      "updated_at": "2026-09-24 11:35:00",
+      "localPath": "Miliastra-knowledge/official/tutorial/mhjobxrdykym_3.20界面控件——手柄适配引导.md"
+    },
+    {
+      "id": "mhu0mc0r40jc",
+      "title": "3.22操控运动器——制作可驾驶载具与操控技能",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhu0mc0r40jc",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhu0mc0r40jc",
+      "scope": "tutorial",
+      "updated_at": "2026-10-29 14:21:00",
+      "localPath": "Miliastra-knowledge/official/tutorial/mhu0mc0r40jc_3.22操控运动器——制作可驾驶载具与操控技能.md"
+    },
+    {
       "id": "mhq8ew91dx8i",
       "title": "3.2定时器——定时发出事件",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhq8ew91dx8i",
@@ -375,7 +429,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh8wpr0h7ywg",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh8wpr0h7ywg",
       "scope": "tutorial",
-      "updated_at": "2026-07-09 18:15:22",
+      "updated_at": "2026-10-12 11:47:28",
       "localPath": "Miliastra-knowledge/official/tutorial/mh8wpr0h7ywg_3.9能力单元——具有预设属性的战斗组件.md"
     },
     {
@@ -474,7 +528,7 @@
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhutlz9w46ze",
       "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhutlz9w46ze",
       "scope": "tutorial",
-      "updated_at": "2026-08-24 09:37:56",
+      "updated_at": "2026-11-02 10:59:42",
       "localPath": "Miliastra-knowledge/official/tutorial/mhutlz9w46ze_加入奇匠共创讨论群，获取更多活动资讯.md"
     },
     {
@@ -658,15 +712,6 @@
       "localPath": "Miliastra-knowledge/official/tutorial/mhpdaf0v84vk_玩法整合：界面控件.md"
     },
     {
-      "id": "mhjobxrdykym",
-      "title": "界面控件——手柄适配引导",
-      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhjobxrdykym",
-      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhjobxrdykym",
-      "scope": "tutorial",
-      "updated_at": "2026-08-24 09:37:57",
-      "localPath": "Miliastra-knowledge/official/tutorial/mhjobxrdykym_界面控件——手柄适配引导.md"
-    },
-    {
       "id": "mhyn09rtxvni",
       "title": "组件设置：基础运动器",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mhyn09rtxvni",
@@ -750,10 +795,10 @@
   ],
   "metadata": {
     "source": "tutorial",
-    "extractedAt": "2026-09-23T17:50:36.724Z",
-    "totalCount": 83,
+    "extractedAt": "2026-11-04T15:40:23.333Z",
+    "totalCount": 88,
     "scopes": {
-      "tutorial": 83
+      "tutorial": 88
     }
   }
 }

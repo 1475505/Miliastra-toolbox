@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "id": "mh47p30a87qo",
+      "title": "3.21客户端脚本——制作点击收集玩法",
+      "url": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh47p30a87qo",
+      "uniqueId": "https://act.mihoyo.com/ys/ugc/tutorial/course/detail/mh47p30a87qo",
+      "scope": "client",
+      "updated_at": "2026-09-24 15:09:11",
+      "localPath": "Miliastra-knowledge/client/mh47p30a87qo_3.21客户端脚本——制作点击收集玩法.md"
+    },
+    {
       "id": "mhd4fxr5v6la",
       "title": "光标检测区域控件",
       "url": "https://act.mihoyo.com/ys/ugc/tutorial/detail/mhd4fxr5v6la",
@@ -93,10 +102,10 @@
   ],
   "metadata": {
     "source": "client",
-    "extractedAt": "2026-09-25T17:54:09.605Z",
-    "totalCount": 10,
+    "extractedAt": "2026-11-04T15:40:24.375Z",
+    "totalCount": 11,
     "scopes": {
-      "client": 10
+      "client": 11
     }
   }
 }

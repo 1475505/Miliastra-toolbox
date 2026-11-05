@@ -32,7 +32,7 @@
 
 - 支持流式响应 (SSE) 以及一键式整合 Web 前端 (自动托管 `static/` 目录)。
 
-- **静态资源缓存策略**：`/assets/*`（带内容 hash）返回 `Cache-Control: public, max-age=31536000, immutable`，HTML 页面返回 `no-cache`，其余静态文件短缓存（1 小时），供 CDN 遵循源站。
+- **静态资源缓存策略**：`/assets/*`（带内容 hash）返回 `Cache-Control: public, max-age=31536000, immutable`，HTML 页面返回 `no-cache`，`/NOTICE.md` 返回 `no-store`，其余静态文件短缓存（1 小时），供 CDN 遵循源站。
 
 - 检索配额由 `knowledge/rag_v1/.env` 的 `TOP_K` / `DOC_MAX` 控制（当前建议 `12/8`），修改后需重启服务。
 

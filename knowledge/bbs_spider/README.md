@@ -50,3 +50,5 @@ A. 回答
 - 入库：检查新增问答，排除本次版本不纳入的客户端控件内容，再把生成的 Markdown 复制到 `../Miliastra-knowledge/bbs/`，运行 `cd ../rag_v1 && python3 rag_cli.py init` 增量更新向量库。`bbs_spider/` 下的生成文件被 `.gitignore` 忽略，只有复制进文档资产目录才会被收录。
 
 2026-09-24 已抓取 1282 楼及之后的 22 条有回答问答，并入库为 `bbs-faq-since1282.md`。
+
+7.2（2026-11-04）从 1316 楼增量抓取至 1363 楼，39 条有回答问答中排除 8 条 Lua/客户端控件内容，保留 31 条。排除楼层记录在 `../config/filtered-7.2.json`，从仓库根目录用 `python3 knowledge/filter_bbs.py` 生成过滤后的资产；完整步骤见 [更新 SOP](../UPDATE_SOP.md)。

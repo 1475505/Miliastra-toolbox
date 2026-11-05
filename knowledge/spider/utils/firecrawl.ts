@@ -221,11 +221,14 @@ export class FirecrawlClient {
   }
 
   private repairStaticMarkdownEncoding(markdown: string): string {
-    const decoder = new TextDecoder('windows-1252');
+    // Explicit mapping avoids runtime ICU differences in the windows-1252 label.
+    // Keep C1 controls too: upstream Markdown may mix Latin-1 and CP1252 decoding.
     const inverse = new Map<string, number>();
     for (let byte = 0; byte < 256; byte++) {
-      inverse.set(decoder.decode(Uint8Array.of(byte)), byte);
+      inverse.set(String.fromCharCode(byte), byte);
     }
+    const cp1252 = '€\u0081‚ƒ„…†‡ˆ‰Š‹Œ\u008dŽ\u008f\u0090‘’“”•–—˜™š›œ\u009džŸ';
+    [...cp1252].forEach((character, index) => inverse.set(character, 0x80 + index));
     const bytes: number[] = [];
     for (const character of markdown) {
       const byte = inverse.get(character);

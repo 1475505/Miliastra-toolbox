@@ -300,7 +300,7 @@ export default function Chat({
 
   // 公告内容通过 NOTICE.md 维护，无需 i18n
   useEffect(() => {
-    fetch('/NOTICE.md')
+    fetch(`/NOTICE.md?t=${Date.now()}`, { cache: 'no-store' })
       .then((response) => response.text())
       .then((text) => setNoticeContent(text))
       .catch((err) => console.warn('Failed to load NOTICE.md:', err))

@@ -113,3 +113,10 @@ test('官方静态正文地址与中文编码恢复', () => {
   const corrupted = new TextDecoder('windows-1252').decode(new TextEncoder().encode(source));
   assert.equal(client['repairStaticMarkdownEncoding'](corrupted), source);
 });
+
+
+test('官方静态正文真实 CP1252 乱码与 C1 控制符恢复', () => {
+  const client = new FirecrawlClient('test-key');
+  assert.equal(client['repairStaticMarkdownEncoding']('7.2ç‰ˆæœ¬'), '7.2版本');
+  assert.equal(client['repairStaticMarkdownEncoding']('## 中文保持原样'), '## 中文保持原样');
+});

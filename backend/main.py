@@ -302,14 +302,17 @@ async def cache_control_middleware(request: Request, call_next):
     """静态资源缓存策略（供 CDN 遵循源站）：
     - /assets/* 构建产物带内容 hash，长缓存一年
     - HTML（index.html / SPA 路由）不缓存，保证发版即生效
-    - 其余静态根文件（favicon、NOTICE.md 等无 hash）短缓存
+    - NOTICE.md 不缓存，避免公告更新后仍显示旧版
+    - 其余静态根文件（favicon 等无 hash）短缓存
     - API 响应不干预
     """
     response = await call_next(request)
     path = request.url.path
     if path.startswith("/api/") or path == "/health":
         return response
-    if path.startswith("/assets/"):
+    if path == "/NOTICE.md":
+        response.headers["Cache-Control"] = "no-store"
+    elif path.startswith("/assets/"):
         response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     elif response.headers.get("content-type", "").startswith("text/html"):
         response.headers["Cache-Control"] = "no-cache"

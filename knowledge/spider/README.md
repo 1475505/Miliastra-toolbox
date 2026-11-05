@@ -121,7 +121,14 @@ npm run scrape -- --since=2026-08-13 --force --filter-config=../config/filtered-
 npm run scrape -- --since=2026.08.13
 ```
 
-> 上次更新时间: 2026-09-24（7.1 分流更新）
+> 当前更新版本：7.2（2026-11-04）。完整流程见 [更新 SOP](../UPDATE_SOP.md)。
+
+```bash
+npm run crawl -- --filter-config=../config/filtered-7.2.json
+npm run scrape -- --since=2026-09-23 --force --filter-config=../config/filtered-7.2.json
+```
+
+7.2 累积配置分流 11 篇客户端文档，保留 4 篇旧控件正文及仅新增 Lua 教程的教程更新日志；传统界面控件的非 Lua 更新正常收录。
 
 **参数说明**：
 - `--test`: 测试模式，限制处理文档数量
