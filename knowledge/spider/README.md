@@ -136,7 +136,7 @@ npm run scrape -- --since=2026-09-23 --force --filter-config=../config/filtered-
 - `--concurrency=N`: 并发爬取数量（默认1，Free Plan限制2）
 - `--force`: 强制覆盖已存在的文件
 - `--filter-config=path`: 读取过滤配置；7.1 配置把 10 篇客户端控件/客户端脚本文档**分流**到 `client/` 目录（不进主目录、`title.json` 与向量库，改由对外工具 `list_client_documents` / `get_client_document` 按需获取），4 篇旧版界面控件文档保留原内容不跟进 7.1 改写，并从 7.1 更新日志删去两个相关专题、从节点文档删去客户端脚本信号章节。目录生成与正文抓取必须使用同一配置；`crawl` 会额外产出 `config/urls-<divertScope>.json`（如 `urls-client.json`），`scrape` 会自动读取。页面代理失败时抓取器会尝试官方静态正文。
-- `--since=DATE`: 只处理目录中 `updated_at` 晚于该日期的文档（格式：YYYY.MM.DD 或 YYYY-MM-DD，默认 2025.10.25）。仅当本地文件 `crawledAt` 不早于目录中的 `updated_at` 时跳过；与 `--force` 合用时会重新抓取候选文档，并只在正文变化时覆盖。
+- `--since=DATE`: 只处理目录中 `updated_at` 晚于该日期的文档（格式：YYYY.MM.DD 或 YYYY-MM-DD，默认 2025.10.25）。仅当本地文件 `crawledAt` 不早于目录中的 `updated_at` 时跳过；与 `--force` 合用时会重新抓取候选文档，成功抓取后刷新 `crawledAt`，即使正文没有变化。
 
 ### 3. 增量更新向量知识库
 ```bash
@@ -197,4 +197,4 @@ knowledge/
 
 ### 文档重命名
 
-正文先写入临时文件并原子替换目标文件，再按文档 ID 清理官方目录中旧标题/旧分类的文件。仅在新文件有效且旧文件 frontmatter ID 一致时清理；独立客户端目录不与官方目录互删。同名内容未变化时也执行旧文件清理。
+正文先写入临时文件并原子替换目标文件，再按文档 ID 清理官方目录中旧标题/旧分类的文件。仅在新文件有效且旧文件 frontmatter ID 一致时清理；独立客户端目录不与官方目录互删。同名内容未变化时也刷新 `crawledAt` 并执行旧文件清理。官方页面容器为空时使用独立静态正文，不使用混有导航的整页回退结果。静态 HTML 直接按 UTF-8 解码，转换为 Markdown 时保留表格、图片、视频与附件链接。

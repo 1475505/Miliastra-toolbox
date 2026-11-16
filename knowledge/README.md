@@ -11,7 +11,7 @@
 
 ## 版本更新
 
-完整流程见 [知识库更新 SOP](./UPDATE_SOP.md)，每轮结果记录在 `updates/`。
+完整流程见 [知识库更新 SOP](./UPDATE_SOP.md)，每轮结果记录在 `updates/`。抓取前后使用 `audit_timestamps.py` 全量比较目录 `updated_at` 与正文 `crawledAt`，避免日期筛选遗漏历史更新。
 
 ## 💡 使用指南
 

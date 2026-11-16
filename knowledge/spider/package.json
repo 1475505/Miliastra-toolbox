@@ -17,10 +17,13 @@
   "license": "MIT",
   "dependencies": {
     "@mendable/firecrawl-js": "^4.4.1",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "turndown": "^7.2.5",
+    "turndown-plugin-gfm": "^1.0.2"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",
+    "@types/turndown": "^5.0.6",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }

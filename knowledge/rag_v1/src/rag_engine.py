@@ -297,6 +297,19 @@ class RAGEngine:
                 "updated": False
             }
         
+        # 解析文档为节点
+        nodes = self.parser.parse_documents([document])
+        
+        if not nodes:
+            logging.info(f"跳过无可索引正文的文档: {doc_title}")
+            return {
+                "status": "skipped",
+                "doc_id": doc_id,
+                "doc_title": doc_title,
+                "reason": "正文为空或仅含已过滤的播放器提示",
+                "updated": False
+            }
+
         # 如果文档已存在且需要重新嵌入，先删除旧数据
         if exists:
             logging.info(f"删除旧数据: {doc_title} ({doc_id})")
@@ -306,19 +319,6 @@ class RAGEngine:
                 doc_id
             )
             logging.info(f"已删除 {deleted_count} 个节点")
-        
-        # 解析文档为节点
-        nodes = self.parser.parse_documents([document])
-        
-        if not nodes:
-            logging.warning(f"文档解析后没有生成节点: {doc_title}")
-            return {
-                "status": "error",
-                "doc_id": doc_id,
-                "doc_title": doc_title,
-                "message": "文档解析后没有生成节点",
-                "updated": False
-            }
         
         # 插入节点到索引（复用通用方法）
         logging.info(f"嵌入文档: {doc_title} ({doc_id}) - 共 {len(nodes)} 个节点")

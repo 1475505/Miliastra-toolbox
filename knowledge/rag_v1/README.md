@@ -399,3 +399,5 @@ WHERE
 从仓库根目录运行 `python3 -m knowledge.rag_v1.src.cleanup` 预览，备份并停止读写服务后加 `--apply` 应用。清洗复用已有向量，不请求嵌入服务；如源正文没有对应向量则在写入前失败，应先增量入库。再次预览应为零删除、零元数据更新。自定义 `source_directories` 导入不触发全库清洗。
 
 回归测试：`python3 -m unittest knowledge.test_cleanup mcp.test_process_docs`。
+
+纯播放器提示或空正文不生成向量，增量入库时计为跳过，不计为抓取或嵌入失败；先解析有效分块再删除旧向量，全库清洗统一移除过期内容。

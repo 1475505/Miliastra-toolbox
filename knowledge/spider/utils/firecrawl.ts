@@ -11,6 +11,8 @@ import Firecrawl, {
 } from '@mendable/firecrawl-js';
 import { URLEntry, ScrapeResult, URLExtractResult } from '../types.js';
 import dotenv from 'dotenv';
+import TurndownService from 'turndown';
+import { gfm } from 'turndown-plugin-gfm';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -245,17 +247,48 @@ export class FirecrawlClient {
   private async scrapeStaticContent(url: string): Promise<Document> {
     const staticURL = this.staticContentURL(url);
     if (!staticURL) throw new Error(`无法构建官方静态正文地址: ${url}`);
-    await new Promise(resolve => setTimeout(resolve, 16000));
-    const result = await this.client.scrape(staticURL, {
-      formats: ['markdown'],
-      onlyMainContent: true,
-      maxAge: 0,
-      timeout: 180000,
+    const response = await fetch(staticURL, { signal: AbortSignal.timeout(180000) });
+    if (!response.ok) throw new Error(`静态正文 HTTP ${response.status}: ${staticURL}`);
+    const html = new TextDecoder('utf-8', { fatal: true }).decode(await response.arrayBuffer());
+    const markdown = this.convertStaticHTML(html, url);
+    if (!markdown.trim()) throw new Error(`官方静态正文为空: ${staticURL}`);
+    console.log('   ℹ️ 使用官方 UTF-8 静态正文补抓');
+    return { markdown };
+  }
+
+  private convertStaticHTML(html: string, pageURL: string): string {
+    const absoluteURL = (value: string): string => new URL(value, pageURL).href;
+    const converter = new TurndownService({
+      headingStyle: 'atx', codeBlockStyle: 'fenced', br: '<br>\n',
+      blankReplacement: (_content, node) => {
+        const source = node.getAttribute('src') || node.getAttribute('href');
+        return source ? `[${node.nodeName === 'VIDEO' ? '课程视频' : '下载附件'}](${absoluteURL(source)})` : '';
+      },
     });
-    result.markdown = this.repairStaticMarkdownEncoding(result.markdown || '');
-    if (!result.markdown.trim()) throw new Error(`官方静态正文为空: ${staticURL}`);
-    console.log('   ℹ️ 使用官方静态正文补抓');
-    return result;
+    converter.use(gfm);
+    converter.remove(['script', 'style', 'nav', 'footer']);
+    converter.addRule('videoLinks', {
+      filter: 'video',
+      replacement: (_content, node) => {
+        const src = node.getAttribute('src') || node.querySelector('source')?.getAttribute('src');
+        return src ? `\n\n[课程视频](${absoluteURL(src)})\n\n` : '';
+      },
+    });
+    converter.addRule('absoluteLinks', {
+      filter: 'a',
+      replacement: (content, node) => {
+        const href = node.getAttribute('href');
+        return href ? `[${content || '下载附件'}](${absoluteURL(href)})` : content;
+      },
+    });
+    converter.addRule('absoluteImages', {
+      filter: 'img',
+      replacement: (_content, node) => {
+        const src = node.getAttribute('src');
+        return src ? `![${node.getAttribute('alt') || ''}](${absoluteURL(src)})` : '';
+      },
+    });
+    return converter.turndown(html);
   }
 
   /** 先抓页面容器，失败或正文为空时尝试官方静态正文。 */
@@ -287,6 +320,8 @@ export class FirecrawlClient {
         return result;
       }
 
+      // 官方站整页回退会混入导航；改用独立的静态正文。
+      if (this.staticContentURL(url)) return await this.scrapeStaticContent(url);
       await new Promise(resolve => setTimeout(resolve, 16000));
       result = await this.client.scrape(url, {
         ...baseOpts,
@@ -365,8 +400,7 @@ export class FirecrawlClient {
         // 移除 frontmatter
         const existingMarkdown = existingContent.replace(/^---\n[\s\S]*?\n---\n\n/, '');
         if (existingMarkdown.trim() === markdown.trim()) {
-          await pruneObsoleteMarkdownPaths(knowledgeDir, { id: documentId, title, scope });
-          return false; // 内容未变化，跳过保存
+          console.log('   ℹ️ 正文未变化，刷新已验证的抓取时间');
         }
       } catch (error) {
         // 文件不存在或读取失败，继续保存

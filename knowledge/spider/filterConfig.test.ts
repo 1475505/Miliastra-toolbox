@@ -145,3 +145,36 @@ test('renamed documents prune old IDs only after a valid replacement exists', as
     await fs.rm(root, { recursive: true, force: true });
   }
 });
+
+test('unchanged verified content refreshes crawledAt', async () => {
+  const fs = await import('node:fs/promises');
+  const { buildAbsoluteMarkdownPath } = await import('./utils/documentPath.js');
+  const client = new FirecrawlClient('test-key');
+  const id = `timestamp-test-${process.pid}`;
+  const entry = { id, title: 'timestamp regression', scope: 'tutorial' };
+  const root = new URL('../', import.meta.url).pathname;
+  const file = buildAbsoluteMarkdownPath(root, entry);
+  const body = 'Verified unchanged content';
+  try {
+    await fs.writeFile(file, `---\nid: ${id}\ncrawledAt: 2020-01-01T00:00:00Z\n---\n\n${body}`);
+    const saved = await client['saveMarkdownFile'](body, '', entry.scope, id, entry.title,
+      { title: entry.title, url: 'https://example.com/test' }, true);
+    assert.equal(saved, true);
+    const updated = await fs.readFile(file, 'utf8');
+    assert.ok(updated.endsWith(body));
+    const crawledAt = updated.match(/^crawledAt: (.+)$/m)?.[1];
+    assert.ok(crawledAt && Date.parse(crawledAt) > Date.parse('2020-01-01'));
+  } finally {
+    await fs.rm(file, { force: true });
+  }
+});
+
+test('static UTF-8 HTML retains Chinese, tables, video and attachment links', () => {
+  const client = new FirecrawlClient('test-key');
+  const result = client['convertStaticHTML']('<h2>学习</h2><p>对照学习</p><video src="https://example.com/a.mp4"></video><a href="/file.gil"></a><table><tr><th>名称</th></tr><tr><td>技能</td></tr></table>', 'https://act.mihoyo.com/ys/ugc/tutorial/course/detail/id');
+  assert.match(result, /## 学习/);
+  assert.match(result, /对照学习/);
+  assert.match(result, /课程视频.*https:\/\/example.com\/a.mp4/);
+  assert.match(result, /下载附件.*https:\/\/act.mihoyo.com\/file.gil/);
+  assert.match(result, /\| 技能 \|/);
+});

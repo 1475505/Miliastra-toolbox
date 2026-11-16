@@ -23,6 +23,17 @@ class CleanupTests(unittest.TestCase):
             Path(d, 'entry.md').write_text('---\nid: a\n---\n正文')
             self.assertEqual([doc.id_ for doc in parser.load_documents(d)], ['a'])
 
+    def test_filtered_video_is_skipped_before_deleting_vectors(self) -> None:
+        from knowledge.rag_v1.src.rag_engine import RAGEngine
+        engine = RAGEngine.__new__(RAGEngine)
+        engine.parser = DocumentParser()
+        doc = Document(text='不支持的音频/视频格式请试试刷新\n播放\n00:00/00:00', id_='video')
+        with patch('knowledge.rag_v1.src.db.check_document_exists', return_value=True), \
+             patch('knowledge.rag_v1.src.db.delete_document_by_id') as delete:
+            result = engine._process_document_embedding(doc, force=True)
+        self.assertEqual(result['status'], 'skipped')
+        delete.assert_not_called()
+
     def test_duplicate_source_ids_fail(self) -> None:
         with TemporaryDirectory() as d:
             for name in ['old', 'new']:

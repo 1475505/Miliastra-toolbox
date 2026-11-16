@@ -18,6 +18,31 @@
 
 比较文档 ID、标题和 `updated_at`，分别列出新增、修改、移除和未变条目。官方时间戳可能早于版本发布日，不能直接用新版本发布日期当 `--since`；用上次抓取边界，并核对新增 ID 是否全部进入候选。
 
+### 逐文档判断是否需要更新
+
+刷新目录 JSON 后，按文档 ID 对照对应 Markdown 的 frontmatter，比较 JSON 的 `updated_at` 与文档的 `crawledAt`（解析为时间点，统一时区，不按字符串比较）：
+
+- **`updated_at > crawledAt`：必须重新抓取正文**，即使不是新增文档、版本号未变，或者这条 JSON 的时间与上次目录相同；目录未变不代表此前已抓取成功。
+- 本地文档不存在，或 `crawledAt` 缺失/无效：加入补抓清单。
+- 两个时间都有效且 `updated_at <= crawledAt`：通常可跳过；明确要求强制重抓时除外。
+- `updated_at` 缺失/无效：不能凭时间认定已是最新，单独核对原文，必要时强制补抓。
+
+以上规则仍须遵循本版过滤配置：`skipUpdateIds` 保留旧版，客户端分流内容仅更新独立目录，混合文档照常删节。
+
+**先完成全目录的逐文档对照，再选择 `--since`。** 当前爬虫在比较本地 `crawledAt` 之前，会先按 JSON 更新时间及 `--since`（未指定时也有默认日期）筛选候选；`--force` 和 `--ids` 都不会绕过此筛选。必须确认补抓清单全部进入候选，对日期较早的漏抓项使用早于其 `updated_at` 的边界单独补抓，不能仅处理“本版本日期之后”的条目。
+
+从仓库根目录运行全目录审计（无 `--since` 截断）：
+
+```bash
+python3 knowledge/audit_timestamps.py \
+  --filter-config knowledge/config/filtered-7.2.json \
+  --output /tmp/knowledge-timestamp-audit.json
+```
+
+脚本按 `localPath` 核对文档 ID，逐项输出 `stale`、缺失或无效时间等异常；`preserved_by_filter` 单独列为明确例外。官方目录没有时区的时间按 `Asia/Shanghai` 解读，带时区的 `crawledAt` 按其实际时间点比较。
+
+抓取成功后，继续更新派生节点索引与 RAG；验收时重新对照补抓清单，确认已成功落盘，且不存在未说明原因的 `updated_at > crawledAt` 条目。
+
 复制上一版配置为 `config/filtered-<版本>.json`，保留累计规则：
 
 - `divertIds` / `divertScope`：客户端控件、Lua 脚本及相关教程分流到 `client/`，不进入主目录、`title.json` 和向量库。
@@ -133,3 +158,5 @@ pm2 save
 - 公开域名验收内容及缓存头，不能仅用本机 HTTP 200 代替用户可见结果。
 - 记录抓取候选/成功/失败数、BBS 保留/排除数、向量节点数、提交号及部署状态到 `knowledge/updates/<版本>.md`。
 - 失败时保留日志，按阶段重试；回滚使用本轮备份和明确的旧提交，不覆盖无关工作区改动。
+
+成功重新抓取且正文相同时，也必须刷新 `crawledAt`；不能把“内容未变”视为未抓取。正文为空或混入整页导航时不通过验收，应使用官方静态正文重抓后再入库。
