@@ -99,11 +99,15 @@ python3 test_rag.py query "你的问题"
 - **官方常见问题**: `knowledge/Miliastra-knowledge/official/faq/`
 - **论坛问答**: `knowledge/Miliastra-knowledge/bbs/`（仅 `bbs-faq*` 前缀文件）
 - **用户总结**: `knowledge/Miliastra-knowledge/user/`
+- **工具指南**: `knowledge/Miliastra-knowledge/tools/`（含模拟器指南）
+- **客户端控件及容器**: `knowledge/Miliastra-knowledge/client/`（排除 Lua API 参考文档 ID `mhtakr07vej4`；其余教程与控件说明正常收录）
+
+聊天检索将 `client` 纳入官方文档优先召回，`tools` 与用户内容一起补足召回。默认初始化、自定义目录初始化及全库清洗共用 ID 排除规则。
 
 
 #### 文档格式规范
 
-文档必须是 Markdown 格式，且**必须**包含 YAML Frontmatter（头部元数据区），用于定义 ID 和更新策略。
+文档必须是 Markdown 格式，建议包含 YAML Frontmatter（头部元数据区），用于定义 ID 和更新策略。
 
 ```markdown
 ---

@@ -56,12 +56,12 @@ from common.i18n import (
 class CombinedRetriever:
     """基于名额分配的优先级检索器，通过 rag_engine.retrieve_nodes() 执行两阶段召回：
 
-    Phase 1 (preferred): 召回 official 目录下的官方文档，最多 doc_max 条
-    Phase 2 (non_preferred): 召回 bbs/user 目录下的用户内容，补齐至 total_k 条
+    Phase 1 (preferred): 召回 official/client 目录下的官方文档，最多 doc_max 条
+    Phase 2 (non_preferred): 召回 bbs/user/tools 目录下的用户内容，补齐至 total_k 条
 
     合并顺序: 先放 non_preferred，再放 preferred，按 node_id 去重。
     效果: 官方文档占主要名额(doc_max)，用户内容补齐剩余。
-    注意: 若 doc_max 接近 total_k，bbs/user 名额会减少；运行时以环境变量 TOP_K/DOC_MAX 为准。
+    注意: 若 doc_max 接近 total_k，bbs/user/tools 名额会减少；运行时以环境变量 TOP_K/DOC_MAX 为准。
 
     数据库 source_dir 与 Miliastra-knowledge 目录对应关系:
         official/guide/    → source_dir="guide"
@@ -69,10 +69,12 @@ class CombinedRetriever:
         official/faq/      → source_dir="faq" 或 "official_faq"
         bbs/               → source_dir="bbs"
         user/              → source_dir="user"
+        client/            → source_dir="client"（不含 Lua API）
+        tools/             → source_dir="tools"
     """
 
-    # 官方文档的 source_dir 白名单（对应 Miliastra-knowledge/official/ 下的子目录）
-    OFFICIAL_SOURCE_DIRS = ["guide", "tutorial", "faq", "official_faq"]
+    # 官方文档的 source_dir 白名单（对应 Miliastra-knowledge/official/ 下的子目录及 client/）
+    OFFICIAL_SOURCE_DIRS = ["guide", "tutorial", "faq", "official_faq", "client"]
 
     def __init__(self, rag_engine, total_k: int = 5, doc_max: int = 4, similarity_cutoff: float = None):
         self.rag_engine = rag_engine
@@ -101,7 +103,7 @@ class CombinedRetriever:
         except Exception:
             preferred_nodes = []
 
-        # Phase 2: 用户内容 (source_dir NOT IN official 白名单，即 bbs/user 等)
+        # Phase 2: 用户内容 (source_dir NOT IN official 白名单，即 bbs/user/tools 等)
         non_preferred_k = total_k - len(preferred_nodes)
         try:
             non_preferred_filters = MetadataFilters(

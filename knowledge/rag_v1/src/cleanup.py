@@ -40,6 +40,8 @@ def load_current_documents(parser: DocumentParser, entries: list[tuple[str, str 
         for doc in parser.load_documents(directory):
             if prefix and not Path(doc.metadata['file_name']).name.startswith(prefix):
                 continue
+            if doc.id_ in config.EXCLUDED_DOCUMENT_IDS:
+                continue
             if doc.id_ in seen:
                 raise ValueError(f'Duplicate source document ID: {doc.id_}; resolve old files first')
             seen.add(doc.id_)

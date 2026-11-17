@@ -45,7 +45,7 @@ python3 knowledge/audit_timestamps.py \
 
 复制上一版配置为 `config/filtered-<版本>.json`，保留累计规则：
 
-- `divertIds` / `divertScope`：客户端控件、Lua 脚本及相关教程分流到 `client/`，不进入主目录、`title.json` 和向量库。
+- `divertIds` / `divertScope`：客户端控件、Lua 脚本及相关教程分流到 `client/`，不进入主目录和 `title.json`。聊天向量库收录 `client/` 的控件、容器与教程，仅排除 Lua API 文档 ID `mhtakr07vej4`，并收录 `tools/` 工具指南。
 - `skipUpdateIds`：保留旧内容和旧目录元数据；必须记录原因，避免日后误以为是最新正文。
 - `redactSections`：从混合文档中删除客户端专题；`expectedMatches` 必须与原文一致。匹配失败先检查原文结构，不能关闭过滤后强行落盘。
 - `bbs`：记录帖子 ID、起始楼层和人工审阅后的 `excludeFloorIds`；不要仅凭“客户端”三个字排除普通客户端节点图。
@@ -126,7 +126,7 @@ python3 -m knowledge.rag_v1.src.cleanup --apply
 
 应用后再次预览，`removed` 和 `metadata_updates` 应为 0；核对每条来源切片都有对应向量（包含合并来源），并检查源文件 ID、BBS 楼层唯一性。
 
-必须核对：失败数为 0、新文档/BBS 节点存在、分流 ID 不在集合中、删节正文未残留。检查实际召回来源，而不只看总节点数。若当前向量库已有应排除的历史数据，须按明确 ID 处理，不能仅期待增量任务自动删除。
+必须核对：失败数为 0、新文档/BBS 节点存在、Lua API 文档 ID 不在集合中、删节正文未残留。检查实际召回来源，而不只看总节点数。若当前向量库已有应排除的历史数据，须按明确 ID 处理，不能仅期待增量任务自动删除。
 
 ## 7. 公告与发布
 

@@ -12,6 +12,17 @@ from knowledge.rag_v1.src.parser import DocumentParser
 
 
 class CleanupTests(unittest.TestCase):
+    def test_client_and_tools_sources_exclude_only_lua_api(self) -> None:
+        parser = DocumentParser(config.MAX_CHUNK_SIZE, config.CHUNK_OVERLAP, config.USE_H1_ONLY)
+        docs = load_current_documents(parser)
+        paths = {Path(doc.metadata['file_path']).name for doc in docs}
+        self.assertIn('simulator.md', paths)
+        client_files = {p.name for p in Path(config.CLIENT_DOCS_PATH).glob('*.md')}
+        self.assertEqual(client_files - paths, {'mhtakr07vej4_客户端控件API文档.md'})
+        custom_docs = load_current_documents(parser, [(config.CLIENT_DOCS_PATH, None)])
+        self.assertNotIn('mhtakr07vej4', {doc.id_ for doc in custom_docs})
+
+
     def test_empty_video_and_admin_files_are_not_indexed(self) -> None:
         parser = DocumentParser(config.MAX_CHUNK_SIZE, config.CHUNK_OVERLAP, config.USE_H1_ONLY)
         nodes = parser.parse_documents([Document(text='\n\n# 实用内容\n保留正文', id_='a')])

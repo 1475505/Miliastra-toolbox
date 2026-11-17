@@ -42,6 +42,10 @@ class Config:
     TUTORIAL_DOCS_PATH: str = os.path.join(_MK_ROOT, "official", "tutorial")
     OFFICIAL_FAQ_DOCS_PATH: str = os.path.join(_MK_ROOT, "official", "faq")
 
+    CLIENT_DOCS_PATH: str = os.path.join(_MK_ROOT, "client")
+    TOOLS_DOCS_PATH: str = os.path.join(_MK_ROOT, "tools")
+    EXCLUDED_DOCUMENT_IDS: frozenset[str] = frozenset({"mhtakr07vej4"})  # Lua API 参考
+
     # 用户内容目录（CombinedRetriever 补足召回）
     BBS_DOCS_PATH: str = os.path.join(_MK_ROOT, "bbs")
     USER_DOCS_PATH: str = os.path.join(_MK_ROOT, "user")
@@ -49,12 +53,14 @@ class Config:
     # init 时嵌入的知识源列表
     # 每项为 (目录路径, 可选的文件名前缀过滤)
     # 前缀过滤为 None 时加载目录下所有 .md 文件
-    KNOWLEDGE_SOURCE_DIRS: list = [
+    KNOWLEDGE_SOURCE_DIRS: list[tuple[str, str | None]] = [
         (GUIDE_DOCS_PATH, None),
         (TUTORIAL_DOCS_PATH, None),
         (OFFICIAL_FAQ_DOCS_PATH, None),
         (BBS_DOCS_PATH, "bbs-faq"),  # 只嵌入 bbs-faq 开头的文件
         (USER_DOCS_PATH, None),
+        (CLIENT_DOCS_PATH, None),
+        (TOOLS_DOCS_PATH, None),
     ]
     
     KNOWLEDGE_BASE_PATH: str = os.path.join(os.path.dirname(__file__), "..", "db")
